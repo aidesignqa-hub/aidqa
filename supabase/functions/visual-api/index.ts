@@ -6,6 +6,7 @@ import {
   handleCreateRun,
   handleListRuns,
   handleGetRun,
+  handleGetRunById,
   handleCreateJob,
   handleRunJob,
   handleCronTick,
@@ -43,6 +44,9 @@ Deno.serve(async (req: Request) => {
     } else if (path.match(/\/baselines\/[\w-]+\/runs$/)) {
       const [, baselineId] = path.match(/\/baselines\/([\w-]+)\/runs$/)!;
       response = req.method === 'POST' ? await handleCreateRun(req, baselineId) : await handleListRuns(baselineId);
+    } else if (path.match(/\/runs\/[\w-]+$/)) {
+      const [, runId] = path.match(/\/runs\/([\w-]+)$/)!;
+      response = req.method === 'GET' ? await handleGetRunById(runId) : new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
     } else if (path.includes('/monitors') && !path.match(/\/monitors\/[\w-]+/)) {
       response = req.method === 'POST' ? await handleCreateMonitor(req) : new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
     } else if (path.match(/\/jobs\/[\w-]+\/run$/)) {

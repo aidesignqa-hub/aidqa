@@ -803,6 +803,50 @@ export async function handleGetRun(
   }
 }
 
+export async function handleGetRunById(runId: string): Promise<Response> {
+  const supabase = getSupabaseServer();
+
+  try {
+    // Fetch run
+    const { data: runData, error: runError } = await supabase
+      .from('visual_runs')
+      .select('*')
+      .eq('id', runId)
+      .single();
+
+    if (runError || !runData) {
+      return jsonError('Run not found', 404);
+    }
+
+    // Fetch baseline snapshot path from design_baselines
+    const { data: baselineData, error: baselineError } = await supabase
+      .from('design_baselines')
+      .select('snapshot_path')
+      .eq('id', runData.baseline_id)
+      .single();
+
+    // Generate signed URLs
+    const currentUrl = runData.current_path ? await getSignedUrl(runData.current_path) : null;
+    const diffUrl = runData.diff_path ? await getSignedUrl(runData.diff_path) : null;
+    const baselineUrl = baselineData?.snapshot_path ? await getSignedUrl(baselineData.snapshot_path) : null;
+
+    const response = {
+      runId: runData.id,
+      mismatchPercentage: parseFloat(runData.mismatch_percentage),
+      severity: runData.severity,
+      baselineImageUrl: baselineUrl,
+      currentImageUrl: currentUrl,
+      diffImageUrl: diffUrl,
+      createdAt: runData.created_at,
+    };
+
+    return jsonResponse(response);
+  } catch (error: any) {
+    console.error('[RUN] GetById failed:', error);
+    return jsonError(error.message || 'Failed to get run', 500);
+  }
+}
+
 // ============================================================================
 // Job Handlers
 // ============================================================================
