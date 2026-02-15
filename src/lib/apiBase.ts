@@ -16,6 +16,15 @@ export function getApiBaseUrl(): string {
 }
 
 /**
+ * Get Supabase project base URL (without /functions/v1/visual-api suffix).
+ */
+export function getSupabaseProjectUrl(): string {
+  const apiBase = getApiBaseUrl();
+  if (!apiBase) return '';
+  return apiBase.replace(/\/functions\/v1\/visual-api\/?$/, '');
+}
+
+/**
  * Get Supabase anon key for API authentication
  */
 export function getSupabaseAnonKey(): string {

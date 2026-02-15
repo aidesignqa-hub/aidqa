@@ -437,7 +437,7 @@ export async function handleCreateMonitor(req: Request): Promise<Response> {
     // 1. Ensure baseline exists and is approved
     const { data: baselineData, error: baselineError } = await supabase
       .from('design_baselines')
-      .select('id, approved')
+      .select('id, approved, snapshot_path, viewport')
       .eq('id', baselineId)
       .single();
 
@@ -479,25 +479,54 @@ export async function handleCreateMonitor(req: Request): Promise<Response> {
 
     console.log('[MONITOR] Created:', monitor.id);
 
-    // 4. Trigger immediate first run
-    try {
-      const runResult = await runMonitor(data.id);
+    // 4. Execute first comparison inline (no cron dependency)
+    const baselineBuffer = await downloadFile(baselineData.snapshot_path);
 
-      return jsonResponse({
-        monitorId: monitor.id,
-        runId: runResult.runId,
-        mismatchPercentage: runResult.mismatchPercentage,
-        severity: runResult.severity,
-      }, 201);
-    } catch (runError: any) {
-      console.error('[MONITOR] First run failed:', runError);
-      // Return monitor creation success but indicate run failure
-      return jsonResponse({
-        monitorId: monitor.id,
-        runId: null,
-        error: runError.message || 'Monitor created but first run failed',
-      }, 201);
+    const currentImageBuffer = await captureScreenshot({
+      url: monitor.targetUrl,
+      viewport: baselineData.viewport,
+      captureSettings: {},
+    });
+
+    const diffResult = await comparePngExact(baselineBuffer, currentImageBuffer, {
+      ignoreRegions: [],
+      diffThresholdPct: 0.2,
+    });
+
+    const runId = crypto.randomUUID();
+    const currentPath = `${monitor.projectId}/monitors/${monitor.id}/runs/${runId}/current.png`;
+    const diffPath = `${monitor.projectId}/monitors/${monitor.id}/runs/${runId}/diff.png`;
+    const resultPath = `${monitor.projectId}/monitors/${monitor.id}/runs/${runId}/result.json`;
+
+    await uploadFile(currentPath, currentImageBuffer, 'image/png');
+    if (diffResult.diffPngBytes) {
+      await uploadFile(diffPath, diffResult.diffPngBytes, 'image/png');
     }
+
+    const { error: runInsertError } = await supabase
+      .from('visual_runs')
+      .insert({
+        id: runId,
+        monitor_id: monitor.id,
+        baseline_id: monitor.baselineId,
+        project_id: monitor.projectId,
+        status: 'completed',
+        mismatch_percentage: diffResult.mismatchPercentage,
+        diff_pixels: diffResult.diffPixels,
+        current_path: currentPath,
+        diff_path: diffResult.diffPngBytes ? diffPath : null,
+        result_path: resultPath,
+        current_source_url: monitor.targetUrl,
+      });
+
+    if (runInsertError) {
+      throw new Error(`Failed to insert run: ${runInsertError.message}`);
+    }
+
+    return jsonResponse({
+      monitorId: monitor.id,
+      mismatchPercentage: diffResult.mismatchPercentage,
+    }, 201);
   } catch (error: any) {
     console.error('[MONITOR] Create failed:', error);
     return jsonError(error.message || 'Failed to create monitor', 500);
@@ -1155,19 +1184,37 @@ async function runMonitor(monitorId: string): Promise<{ runId: string; mismatchP
   // Download baseline snapshot
   const baselineBytes = await downloadFile(baseline.snapshot_path);
 
-  // Capture current screenshot from target_url
-  console.log('[RUN_MONITOR] Capturing screenshot for monitor:', monitor.id, 'url:', monitor.target_url);
-  const currentBytes = await captureScreenshot({
-    url: monitor.target_url,
-    viewport: baseline.viewport,
-    captureSettings: {},
-  });
+  let currentBytes: Uint8Array;
+  try {
+    console.log('[RUN_MONITOR] Capturing screenshot for monitor:', monitor.id, 'url:', monitor.target_url);
+    currentBytes = await captureScreenshot({
+      url: monitor.target_url,
+      viewport: baseline.viewport,
+      captureSettings: {},
+    });
+  } catch (error: any) {
+    console.error('[RUN_MONITOR] Screenshot capture failed:', {
+      monitorId: monitor.id,
+      targetUrl: monitor.target_url,
+      error: error?.message || String(error),
+    });
+    throw error;
+  }
 
-  // Run pixel diff
-  const diffResult = await comparePngExact(baselineBytes, currentBytes, {
-    ignoreRegions: [],
-    diffThresholdPct: 0.2,
-  });
+  let diffResult: Awaited<ReturnType<typeof comparePngExact>>;
+  try {
+    diffResult = await comparePngExact(baselineBytes, currentBytes, {
+      ignoreRegions: [],
+      diffThresholdPct: 0.2,
+    });
+  } catch (error: any) {
+    console.error('[RUN_MONITOR] Diff calculation failed:', {
+      monitorId: monitor.id,
+      baselineId: baseline.id,
+      error: error?.message || String(error),
+    });
+    throw error;
+  }
 
   // Generate run ID and storage paths
   const runId = crypto.randomUUID();
@@ -1177,10 +1224,20 @@ async function runMonitor(monitorId: string): Promise<{ runId: string; mismatchP
     : null;
   const resultPath = `${monitor.project_id}/monitors/${monitor.id}/runs/${runId}/result.json`;
 
-  // Upload screenshots
-  await uploadFile(currentPath, currentBytes, 'image/png');
-  if (diffResult.diffPngBytes && diffPath) {
-    await uploadFile(diffPath, diffResult.diffPngBytes, 'image/png');
+  try {
+    await uploadFile(currentPath, currentBytes, 'image/png');
+    if (diffResult.diffPngBytes && diffPath) {
+      await uploadFile(diffPath, diffResult.diffPngBytes, 'image/png');
+    }
+  } catch (error: any) {
+    console.error('[RUN_MONITOR] Storage upload failed:', {
+      monitorId: monitor.id,
+      runId,
+      currentPath,
+      diffPath,
+      error: error?.message || String(error),
+    });
+    throw error;
   }
 
   // Generate signed URLs for AI analysis
@@ -1203,7 +1260,17 @@ async function runMonitor(monitorId: string): Promise<{ runId: string; mismatchP
     diffUrl,
     ai: aiInsights,
   };
-  await uploadFile(resultPath, new TextEncoder().encode(JSON.stringify(resultJson, null, 2)), 'application/json');
+  try {
+    await uploadFile(resultPath, new TextEncoder().encode(JSON.stringify(resultJson, null, 2)), 'application/json');
+  } catch (error: any) {
+    console.error('[RUN_MONITOR] Storage upload failed:', {
+      monitorId: monitor.id,
+      runId,
+      resultPath,
+      error: error?.message || String(error),
+    });
+    throw error;
+  }
 
   // Determine severity
   let severity: 'minor' | 'warning' | 'critical' = 'minor';
@@ -1212,31 +1279,41 @@ async function runMonitor(monitorId: string): Promise<{ runId: string; mismatchP
   else if (mismatch <= 10) severity = 'warning';
   else severity = 'critical';
 
-  // Insert run into visual_runs table (do not wait for AI)
-  const { data: runData, error: runError } = await supabase
-    .from('visual_runs')
-    .insert({
-      id: runId,
-      monitor_id: monitor.id,
-      baseline_id: monitor.baseline_id,
-      project_id: monitor.project_id,
-      status: 'completed',
-      mismatch_percentage: diffResult.mismatchPercentage,
-      diff_pixels: diffResult.diffPixels,
-      current_path: currentPath,
-      diff_path: diffPath,
-      result_path: resultPath,
-      severity,
-      current_source_url: monitor.target_url,
-      ai_json: null,
-      ai_status: 'skipped',
-      ai_error: null,
-    })
-    .select()
-    .single();
+  let runData: { id: string };
+  try {
+    const { data, error: runError } = await supabase
+      .from('visual_runs')
+      .insert({
+        id: runId,
+        monitor_id: monitor.id,
+        baseline_id: monitor.baseline_id,
+        project_id: monitor.project_id,
+        status: 'completed',
+        mismatch_percentage: diffResult.mismatchPercentage,
+        diff_pixels: diffResult.diffPixels,
+        current_path: currentPath,
+        diff_path: diffPath,
+        result_path: resultPath,
+        severity,
+        current_source_url: monitor.target_url,
+        ai_json: null,
+        ai_status: 'skipped',
+        ai_error: null,
+      })
+      .select('id')
+      .single();
 
-  if (runError) {
-    throw new Error(`Failed to insert run: ${runError.message}`);
+    if (runError || !data) {
+      throw new Error(`Failed to insert run: ${runError?.message || 'unknown error'}`);
+    }
+    runData = data;
+  } catch (error: any) {
+    console.error('[RUN_MONITOR] Database insert failed:', {
+      monitorId: monitor.id,
+      runId,
+      error: error?.message || String(error),
+    });
+    throw error;
   }
 
   console.log('[RUN_MONITOR] Monitor run completed:', monitor.id, 'runId:', runId);

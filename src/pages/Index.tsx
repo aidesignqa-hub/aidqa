@@ -27,6 +27,7 @@ export default function Index() {
   const [targetUrl, setTargetUrl] = useState('');
   const [cadence, setCadence] = useState<'hourly' | 'daily'>('daily');
   const [monitorId, setMonitorId] = useState<string>('');
+  const [monitorMismatchPercentage, setMonitorMismatchPercentage] = useState<number | null>(null);
   
   // UI state
   const [error, setError] = useState<string | null>(null);
@@ -168,16 +169,15 @@ export default function Index() {
 
       const json = await res.json();
       const id = json.monitorId;
-      const runId = json.runId;
+      const mismatchPercentage = Number(json.mismatchPercentage);
       
       if (!id) throw new Error('Invalid response: missing monitorId');
+      if (!Number.isFinite(mismatchPercentage)) {
+        throw new Error('Invalid response: missing mismatchPercentage');
+      }
 
       setMonitorId(id);
-      
-      // Redirect to run detail page if we got a runId
-      if (runId) {
-        window.location.href = `/runs/${runId}`;
-      }
+      setMonitorMismatchPercentage(mismatchPercentage);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create monitor');
     } finally {
@@ -387,7 +387,19 @@ export default function Index() {
                 </Button>
               )}
 
-              {/* Removed static "Monitor Created" message — creation redirects to run result */}
+              {monitorMismatchPercentage !== null && (
+                <Card className="p-4 border">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Immediate Result</p>
+                    <p className="text-2xl font-bold">Drift %: {monitorMismatchPercentage.toFixed(2)}%</p>
+                    <p className="text-sm font-medium">
+                      {monitorMismatchPercentage === 0
+                        ? 'No visual drift detected'
+                        : 'Visual drift detected'}
+                    </p>
+                  </div>
+                </Card>
+              )}
             </div>
           </Card>
         )}
