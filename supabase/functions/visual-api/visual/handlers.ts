@@ -8,6 +8,10 @@ import type {
   Run,
   CreateBaselineRequest,
   CreateRunRequest,
+  DesignBaseline,
+  CreateDesignBaselineRequest,
+  Monitor,
+  CreateMonitorRequest,
   APIError,
 } from '../_lib/types.ts';
 import { captureScreenshot } from './capture.ts';
@@ -264,6 +268,226 @@ export async function handleListBaselines(req: Request): Promise<Response> {
   } catch (error: any) {
     console.error('[BASELINE] List failed:', error);
     return jsonError(error.message || 'Failed to list baselines', 500);
+  }
+}
+
+// ============================================================================
+// Design Baseline Handlers (New Implementation)
+// ============================================================================
+
+export async function handleCreateDesignBaseline(req: Request): Promise<Response> {
+  const supabase = getSupabaseServer();
+
+  try {
+    const body: CreateDesignBaselineRequest = await req.json();
+    const {
+      projectId,
+      name,
+      sourceType,
+      sourceUrl,
+      viewport = { width: 1440, height: 900 },
+    } = body;
+
+    // Validation
+    if (!projectId || !name || !sourceType) {
+      return jsonError('projectId, name, and sourceType are required', 400);
+    }
+
+    if (sourceType !== 'url') {
+      return jsonError('Only sourceType "url" is supported at this time', 501);
+    }
+
+    if (!sourceUrl) {
+      return jsonError('sourceUrl is required for url source type', 400);
+    }
+
+    // SSRF protection
+    const urlCheck = isUrlSafe(sourceUrl);
+    if (!urlCheck.safe) {
+      return jsonError(urlCheck.error || 'URL not allowed', 400);
+    }
+
+    // 1. Capture screenshot from sourceUrl
+    console.log('[DESIGN_BASELINE] Capturing screenshot for:', sourceUrl);
+    const screenshotBytes = await captureScreenshot({
+      url: sourceUrl,
+      viewport,
+      captureSettings: {},
+    });
+
+    // 2. Generate baseline ID and storage path
+    const baselineId = crypto.randomUUID();
+    const snapshotPath = `${projectId}/baselines/${baselineId}/baseline.png`;
+
+    // 3. Upload to Supabase Storage
+    await uploadFile(snapshotPath, screenshotBytes, 'image/png');
+
+    // 4. Insert into design_baselines table
+    const { data, error } = await supabase
+      .from('design_baselines')
+      .insert({
+        id: baselineId,
+        project_id: projectId,
+        name,
+        source_type: sourceType,
+        snapshot_path: snapshotPath,
+        viewport,
+        approved: false,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Database insert failed: ${error.message}`);
+    }
+
+    // 5. Return baseline data
+    const baseline: DesignBaseline = {
+      id: data.id,
+      projectId: data.project_id,
+      name: data.name,
+      sourceType: data.source_type,
+      snapshotPath: data.snapshot_path,
+      viewport: data.viewport,
+      approved: data.approved,
+      approvedAt: data.approved_at,
+      createdAt: data.created_at,
+    };
+
+    return jsonResponse({ baselineId: baseline.id, baseline }, 201);
+  } catch (error: any) {
+    console.error('[DESIGN_BASELINE] Create failed:', error);
+    return jsonError(error.message || 'Failed to create design baseline', 500);
+  }
+}
+
+export async function handleApproveBaseline(baselineId: string): Promise<Response> {
+  const supabase = getSupabaseServer();
+
+  try {
+    // Validate UUID format
+    if (!baselineId || !baselineId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      return jsonError('Invalid baseline ID format', 400);
+    }
+
+    // Update baseline to approved
+    const { data, error } = await supabase
+      .from('design_baselines')
+      .update({
+        approved: true,
+        approved_at: new Date().toISOString(),
+      })
+      .eq('id', baselineId)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return jsonError('Baseline not found', 404);
+      }
+      throw new Error(`Database update failed: ${error.message}`);
+    }
+
+    // Return updated baseline
+    const baseline: DesignBaseline = {
+      id: data.id,
+      projectId: data.project_id,
+      name: data.name,
+      sourceType: data.source_type,
+      snapshotPath: data.snapshot_path,
+      viewport: data.viewport,
+      approved: data.approved,
+      approvedAt: data.approved_at,
+      createdAt: data.created_at,
+    };
+
+    console.log('[DESIGN_BASELINE] Approved:', baselineId);
+    return jsonResponse({ baseline }, 200);
+  } catch (error: any) {
+    console.error('[DESIGN_BASELINE] Approve failed:', error);
+    return jsonError(error.message || 'Failed to approve baseline', 500);
+  }
+}
+
+// ============================================================================
+// Monitor Handlers
+// ============================================================================
+
+export async function handleCreateMonitor(req: Request): Promise<Response> {
+  const supabase = getSupabaseServer();
+
+  try {
+    const body: CreateMonitorRequest = await req.json();
+    const {
+      projectId,
+      baselineId,
+      targetUrl,
+      cadence = 'daily',
+    } = body;
+
+    // Validation
+    if (!projectId || !baselineId || !targetUrl) {
+      return jsonError('projectId, baselineId, and targetUrl are required', 400);
+    }
+
+    if (!['hourly', 'daily'].includes(cadence)) {
+      return jsonError('cadence must be "hourly" or "daily"', 400);
+    }
+
+    // SSRF protection
+    const urlCheck = isUrlSafe(targetUrl);
+    if (!urlCheck.safe) {
+      return jsonError(urlCheck.error || 'URL not allowed', 400);
+    }
+
+    // 1. Ensure baseline exists and is approved
+    const { data: baselineData, error: baselineError } = await supabase
+      .from('design_baselines')
+      .select('id, approved')
+      .eq('id', baselineId)
+      .single();
+
+    if (baselineError || !baselineData) {
+      return jsonError('Baseline not found', 404);
+    }
+
+    if (!baselineData.approved) {
+      return jsonError('Baseline must be approved before creating a monitor', 403);
+    }
+
+    // 2. Insert into monitors table
+    const { data, error } = await supabase
+      .from('monitors')
+      .insert({
+        project_id: projectId,
+        baseline_id: baselineId,
+        target_url: targetUrl,
+        cadence,
+        enabled: true,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Database insert failed: ${error.message}`);
+    }
+
+    // 3. Return monitor data
+    const monitor: Monitor = {
+      id: data.id,
+      projectId: data.project_id,
+      baselineId: data.baseline_id,
+      targetUrl: data.target_url,
+      cadence: data.cadence,
+      enabled: data.enabled,
+      createdAt: data.created_at,
+    };
+
+    console.log('[MONITOR] Created:', monitor.id);
+    return jsonResponse({ monitorId: monitor.id, monitor }, 201);
+  } catch (error: any) {
+    console.error('[MONITOR] Create failed:', error);
+    return jsonError(error.message || 'Failed to create monitor', 500);
   }
 }
 
@@ -784,43 +1008,167 @@ export async function handleCronTick(): Promise<Response> {
   const supabase = getSupabaseServer();
 
   try {
-    // Find all due jobs
-    const { data: dueJobs, error } = await supabase
-      .from('visual_jobs')
+    // 1. Select all enabled monitors
+    const { data: monitors, error: monitorsError } = await supabase
+      .from('monitors')
       .select('*')
       .eq('enabled', true)
-      .lte('next_run_at', new Date().toISOString())
-      .limit(50); // Process max 50 jobs per tick
+      .limit(50); // Process max 50 monitors per tick
 
-    if (error) {
-      throw new Error(`Database query failed: ${error.message}`);
+    if (monitorsError) {
+      throw new Error(`Database query failed: ${monitorsError.message}`);
     }
 
     const results = {
       processed: 0,
       succeeded: 0,
       failed: 0,
-      jobs: [] as any[],
+      runs: [] as any[],
     };
 
-    for (const job of dueJobs || []) {
+    // 2. Process each monitor
+    for (const monitor of monitors || []) {
       results.processed++;
+      
       try {
-        console.log('[CRON] Processing job:', job.id);
-        const response = await handleRunJob(job.id);
-        const responseData = await response.json();
-        
-        if (response.ok) {
-          results.succeeded++;
-          results.jobs.push({ jobId: job.id, status: 'success', runId: responseData.runId });
-        } else {
-          results.failed++;
-          results.jobs.push({ jobId: job.id, status: 'failed', error: responseData.error });
+        console.log('[CRON] Processing monitor:', monitor.id);
+
+        // Fetch approved baseline
+        const { data: baseline, error: baselineError } = await supabase
+          .from('design_baselines')
+          .select('*')
+          .eq('id', monitor.baseline_id)
+          .eq('approved', true)
+          .single();
+
+        if (baselineError || !baseline) {
+          throw new Error('Approved baseline not found');
         }
+
+        // Download baseline snapshot
+        const baselineBytes = await downloadFile(baseline.snapshot_path);
+
+        // Capture current screenshot from target_url
+        console.log('[CRON] Capturing screenshot for monitor:', monitor.id, 'url:', monitor.target_url);
+        const currentBytes = await captureScreenshot({
+          url: monitor.target_url,
+          viewport: baseline.viewport,
+          captureSettings: {},
+        });
+
+        // Run pixel diff
+        const diffResult = await comparePngExact(baselineBytes, currentBytes, {
+          ignoreRegions: [],
+          diffThresholdPct: 0.2,
+        });
+
+        // Generate run ID and storage paths
+        const runId = crypto.randomUUID();
+        const currentPath = `${monitor.project_id}/monitors/${monitor.id}/runs/${runId}/current.png`;
+        const diffPath = diffResult.diffPngBytes
+          ? `${monitor.project_id}/monitors/${monitor.id}/runs/${runId}/diff.png`
+          : null;
+        const resultPath = `${monitor.project_id}/monitors/${monitor.id}/runs/${runId}/result.json`;
+
+        // Upload screenshots
+        await uploadFile(currentPath, currentBytes, 'image/png');
+        if (diffResult.diffPngBytes && diffPath) {
+          await uploadFile(diffPath, diffResult.diffPngBytes, 'image/png');
+        }
+
+        // Generate signed URLs for AI analysis
+        const baselineUrl = await getSignedUrl(baseline.snapshot_path);
+        const currentUrl = await getSignedUrl(currentPath);
+        const diffUrl = diffPath ? await getSignedUrl(diffPath) : null;
+
+        // AI analysis (optional, async, non-blocking)
+        const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+        let aiInsights: any = null;
+        let aiStatus: 'skipped' | 'completed' | 'failed' = 'skipped';
+        let aiError: string | null = null;
+
+        if (OPENAI_API_KEY) {
+          try {
+            aiInsights = await generateAIInsights({
+              baselineUrl,
+              currentUrl,
+              diffUrl,
+              mismatchPercentage: diffResult.mismatchPercentage,
+              diffPixels: diffResult.diffPixels,
+              baselineSourceUrl: monitor.target_url,
+              currentSourceUrl: monitor.target_url,
+              duplicationAllowed: false,
+            });
+            aiInsights = {
+              ...aiInsights,
+              issues: filterAIIssues(aiInsights?.issues, {
+                mismatchPercentage: diffResult.mismatchPercentage,
+                diffPixels: diffResult.diffPixels,
+              }),
+            };
+            aiStatus = 'completed';
+          } catch (e: any) {
+            aiStatus = 'failed';
+            aiError = e?.message ?? String(e);
+            aiInsights = { error: aiError };
+            console.warn('[CRON] AI analysis failed for monitor:', monitor.id, aiError);
+          }
+        }
+
+        // Upload result JSON
+        const resultJson = {
+          mismatchPercentage: diffResult.mismatchPercentage,
+          diffPixels: diffResult.diffPixels,
+          baselineUrl,
+          currentUrl,
+          diffUrl,
+          ai: aiInsights,
+        };
+        await uploadFile(resultPath, new TextEncoder().encode(JSON.stringify(resultJson, null, 2)), 'application/json');
+
+        // Insert run into visual_runs table
+        const { data: runData, error: runError } = await supabase
+          .from('visual_runs')
+          .insert({
+            id: runId,
+            baseline_id: monitor.baseline_id,
+            project_id: monitor.project_id,
+            status: 'completed',
+            mismatch_percentage: diffResult.mismatchPercentage,
+            diff_pixels: diffResult.diffPixels,
+            current_path: currentPath,
+            diff_path: diffPath,
+            result_path: resultPath,
+            current_source_url: monitor.target_url,
+            ai_json: aiInsights,
+            ai_status: aiStatus,
+            ai_error: aiError,
+          })
+          .select()
+          .single();
+
+        if (runError) {
+          throw new Error(`Failed to insert run: ${runError.message}`);
+        }
+
+        results.succeeded++;
+        results.runs.push({
+          monitorId: monitor.id,
+          runId: runData.id,
+          status: 'success',
+          mismatchPercentage: diffResult.mismatchPercentage,
+          aiStatus,
+        });
+
+        console.log('[CRON] Monitor run completed:', monitor.id, 'runId:', runId);
       } catch (e: any) {
         results.failed++;
-        results.jobs.push({ jobId: job.id, status: 'failed', error: e.message });
-        console.error('[CRON] Job execution failed:', job.id, e);
+        results.runs.push({
+          monitorId: monitor.id,
+          status: 'failed',
+          error: e.message,
+        });
+        console.error('[CRON] Monitor execution failed:', monitor.id, e);
       }
     }
 

@@ -118,6 +118,48 @@ export interface CreateJobRequest {
   cadence: string;
 }
 
+export interface DesignBaseline {
+  id: string;
+  projectId: string;
+  name: string;
+  sourceType: 'url' | 'figma' | 'upload';
+  snapshotPath: string;
+  viewport: Viewport;
+  approved: boolean;
+  approvedAt: string | null;
+  createdAt: string;
+}
+
+export interface Monitor {
+  id: string;
+  projectId: string;
+  baselineId: string;
+  targetUrl: string;
+  cadence: string;
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface CreateDesignBaselineRequest {
+  projectId: string;
+  name: string;
+  sourceType: 'url' | 'figma' | 'upload';
+  viewport?: Viewport;
+  // For URL/Figma sources
+  sourceUrl?: string;
+  figmaFileKey?: string;
+  figmaNodeId?: string;
+  // For upload source
+  snapshotData?: Uint8Array;
+}
+
+export interface CreateMonitorRequest {
+  projectId: string;
+  baselineId: string;
+  targetUrl: string;
+  cadence?: string;
+}
+
 export interface APIError {
   error: string;
   code?: string;
