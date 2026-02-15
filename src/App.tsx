@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import VisualRun from "./pages/VisualRun";
 import RunDetail from "./pages/RunDetail";
@@ -17,7 +18,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/create-monitor" element={<Index />} />
           <Route path="/visual/baselines/:baselineId/runs/:runId" element={<VisualRun />} />
           <Route path="/runs/:runId" element={<RunDetail />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
