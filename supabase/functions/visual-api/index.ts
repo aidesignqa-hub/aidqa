@@ -13,6 +13,7 @@ import {
   handleCreateDesignBaseline,
   handleApproveBaseline,
   handleCreateMonitor,
+  handleListMonitors,
 } from './visual/handlers.ts';
 
 Deno.serve(async (req: Request) => {
@@ -48,7 +49,7 @@ Deno.serve(async (req: Request) => {
       const [, runId] = path.match(/\/runs\/([\w-]+)$/)!;
       response = req.method === 'GET' ? await handleGetRunById(runId) : new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
     } else if (path.includes('/monitors') && !path.match(/\/monitors\/[\w-]+/)) {
-      response = req.method === 'POST' ? await handleCreateMonitor(req) : new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+      response = req.method === 'POST' ? await handleCreateMonitor(req) : req.method === 'GET' ? await handleListMonitors(req) : new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
     } else if (path.match(/\/jobs\/[\w-]+\/run$/)) {
       const [, jobId] = path.match(/\/jobs\/([\w-]+)\/run$/)!;
       response = req.method === 'POST' ? await handleRunJob(jobId) : new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });

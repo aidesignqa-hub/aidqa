@@ -504,6 +504,66 @@ export async function handleCreateMonitor(req: Request): Promise<Response> {
   }
 }
 
+export async function handleListMonitors(req: Request): Promise<Response> {
+  const supabase = getSupabaseServer();
+
+  try {
+    const url = new URL(req.url);
+    const projectId = url.searchParams.get('projectId') || 'demo';
+
+    // Fetch all monitors for project
+    const { data: monitors, error: monitorsError } = await supabase
+      .from('monitors')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false });
+
+    if (monitorsError) {
+      throw new Error(`Database query failed: ${monitorsError.message}`);
+    }
+
+    if (!monitors || monitors.length === 0) {
+      return jsonResponse([]);
+    }
+
+    // For each monitor, fetch baseline name and latest run
+    const results = await Promise.all(
+      monitors.map(async (monitor) => {
+        // Fetch baseline name
+        const { data: baseline } = await supabase
+          .from('design_baselines')
+          .select('name')
+          .eq('id', monitor.baseline_id)
+          .single();
+
+        // Fetch latest run
+        const { data: latestRun } = await supabase
+          .from('visual_runs')
+          .select('mismatch_percentage, severity, created_at')
+          .eq('monitor_id', monitor.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        return {
+          monitorId: monitor.id,
+          baselineName: baseline?.name || 'Unknown',
+          latestMismatchPercentage: latestRun?.mismatch_percentage ? parseFloat(latestRun.mismatch_percentage) : null,
+          latestSeverity: latestRun?.severity || null,
+          lastRunAt: latestRun?.created_at || null,
+          enabled: monitor.enabled,
+          targetUrl: monitor.target_url,
+        };
+      })
+    );
+
+    return jsonResponse(results);
+  } catch (error: any) {
+    console.error('[MONITOR] List failed:', error);
+    return jsonError(error.message || 'Failed to list monitors', 500);
+  }
+}
+
 // ============================================================================
 // Run Handlers
 // ============================================================================
