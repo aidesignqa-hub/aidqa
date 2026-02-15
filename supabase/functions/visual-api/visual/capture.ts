@@ -6,11 +6,18 @@ import type { Viewport } from '../_lib/types.ts';
 
 const DEFAULT_VIEWPORT: Viewport = { width: 1440, height: 900 };
 
+interface CaptureSettings {
+  waitForTimeout?: number;
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2';
+  waitForSelector?: string;
+}
+
 export async function captureScreenshot(opts: {
   url: string;
   viewport?: Viewport;
+  captureSettings?: CaptureSettings;
 }): Promise<Uint8Array> {
-  const { url, viewport = DEFAULT_VIEWPORT } = opts;
+  const { url, viewport = DEFAULT_VIEWPORT, captureSettings = {} } = opts;
 
   const browserlessEndpoint = Deno.env.get('BROWSERLESS_REST_ENDPOINT');
   const browserlessApiKey = Deno.env.get('BROWSERLESS_API_KEY');
@@ -21,30 +28,74 @@ export async function captureScreenshot(opts: {
 
   console.log('[SCREENSHOT] Capturing:', url, 'via Browserless REST API');
 
+  const maxRetries = 3;
+  const retryDelays = [300, 900, 2000]; // Exponential backoff
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await captureScreenshotAttempt(url, viewport, captureSettings, browserlessEndpoint, browserlessApiKey);
+    } catch (error: any) {
+      lastError = error;
+      const shouldRetry = 
+        error.message.includes('Screenshot capture failed: 5') || // 5xx errors
+        error.message.includes('blank/white'); // Blank screenshot
+      
+      if (shouldRetry && attempt < maxRetries - 1) {
+        const delay = retryDelays[attempt];
+        console.warn(`[SCREENSHOT] Attempt ${attempt + 1} failed: ${error.message}. Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      throw error;
+    }
+  }
+
+  throw lastError || new Error('Screenshot capture failed after retries');
+}
+
+async function captureScreenshotAttempt(
+  url: string,
+  viewport: Viewport,
+  captureSettings: CaptureSettings,
+  browserlessEndpoint: string,
+  browserlessApiKey: string | undefined
+): Promise<Uint8Array> {
   // Use Browserless HTTP screenshot API with proper wait for JS-heavy pages
   // Docs: https://docs.browserless.io/screenshot
   const screenshotUrl = `${browserlessEndpoint}/screenshot${browserlessApiKey ? `?token=${browserlessApiKey}` : ''}`;
   
+  const requestBody: any = {
+    url,
+    viewport: {
+      width: viewport.width,
+      height: viewport.height,
+    },
+    gotoOptions: {
+      waitUntil: captureSettings.waitUntil || 'networkidle2',
+    },
+    waitForTimeout: captureSettings.waitForTimeout || 3000,
+    options: {
+      type: 'png',
+      fullPage: false,
+    },
+  };
+
+  // Add optional waitForSelector if provided
+  if (captureSettings.waitForSelector) {
+    requestBody.waitForSelector = {
+      selector: captureSettings.waitForSelector,
+      timeout: 10000,
+    };
+  }
+
   const response = await fetch(screenshotUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      url,
-      viewport: {
-        width: viewport.width,
-        height: viewport.height,
-      },
-      gotoOptions: {
-        waitUntil: 'networkidle2',
-      },
-      waitForTimeout: 3000,
-      options: {
-        type: 'png',
-        fullPage: false,
-      },
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
@@ -55,14 +106,18 @@ export async function captureScreenshot(opts: {
   const arrayBuffer = await response.arrayBuffer();
   const pngBytes = new Uint8Array(arrayBuffer);
 
-  // Guard against blank/white screenshots
+  // Guard against blank/white screenshots with optimized grid sampling
   try {
     const image = await Image.decode(pngBytes);
     let whitePixelCount = 0;
-    const totalPixels = image.width * image.height;
+    let sampledPixels = 0;
 
-    for (let y = 0; y < image.height; y++) {
-      for (let x = 0; x < image.width; x++) {
+    // Sample grid - approximately 3000-5000 pixels total
+    const stepX = Math.max(1, Math.floor(image.width / 60));
+    const stepY = Math.max(1, Math.floor(image.height / 50));
+
+    for (let y = 0; y < image.height; y += stepY) {
+      for (let x = 0; x < image.width; x += stepX) {
         const color = image.getPixelAt(x, y);
         // Check if pixel is near-white (RGB > 250)
         const r = (color >> 24) & 0xFF;
@@ -71,11 +126,12 @@ export async function captureScreenshot(opts: {
         if (r > 250 && g > 250 && b > 250) {
           whitePixelCount++;
         }
+        sampledPixels++;
       }
     }
 
-    const whitePercentage = (whitePixelCount / totalPixels) * 100;
-    console.log('[SCREENSHOT] White pixels:', whitePercentage.toFixed(2) + '%');
+    const whitePercentage = sampledPixels > 0 ? (whitePixelCount / sampledPixels) * 100 : 0;
+    console.log('[SCREENSHOT] White pixels (sampled):', whitePercentage.toFixed(2) + '%', `(${sampledPixels} samples)`);
 
     if (whitePercentage > 98) {
       throw new Error(

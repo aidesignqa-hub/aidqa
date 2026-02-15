@@ -3,12 +3,18 @@
 
 import { Image } from 'https://deno.land/x/imagescript@1.2.15/mod.ts';
 import pixelmatch from 'https://esm.sh/pixelmatch@6.0.0';
-import type { DiffResult } from '../_lib/types.ts';
+import type { DiffResult, IgnoreRegion } from '../_lib/types.ts';
 
 export async function comparePngExact(
   baselinePng: Uint8Array,
-  currentPng: Uint8Array
+  currentPng: Uint8Array,
+  options?: {
+    ignoreRegions?: IgnoreRegion[];
+    diffThresholdPct?: number;
+  }
 ): Promise<DiffResult> {
+  const { ignoreRegions = [], diffThresholdPct } = options || {};
+
   // Decode PNGs using imagescript (pure Deno, no Node.js dependencies)
   const baselineImg = await Image.decode(baselinePng);
   const currentImg = await Image.decode(currentPng);
@@ -25,6 +31,33 @@ export async function comparePngExact(
   // Get raw RGBA bitmap data (Image.bitmap is already Uint8ClampedArray)
   const baselineData = baselineImg.bitmap;
   const currentData = currentImg.bitmap;
+
+  // Apply ignore regions by masking pixels in both images
+  if (ignoreRegions.length > 0) {
+    for (const region of ignoreRegions) {
+      const { x, y, width: w, height: h } = region;
+      // Ensure region is within bounds
+      const x1 = Math.max(0, Math.floor(x));
+      const y1 = Math.max(0, Math.floor(y));
+      const x2 = Math.min(width, Math.floor(x + w));
+      const y2 = Math.min(height, Math.floor(y + h));
+
+      for (let py = y1; py < y2; py++) {
+        for (let px = x1; px < x2; px++) {
+          const idx = (py * width + px) * 4;
+          // Set to fully transparent black so pixelmatch ignores them
+          baselineData[idx] = 0;
+          baselineData[idx + 1] = 0;
+          baselineData[idx + 2] = 0;
+          baselineData[idx + 3] = 0;
+          currentData[idx] = 0;
+          currentData[idx + 1] = 0;
+          currentData[idx + 2] = 0;
+          currentData[idx + 3] = 0;
+        }
+      }
+    }
+  }
 
   // Run pixelmatch into a temporary mask — used only to identify which pixels differ
   const maskData = new Uint8ClampedArray(width * height * 4);
@@ -44,6 +77,9 @@ export async function comparePngExact(
 
   const totalPixels = width * height;
   const mismatchPercentage = totalPixels > 0 ? (mismatchPixels / totalPixels) * 100 : 0;
+
+  // Determine pass/fail based on threshold
+  const isPassed = diffThresholdPct !== undefined ? mismatchPercentage < diffThresholdPct : undefined;
 
   let diffPngBytes: Uint8Array | null = null;
   if (mismatchPixels > 0) {
@@ -102,6 +138,7 @@ export async function comparePngExact(
   }
 
   return {
+    isPassed,
     diffPixels: mismatchPixels,
     mismatchPercentage: parseFloat(mismatchPercentage.toFixed(4)),
     diffPngBytes,

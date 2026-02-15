@@ -5,27 +5,51 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
 import { getApiBaseUrl, validateApiConfig, getApiHeaders } from '@/lib/apiBase';
 
+type DevicePreset = 'desktop' | 'tablet' | 'mobile' | 'custom';
+
 export default function Index() {
   // Visual regression (MVP) UI state
-  const [visualProjectId, setVisualProjectId] = useState('demo');
-  const [visualName, setVisualName] = useState('Example.com');
-  const [visualUrl, setVisualUrl] = useState('https://example.com');
+  const [visualName, setVisualName] = useState('');
+  const [visualUrl, setVisualUrl] = useState('');
   const [visualFigmaFileKey, setVisualFigmaFileKey] = useState('');
   const [visualFigmaNodeIds, setVisualFigmaNodeIds] = useState('');
   const [visualUseFigma, setVisualUseFigma] = useState(false);
+  const [devicePreset, setDevicePreset] = useState<DevicePreset>('desktop');
   const [visualViewportWidth, setVisualViewportWidth] = useState('1440');
   const [visualViewportHeight, setVisualViewportHeight] = useState('900');
+  const [visualDiffThreshold, setVisualDiffThreshold] = useState('0.2');
+  const [visualIgnoreRegions, setVisualIgnoreRegions] = useState('[]');
   const [visualBaselineId, setVisualBaselineId] = useState<string>('');
-  const [visualRunUrl, setVisualRunUrl] = useState<string>('');  // URL to compare against
-  const [visualRunId, setVisualRunId] = useState<string>('');
   const [visualStatus, setVisualStatus] = useState<'PASS' | 'FAIL' | 'ERROR' | ''>('');
   const [visualMismatch, setVisualMismatch] = useState<number | null>(null);
   const [visualError, setVisualError] = useState<string | null>(null);
   const [visualLoading, setVisualLoading] = useState(false);
   const apiBase = getApiBaseUrl();
+
+  const handleDeviceChange = (value: DevicePreset) => {
+    setDevicePreset(value);
+    switch (value) {
+      case 'desktop':
+        setVisualViewportWidth('1440');
+        setVisualViewportHeight('900');
+        break;
+      case 'tablet':
+        setVisualViewportWidth('768');
+        setVisualViewportHeight('1024');
+        break;
+      case 'mobile':
+        setVisualViewportWidth('390');
+        setVisualViewportHeight('844');
+        break;
+      case 'custom':
+        // Keep current values
+        break;
+    }
+  };
 
   const parseViewport = () => {
     const width = Number(visualViewportWidth);
@@ -38,7 +62,6 @@ export default function Index() {
 
   const handleCreateBaseline = async () => {
     setVisualError(null);
-    setVisualRunId('');
     setVisualStatus('');
     setVisualMismatch(null);
     setVisualLoading(true);
@@ -50,10 +73,27 @@ export default function Index() {
       const viewport = parseViewport();
 
       const body: any = {
-        projectId: visualProjectId.trim(),
+        projectId: 'demo', // Hardcoded for monitoring-first product
         name: visualName.trim(),
         viewport,
       };
+
+      // Parse and add diff threshold
+      const threshold = parseFloat(visualDiffThreshold);
+      if (Number.isFinite(threshold) && threshold >= 0) {
+        body.diffThresholdPct = threshold;
+      }
+
+      // Parse and add ignore regions
+      try {
+        const regions = JSON.parse(visualIgnoreRegions);
+        if (Array.isArray(regions)) {
+          body.ignoreRegions = regions;
+        }
+      } catch (e) {
+        // Invalid JSON, skip ignore regions
+        console.warn('Invalid ignore regions JSON, skipping:', e);
+      }
 
       if (visualUseFigma) {
         if (!visualFigmaFileKey || !visualFigmaNodeIds) {
@@ -84,48 +124,10 @@ export default function Index() {
       const baselineId = json.baselineId ?? json.id;
       if (!baselineId) throw new Error(`Unexpected response: ${text}`);
       setVisualBaselineId(baselineId);
+      setVisualStatus('PASS');
     } catch (e) {
       setVisualError(e instanceof Error ? e.message : 'Failed to create baseline');
-    } finally {
-      setVisualLoading(false);
-    }
-  };
-
-  const handleCreateRun = async () => {
-    if (!visualBaselineId) {
-      setVisualError('baselineId is required (create a baseline first)');
-      return;
-    }
-    if (!visualRunUrl || !visualRunUrl.trim()) {
-      setVisualError('Enter URL to compare against');
-      return;
-    }
-    setVisualError(null);
-    setVisualRunId('');
-    setVisualStatus('');
-    setVisualMismatch(null);
-    setVisualLoading(true);
-    try {
-      const configCheck = validateApiConfig();
-      if (!configCheck.valid) {
-        throw new Error(configCheck.error);
-      }
-      const res = await fetch(`${apiBase}/baselines/${visualBaselineId}/runs`, {
-        method: 'POST',
-        headers: getApiHeaders(),
-        body: JSON.stringify({ url: visualRunUrl.trim() }),
-      });
-      const text = await res.text();
-      if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
-      const json = JSON.parse(text);
-      
-      const runId = json.runId ?? json.id;
-      if (!runId) throw new Error(`Unexpected response: ${text}`);
-      setVisualRunId(runId);
-      setVisualStatus(json.status || 'PASS');
-      setVisualMismatch(json.diffPixels ?? json.mismatchPixelCount ?? null);
-    } catch (e) {
-      setVisualError(e instanceof Error ? e.message : 'Failed to create run');
+      setVisualStatus('ERROR');
     } finally {
       setVisualLoading(false);
     }
@@ -134,21 +136,21 @@ export default function Index() {
 
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <header className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">AIDQA</h1>
-          <p className="text-muted-foreground">
-            Automatically scan design files for inconsistencies in design systems, brand standards, and accessibility.
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="w-full max-w-2xl space-y-8">
+        <header className="text-center space-y-3">
+          <h1 className="text-5xl font-bold tracking-tight">AIDQA</h1>
+          <p className="text-lg text-muted-foreground">
+            Continuous visual monitoring for your web applications
           </p>
         </header>
 
-        {/* Visual Regression (MVP) */}
-        <Card className="p-6 space-y-4">
-          <div>
-            <h2 className="text-2xl font-semibold">Visual Regression (MVP)</h2>
+        <Card className="p-8 space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold">Start Monitoring</h2>
             <p className="text-sm text-muted-foreground">
-              Create a baseline screenshot from URL or Figma design, then run exact pixel compare.
+              Capture a baseline screenshot and we'll automatically monitor it for visual changes. 
+              You'll be notified immediately when differences are detected.
             </p>
           </div>
 
@@ -158,128 +160,190 @@ export default function Index() {
             </Alert>
           )}
 
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-4 pb-2">
             <Label className="flex items-center gap-2 cursor-pointer">
               <input 
                 type="radio" 
                 checked={!visualUseFigma} 
                 onChange={() => setVisualUseFigma(false)}
+                className="cursor-pointer"
               />
-              <span>URL</span>
+              <span className="font-medium">URL</span>
             </Label>
             <Label className="flex items-center gap-2 cursor-pointer">
               <input 
                 type="radio" 
                 checked={visualUseFigma} 
                 onChange={() => setVisualUseFigma(true)}
+                className="cursor-pointer"
               />
-              <span>Figma</span>
+              <span className="font-medium">Figma</span>
             </Label>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <div className="space-y-2 lg:col-span-1">
-              <Label htmlFor="visualProjectId">Project ID</Label>
-              <Input id="visualProjectId" value={visualProjectId} onChange={(e) => setVisualProjectId(e.target.value)} />
-            </div>
-            <div className="space-y-2 lg:col-span-1">
-              <Label htmlFor="visualName">Name</Label>
-              <Input id="visualName" value={visualName} onChange={(e) => setVisualName(e.target.value)} />
-            </div>
+          <div className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="visualViewportWidth">Viewport W</Label>
-              <Input id="visualViewportWidth" value={visualViewportWidth} onChange={(e) => setVisualViewportWidth(e.target.value)} />
+              <Label htmlFor="visualName" className="text-base font-medium">Monitor Name</Label>
+              <Input 
+                id="visualName" 
+                value={visualName} 
+                onChange={(e) => setVisualName(e.target.value)}
+                placeholder="e.g., Homepage, Checkout Flow, Dashboard"
+                className="h-11"
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="visualViewportHeight">Viewport H</Label>
-              <Input id="visualViewportHeight" value={visualViewportHeight} onChange={(e) => setVisualViewportHeight(e.target.value)} />
-            </div>
+
             {!visualUseFigma ? (
-              <div className="space-y-2 lg:col-span-2">
-                <Label htmlFor="visualUrl">URL</Label>
+              <div className="space-y-2">
+                <Label htmlFor="visualUrl" className="text-base font-medium">URL to Monitor</Label>
                 <Input 
                   id="visualUrl" 
                   value={visualUrl} 
                   onChange={(e) => setVisualUrl(e.target.value)}
-                  placeholder=""
-                  className="placeholder:text-gray-400"
+                  placeholder="https://example.com"
+                  className="h-11"
                 />
               </div>
             ) : (
               <>
-                <div className="space-y-2 lg:col-span-1">
-                  <Label htmlFor="visualFigmaFileKey">Figma File Key</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="visualFigmaFileKey" className="text-base font-medium">Figma File Key</Label>
                   <Input 
                     id="visualFigmaFileKey" 
                     value={visualFigmaFileKey} 
                     onChange={(e) => setVisualFigmaFileKey(e.target.value)}
                     placeholder="abc123def456"
+                    className="h-11"
                   />
                 </div>
-                <div className="space-y-2 lg:col-span-1">
-                  <Label htmlFor="visualFigmaNodeIds">Node IDs (comma-separated)</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="visualFigmaNodeIds" className="text-base font-medium">Node IDs (comma-separated)</Label>
                   <Input 
                     id="visualFigmaNodeIds" 
                     value={visualFigmaNodeIds} 
                     onChange={(e) => setVisualFigmaNodeIds(e.target.value)}
                     placeholder="1:23, 2:45"
+                    className="h-11"
                   />
                 </div>
               </>
             )}
-          </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={handleCreateBaseline} disabled={visualLoading}>
-              Create baseline
-            </Button>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="visualBaselineId">Baseline ID</Label>
-              <Input
-                id="visualBaselineId"
-                value={visualBaselineId}
-                onChange={(e) => setVisualBaselineId(e.target.value)}
-                className="w-[420px] max-w-full font-mono"
-                placeholder="(created baselineId appears here)"
-              />
-            </div>
-          </div>
-
-          {visualBaselineId && (
             <div className="space-y-2">
-              <Label htmlFor="visualRunUrl">Compare against URL</Label>
-              <Input
-                id="visualRunUrl"
-                value={visualRunUrl}
-                onChange={(e) => setVisualRunUrl(e.target.value)}
-                placeholder="https://..."
-                className="w-full"
-              />
+              <Label htmlFor="devicePreset" className="text-base font-medium">Device Type</Label>
+              <Select value={devicePreset} onValueChange={handleDeviceChange}>
+                <SelectTrigger className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desktop">Desktop (1440×900)</SelectItem>
+                  <SelectItem value="tablet">Tablet (768×1024)</SelectItem>
+                  <SelectItem value="mobile">Mobile (390×844)</SelectItem>
+                  <SelectItem value="custom">Custom Size</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={handleCreateRun} disabled={visualLoading || !visualBaselineId}>
-              Create run
+            {devicePreset === 'custom' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="visualViewportWidth">Width (px)</Label>
+                  <Input 
+                    id="visualViewportWidth" 
+                    value={visualViewportWidth} 
+                    onChange={(e) => setVisualViewportWidth(e.target.value)}
+                    placeholder="1440"
+                    type="number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="visualViewportHeight">Height (px)</Label>
+                  <Input 
+                    id="visualViewportHeight" 
+                    value={visualViewportHeight} 
+                    onChange={(e) => setVisualViewportHeight(e.target.value)}
+                    placeholder="900"
+                    type="number"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <details className="space-y-4">
+            <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+              Advanced Options
+            </summary>
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label htmlFor="visualDiffThreshold">Difference Threshold (%)</Label>
+                <Input 
+                  id="visualDiffThreshold" 
+                  value={visualDiffThreshold} 
+                  onChange={(e) => setVisualDiffThreshold(e.target.value)}
+                  placeholder="0.2"
+                  type="number"
+                  step="0.1"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Maximum allowed difference before flagging as changed (0.2% recommended)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="visualIgnoreRegions">Ignore Regions (JSON)</Label>
+                <Input 
+                  id="visualIgnoreRegions" 
+                  value={visualIgnoreRegions} 
+                  onChange={(e) => setVisualIgnoreRegions(e.target.value)}
+                  placeholder='[{"x": 0, "y": 0, "width": 100, "height": 50}]'
+                  className="font-mono text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Optional: Regions to mask before comparison (e.g., timestamps, ads)
+                </p>
+              </div>
+            </div>
+          </details>
+
+          <div className="pt-2">
+            <Button 
+              onClick={handleCreateBaseline} 
+              disabled={visualLoading}
+              className="w-full h-12 text-base font-semibold"
+              size="lg"
+            >
+              {visualLoading ? 'Setting up monitoring...' : 'Start Monitoring'}
             </Button>
           </div>
 
-          {(visualRunId || visualStatus) && (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              {visualStatus && (
-                <Badge variant={visualStatus === 'PASS' ? 'default' : visualStatus === 'FAIL' ? 'secondary' : 'destructive'}>
-                  {visualStatus}
-                </Badge>
-              )}
-              {visualMismatch !== null && <span className="text-muted-foreground">mismatchPixelCount: {visualMismatch}</span>}
-              {visualBaselineId && visualRunId && (
-                <Link className="underline" to={`/visual/baselines/${visualBaselineId}/runs/${visualRunId}`}>
-                  Open run viewer
-                </Link>
-              )}
+          {visualStatus && visualBaselineId && (
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant={visualStatus === 'PASS' ? 'default' : 'destructive'} className="text-sm">
+                    {visualStatus === 'PASS' ? '✓ Baseline Created' : 'Failed'}
+                  </Badge>
+                  {visualMismatch !== null && (
+                    <span className="text-xs text-muted-foreground">
+                      {visualMismatch} pixels difference
+                    </span>
+                  )}
+                </div>
+              </div>
+              <Link 
+                className="inline-flex items-center gap-1 text-sm font-medium underline hover:no-underline" 
+                to={`/visual/baselines/${visualBaselineId}/runs/latest`}
+              >
+                View monitoring dashboard →
+              </Link>
             </div>
           )}
         </Card>
+
+        <p className="text-center text-sm text-muted-foreground">
+          Powered by AI-assisted visual regression testing
+        </p>
       </div>
     </div>
   );

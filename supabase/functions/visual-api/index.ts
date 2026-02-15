@@ -6,6 +6,9 @@ import {
   handleCreateRun,
   handleListRuns,
   handleGetRun,
+  handleCreateJob,
+  handleRunJob,
+  handleCronTick,
 } from './visual/handlers.ts';
 
 Deno.serve(async (req: Request) => {
@@ -34,6 +37,13 @@ Deno.serve(async (req: Request) => {
     } else if (path.match(/\/baselines\/[\w-]+\/runs$/)) {
       const [, baselineId] = path.match(/\/baselines\/([\w-]+)\/runs$/)!;
       response = req.method === 'POST' ? await handleCreateRun(req, baselineId) : await handleListRuns(baselineId);
+    } else if (path.match(/\/jobs\/[\w-]+\/run$/)) {
+      const [, jobId] = path.match(/\/jobs\/([\w-]+)\/run$/)!;
+      response = req.method === 'POST' ? await handleRunJob(jobId) : new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+    } else if (path.includes('/jobs') && !path.match(/run/)) {
+      response = req.method === 'POST' ? await handleCreateJob(req) : new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+    } else if (path.includes('/cron/tick')) {
+      response = req.method === 'POST' ? await handleCronTick() : new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
     } else {
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,

@@ -66,14 +66,50 @@ function filterAIIssues(
 
 export async function handleCreateBaseline(req: Request): Promise<Response> {
   const body: CreateBaselineRequest = await req.json();
-  const { projectId, name, url, viewport = { width: 1440, height: 900 } } = body;
+  const { 
+    projectId, 
+    name, 
+    url, 
+    source,
+    viewport = { width: 1440, height: 900 },
+    diffThresholdPct = 0.2,
+    ignoreRegions = [],
+    captureSettings = {}
+  } = body;
 
-  if (!projectId || !name || !url) {
-    return jsonError('projectId, name, and url are required', 400);
+  if (!projectId || !name) {
+    return jsonError('projectId and name are required', 400);
+  }
+
+  // Determine source: new source object or legacy URL
+  let sourceType: 'url' | 'storybook' | 'figma_frame';
+  let sourceConfig: Record<string, any>;
+  
+  if (source) {
+    // New source mode
+    sourceType = source.type;
+    sourceConfig = source.config;
+  } else if (url) {
+    // Legacy URL mode (backward compat)
+    sourceType = 'url';
+    sourceConfig = { url };
+  } else {
+    return jsonError('Either url or source is required', 400);
+  }
+
+  // Extract capture URL based on source type
+  let captureUrl: string;
+  if (sourceType === 'url') {
+    captureUrl = sourceConfig.url;
+    if (!captureUrl) {
+      return jsonError('URL source requires config.url', 400);
+    }
+  } else {
+    return jsonError(`Source type '${sourceType}' not yet implemented`, 501);
   }
 
   // SSRF protection
-  const urlCheck = isUrlSafe(url);
+  const urlCheck = isUrlSafe(captureUrl);
   if (!urlCheck.safe) {
     return jsonError(urlCheck.error || 'URL not allowed', 400);
   }
@@ -81,27 +117,54 @@ export async function handleCreateBaseline(req: Request): Promise<Response> {
   const supabase = getSupabaseServer();
 
   try {
-    // Capture baseline screenshot
-    console.log('[BASELINE] Capturing screenshot for:', url);
-    const screenshotBytes = await captureScreenshot({ url, viewport });
+    // 1. Create baseline source
+    const { data: sourceData, error: sourceError } = await supabase
+      .from('baseline_sources')
+      .insert({
+        project_id: projectId,
+        type: sourceType,
+        name,
+        config: sourceConfig,
+        viewport,
+      })
+      .select()
+      .single();
 
-    // Generate baseline ID and storage path
+    if (sourceError) {
+      throw new Error(`Failed to create source: ${sourceError.message}`);
+    }
+
+    const sourceId = sourceData.id;
+
+    // 2. Capture baseline screenshot
+    console.log('[BASELINE] Capturing screenshot for:', captureUrl);
+    const screenshotBytes = await captureScreenshot({ 
+      url: captureUrl, 
+      viewport,
+      captureSettings 
+    });
+
+    // 3. Generate baseline ID and storage path
     const baselineId = crypto.randomUUID();
     const baselinePath = `${projectId}/baselines/${baselineId}/baseline.png`;
 
-    // Upload to Supabase Storage
+    // 4. Upload to Supabase Storage
     await uploadFile(baselinePath, screenshotBytes, 'image/png');
 
-    // Insert into database
+    // 5. Insert baseline into database
     const { data, error } = await supabase
       .from('visual_baselines')
       .insert({
         id: baselineId,
         project_id: projectId,
         name,
-        url,
+        url: captureUrl, // Keep for backward compat
         viewport,
         baseline_path: baselinePath,
+        diff_threshold_pct: diffThresholdPct,
+        ignore_regions: ignoreRegions,
+        capture_settings: captureSettings,
+        source_id: sourceId,
       })
       .select()
       .single();
@@ -110,7 +173,7 @@ export async function handleCreateBaseline(req: Request): Promise<Response> {
       throw new Error(`Database insert failed: ${error.message}`);
     }
 
-    // Generate signed URL for response
+    // 6. Generate signed URL for response
     const baselineUrl = await getSignedUrl(baselinePath);
 
     const baseline: Baseline = {
@@ -122,6 +185,10 @@ export async function handleCreateBaseline(req: Request): Promise<Response> {
       createdAt: data.created_at,
       baselinePath: data.baseline_path,
       baselineUrl,
+      diffThresholdPct: data.diff_threshold_pct,
+      ignoreRegions: data.ignore_regions,
+      captureSettings: data.capture_settings,
+      sourceId: data.source_id,
     };
 
     return jsonResponse(baseline, 201);
@@ -142,9 +209,20 @@ export async function handleListBaselines(req: Request): Promise<Response> {
   const supabase = getSupabaseServer();
 
   try {
+    // Join with baseline_sources to get source metadata
     const { data, error } = await supabase
       .from('visual_baselines')
-      .select('*')
+      .select(`
+        *,
+        baseline_sources (
+          id,
+          type,
+          name,
+          config,
+          viewport,
+          created_at
+        )
+      `)
       .eq('project_id', projectId)
       .order('created_at', { ascending: false });
 
@@ -154,16 +232,32 @@ export async function handleListBaselines(req: Request): Promise<Response> {
 
     // Generate signed URLs for all baselines
     const baselines: Baseline[] = await Promise.all(
-      (data || []).map(async (row) => ({
-        id: row.id,
-        projectId: row.project_id,
-        name: row.name,
-        url: row.url,
-        viewport: row.viewport,
-        createdAt: row.created_at,
-        baselinePath: row.baseline_path,
-        baselineUrl: await getSignedUrl(row.baseline_path),
-      }))
+      (data || []).map(async (row) => {
+        const sourceData = row.baseline_sources;
+        return {
+          id: row.id,
+          projectId: row.project_id,
+          name: row.name,
+          url: row.url,
+          viewport: row.viewport,
+          createdAt: row.created_at,
+          baselinePath: row.baseline_path,
+          baselineUrl: await getSignedUrl(row.baseline_path),
+          diffThresholdPct: row.diff_threshold_pct,
+          ignoreRegions: row.ignore_regions,
+          captureSettings: row.capture_settings,
+          sourceId: row.source_id,
+          source: sourceData ? {
+            id: sourceData.id,
+            projectId: row.project_id,
+            type: sourceData.type,
+            name: sourceData.name,
+            config: sourceData.config,
+            viewport: sourceData.viewport,
+            createdAt: sourceData.created_at,
+          } : undefined,
+        };
+      })
     );
 
     return jsonResponse(baselines);
@@ -217,15 +311,19 @@ export async function handleCreateRun(req: Request, baselineId: string): Promise
     const currentBytes = await captureScreenshot({
       url: captureUrl,
       viewport: baseline.viewport,
+      captureSettings: baseline.capture_settings || {},
     });
 
     // Download baseline screenshot
     console.log('[RUN] Downloading baseline from storage');
     const baselineBytes = await downloadFile(baseline.baseline_path);
 
-    // Compare and generate diff
+    // Compare and generate diff with ignore regions and threshold
     console.log('[RUN] Computing pixel diff');
-    const diffResult = await comparePngExact(baselineBytes, currentBytes);
+    const diffResult = await comparePngExact(baselineBytes, currentBytes, {
+      ignoreRegions: baseline.ignore_regions || [],
+      diffThresholdPct: baseline.diff_threshold_pct,
+    });
 
     // Generate run ID and storage paths
     const runId = crypto.randomUUID();
@@ -248,56 +346,51 @@ export async function handleCreateRun(req: Request, baselineId: string): Promise
     const currentUrl = await getSignedUrl(currentPath);
     const diffUrl = diffPath ? await getSignedUrl(diffPath) : null;
 
-    // Generate AI insights (REQUIRED - will throw if OPENAI_API_KEY missing)
-    console.log('[RUN] Generating AI insights (required)');
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
-    
-    let aiInsights;
-    try {
-      aiInsights = await generateAIInsights({
-        baselineUrl,
-        currentUrl,
-        diffUrl,
-        mismatchPercentage: diffResult.mismatchPercentage,
-        diffPixels: diffResult.diffPixels,
-        baselineSourceUrl: baseline.url ?? null,
-        currentSourceUrl: captureUrl,
-        duplicationAllowed: false,
-      });
-      aiInsights = {
-        ...aiInsights,
-        issues: filterAIIssues(aiInsights?.issues, {
+    // Check if AI is available
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    let aiInsights: any = null;
+    let aiStatus: 'skipped' | 'completed' | 'failed' = 'skipped';
+    let aiError: string | null = null;
+
+    if (!OPENAI_API_KEY) {
+      console.log('[RUN] OpenAI API key not configured, skipping AI analysis');
+      aiStatus = 'skipped';
+    } else {
+      // Generate AI insights (optional - will not fail the run)
+      console.log('[RUN] Generating AI insights');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+      
+      try {
+        aiInsights = await generateAIInsights({
+          baselineUrl,
+          currentUrl,
+          diffUrl,
           mismatchPercentage: diffResult.mismatchPercentage,
           diffPixels: diffResult.diffPixels,
-        }),
-      };
-    } catch (e: any) {
-      clearTimeout(timeout);
-      const errorMsg = e?.message ?? String(e);
-      const errorStack = e?.stack ?? '';
-      console.error('[RUN] AI analysis failed (required):', errorMsg, errorStack);
-      
-      // Insert failed run into database
-      await supabase
-        .from('visual_runs')
-        .insert({
-          id: runId,
-          baseline_id: baselineId,
-          project_id: baseline.project_id,
-          status: 'failed',
-          mismatch_percentage: diffResult.mismatchPercentage,
-          diff_pixels: diffResult.diffPixels,
-          current_path: currentPath,
-          diff_path: diffPath,
-          result_path: resultPath,
-          current_source_url: captureUrl,
-          ai_json: { error: errorMsg, stack: errorStack },
+          baselineSourceUrl: baseline.url ?? null,
+          currentSourceUrl: captureUrl,
+          duplicationAllowed: false,
         });
-      
-      return jsonError(`AI analysis failed: ${errorMsg}`, 500);
-    } finally {
-      clearTimeout(timeout);
+        aiInsights = {
+          ...aiInsights,
+          issues: filterAIIssues(aiInsights?.issues, {
+            mismatchPercentage: diffResult.mismatchPercentage,
+            diffPixels: diffResult.diffPixels,
+          }),
+        };
+        aiStatus = 'completed';
+        console.log('[RUN] AI analysis completed successfully');
+      } catch (e: any) {
+        const errorMsg = e?.message ?? String(e);
+        const errorStack = e?.stack ?? '';
+        console.error('[RUN] AI analysis failed (non-fatal):', errorMsg);
+        aiStatus = 'failed';
+        aiError = `${errorMsg}${errorStack ? '\n' + errorStack : ''}`;
+        aiInsights = { error: errorMsg };
+      } finally {
+        clearTimeout(timeout);
+      }
     }
 
     // Upload result JSON
@@ -312,7 +405,7 @@ export async function handleCreateRun(req: Request, baselineId: string): Promise
     const resultBytes = new TextEncoder().encode(JSON.stringify(resultJson, null, 2));
     await uploadFile(resultPath, resultBytes, 'application/json');
 
-    // Insert run into database
+    // Insert run into database (always succeeds for visual diff)
     const { data: runData, error: runError } = await supabase
       .from('visual_runs')
       .insert({
@@ -327,6 +420,8 @@ export async function handleCreateRun(req: Request, baselineId: string): Promise
         result_path: resultPath,
         current_source_url: captureUrl,
         ai_json: aiInsights,
+        ai_status: aiStatus,
+        ai_error: aiError,
       })
       .select()
       .single();
@@ -347,6 +442,8 @@ export async function handleCreateRun(req: Request, baselineId: string): Promise
       diffPath: runData.diff_path,
       resultPath: runData.result_path,
       aiJson: runData.ai_json,
+      aiStatus: runData.ai_status,
+      aiError: runData.ai_error,
       currentUrl,
       diffUrl,
       baselineUrl,
@@ -396,6 +493,8 @@ export async function handleListRuns(baselineId: string): Promise<Response> {
           diffPath: row.diff_path,
           resultPath: row.result_path,
           aiJson: row.ai_json,
+          aiStatus: row.ai_status,
+          aiError: row.ai_error,
           currentUrl,
           diffUrl,
         };
@@ -453,6 +552,8 @@ export async function handleGetRun(
       diffPath: runData.diff_path,
       resultPath: runData.result_path,
       aiJson: runData.ai_json,
+      aiStatus: runData.ai_status,
+      aiError: runData.ai_error,
       currentUrl,
       diffUrl,
       baselineUrl,
@@ -463,6 +564,288 @@ export async function handleGetRun(
     console.error('[RUN] Get failed:', error);
     return jsonError(error.message || 'Failed to get run', 500);
   }
+}
+
+// ============================================================================
+// Job Handlers
+// ============================================================================
+
+export async function handleCreateJob(req: Request): Promise<Response> {
+  const supabase = getSupabaseServer();
+
+  try {
+    const body = await req.json();
+    const { projectId, baselineId, cadence } = body;
+
+    if (!projectId || !baselineId || !cadence) {
+      return jsonError('projectId, baselineId, and cadence are required', 400);
+    }
+
+    // Calculate next run time based on cadence
+    const nextRunAt = calculateNextRun(cadence);
+
+    const { data, error } = await supabase
+      .from('visual_jobs')
+      .insert({
+        project_id: projectId,
+        baseline_id: baselineId,
+        cadence,
+        next_run_at: nextRunAt,
+        enabled: true,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Database insert failed: ${error.message}`);
+    }
+
+    const job = {
+      id: data.id,
+      projectId: data.project_id,
+      baselineId: data.baseline_id,
+      cadence: data.cadence,
+      nextRunAt: data.next_run_at,
+      enabled: data.enabled,
+      createdAt: data.created_at,
+    };
+
+    return jsonResponse(job, 201);
+  } catch (error: any) {
+    console.error('[JOB] Create failed:', error);
+    return jsonError(error.message || 'Failed to create job', 500);
+  }
+}
+
+export async function handleRunJob(jobId: string): Promise<Response> {
+  const supabase = getSupabaseServer();
+
+  try {
+    // Fetch job
+    const { data: jobData, error: jobError } = await supabase
+      .from('visual_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single();
+
+    if (jobError || !jobData) {
+      return jsonError('Job not found', 404);
+    }
+
+    if (!jobData.enabled) {
+      return jsonError('Job is disabled', 400);
+    }
+
+    // Fetch baseline
+    const { data: baselineData, error: baselineError } = await supabase
+      .from('visual_baselines')
+      .select('*')
+      .eq('id', jobData.baseline_id)
+      .single();
+
+    if (baselineError || !baselineData) {
+      return jsonError('Baseline not found for job', 404);
+    }
+
+    const baseline = baselineData;
+
+    // Use baseline URL for the run
+    if (!baseline.url) {
+      return jsonError('Baseline has no URL to capture', 400);
+    }
+
+    // Capture current screenshot
+    console.log('[JOB] Capturing screenshot for job:', jobId);
+    const currentBytes = await captureScreenshot({
+      url: baseline.url,
+      viewport: baseline.viewport,
+      captureSettings: baseline.capture_settings || {},
+    });
+
+    // Download baseline screenshot
+    const baselineBytes = await downloadFile(baseline.baseline_path);
+
+    // Compare and generate diff
+    const diffResult = await comparePngExact(baselineBytes, currentBytes, {
+      ignoreRegions: baseline.ignore_regions || [],
+      diffThresholdPct: baseline.diff_threshold_pct,
+    });
+
+    // Generate run ID and storage paths
+    const runId = crypto.randomUUID();
+    const currentPath = `${baseline.project_id}/baselines/${baseline.id}/runs/${runId}/current.png`;
+    const diffPath = diffResult.diffPngBytes
+      ? `${baseline.project_id}/baselines/${baseline.id}/runs/${runId}/diff.png`
+      : null;
+    const resultPath = `${baseline.project_id}/baselines/${baseline.id}/runs/${runId}/result.json`;
+
+    // Upload screenshots
+    await uploadFile(currentPath, currentBytes, 'image/png');
+    if (diffResult.diffPngBytes && diffPath) {
+      await uploadFile(diffPath, diffResult.diffPngBytes, 'image/png');
+    }
+
+    // Generate signed URLs
+    const baselineUrl = await getSignedUrl(baseline.baseline_path);
+    const currentUrl = await getSignedUrl(currentPath);
+    const diffUrl = diffPath ? await getSignedUrl(diffPath) : null;
+
+    // Try AI analysis (optional)
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    let aiInsights: any = null;
+    let aiStatus: 'skipped' | 'completed' | 'failed' = 'skipped';
+    let aiError: string | null = null;
+
+    if (OPENAI_API_KEY) {
+      try {
+        aiInsights = await generateAIInsights({
+          baselineUrl,
+          currentUrl,
+          diffUrl,
+          mismatchPercentage: diffResult.mismatchPercentage,
+          diffPixels: diffResult.diffPixels,
+          baselineSourceUrl: baseline.url,
+          currentSourceUrl: baseline.url,
+          duplicationAllowed: false,
+        });
+        aiInsights = {
+          ...aiInsights,
+          issues: filterAIIssues(aiInsights?.issues, {
+            mismatchPercentage: diffResult.mismatchPercentage,
+            diffPixels: diffResult.diffPixels,
+          }),
+        };
+        aiStatus = 'completed';
+      } catch (e: any) {
+        aiStatus = 'failed';
+        aiError = e?.message ?? String(e);
+        aiInsights = { error: aiError };
+        console.error('[JOB] AI analysis failed:', aiError);
+      }
+    }
+
+    // Upload result JSON
+    const resultJson = {
+      mismatchPercentage: diffResult.mismatchPercentage,
+      diffPixels: diffResult.diffPixels,
+      baselineUrl,
+      currentUrl,
+      diffUrl,
+      ai: aiInsights,
+    };
+    await uploadFile(resultPath, new TextEncoder().encode(JSON.stringify(resultJson, null, 2)), 'application/json');
+
+    // Insert run into database
+    const { data: runData, error: runError } = await supabase
+      .from('visual_runs')
+      .insert({
+        id: runId,
+        baseline_id: baseline.id,
+        project_id: baseline.project_id,
+        status: 'completed',
+        mismatch_percentage: diffResult.mismatchPercentage,
+        diff_pixels: diffResult.diffPixels,
+        current_path: currentPath,
+        diff_path: diffPath,
+        result_path: resultPath,
+        current_source_url: baseline.url,
+        ai_json: aiInsights,
+        ai_status: aiStatus,
+        ai_error: aiError,
+      })
+      .select()
+      .single();
+
+    if (runError) {
+      throw new Error(`Database insert failed: ${runError.message}`);
+    }
+
+    // Update job's next_run_at
+    const nextRunAt = calculateNextRun(jobData.cadence);
+    await supabase
+      .from('visual_jobs')
+      .update({ next_run_at: nextRunAt })
+      .eq('id', jobId);
+
+    return jsonResponse({
+      runId: runData.id,
+      status: runData.status,
+      mismatchPercentage: diffResult.mismatchPercentage,
+      diffPixels: diffResult.diffPixels,
+      aiStatus,
+    }, 201);
+  } catch (error: any) {
+    console.error('[JOB] Run failed:', error);
+    return jsonError(error.message || 'Failed to run job', 500);
+  }
+}
+
+export async function handleCronTick(): Promise<Response> {
+  const supabase = getSupabaseServer();
+
+  try {
+    // Find all due jobs
+    const { data: dueJobs, error } = await supabase
+      .from('visual_jobs')
+      .select('*')
+      .eq('enabled', true)
+      .lte('next_run_at', new Date().toISOString())
+      .limit(50); // Process max 50 jobs per tick
+
+    if (error) {
+      throw new Error(`Database query failed: ${error.message}`);
+    }
+
+    const results = {
+      processed: 0,
+      succeeded: 0,
+      failed: 0,
+      jobs: [] as any[],
+    };
+
+    for (const job of dueJobs || []) {
+      results.processed++;
+      try {
+        console.log('[CRON] Processing job:', job.id);
+        const response = await handleRunJob(job.id);
+        const responseData = await response.json();
+        
+        if (response.ok) {
+          results.succeeded++;
+          results.jobs.push({ jobId: job.id, status: 'success', runId: responseData.runId });
+        } else {
+          results.failed++;
+          results.jobs.push({ jobId: job.id, status: 'failed', error: responseData.error });
+        }
+      } catch (e: any) {
+        results.failed++;
+        results.jobs.push({ jobId: job.id, status: 'failed', error: e.message });
+        console.error('[CRON] Job execution failed:', job.id, e);
+      }
+    }
+
+    return jsonResponse(results);
+  } catch (error: any) {
+    console.error('[CRON] Tick failed:', error);
+    return jsonError(error.message || 'Failed to process cron tick', 500);
+  }
+}
+
+function calculateNextRun(cadence: string): string {
+  const now = new Date();
+  
+  if (cadence === 'hourly') {
+    now.setHours(now.getHours() + 1);
+  } else if (cadence === 'daily') {
+    now.setDate(now.getDate() + 1);
+  } else if (cadence === 'weekly') {
+    now.setDate(now.getDate() + 7);
+  } else {
+    // Default to daily if unknown cadence
+    now.setDate(now.getDate() + 1);
+  }
+  
+  return now.toISOString();
 }
 
 // ============================================================================
