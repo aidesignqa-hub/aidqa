@@ -2,7 +2,7 @@
 
 > This file is the authoritative reference for AI assistants working on this codebase.
 > Update it whenever a milestone is completed or architecture changes.
-> Last reconstructed: 2026-02-20
+> Last audited: 2026-02-20 (full code audit, all sections verified against actual files)
 
 ---
 
@@ -15,7 +15,7 @@ GPT-4o Vision to explain what changed and why.
 **Target user:** Developers and QA teams who want to catch unintended visual regressions in
 production without maintaining a local browser test suite.
 
-**Business model:** SaaS (multi-tenant, subscription). Each user's data is isolated by `project_id = auth.uid()`.
+**Business model:** SaaS (multi-tenant). Each user's data is isolated by `project_id = auth.uid()`.
 
 ---
 
@@ -23,18 +23,31 @@ production without maintaining a local browser test suite.
 
 ### Frontend
 - React 18 + Vite + TypeScript
-- React Router v6 (`/login`, `/signup`, `/`, `/create-monitor`, `/monitors/:id/history`, `/visual/baselines/:id/runs/:id`, `/runs/:id`)
-- `ProtectedRoute` component wraps all app routes — redirects to `/login` if no session
-- TanStack React Query is installed but not used — data fetching is done with raw `fetch()` and `useState`
-- shadcn/ui + Tailwind CSS for all UI components
-- Deployed to Vercel (SPA rewrites configured in `vercel.json`)
+- React Router v6 routes:
+  - `/login` — Login (unprotected)
+  - `/signup` — Signup (unprotected)
+  - `/` — Dashboard (protected)
+  - `/create-monitor` — Baseline + monitor creation wizard (protected)
+  - `/monitors/:monitorId/history` — Run history with trend chart (protected)
+  - `/visual/baselines/:baselineId/runs/:runId` — Individual run detail (protected)
+  - `/runs/:runId` — Run detail by ID (protected)
+- `ProtectedRoute` component: checks `supabase.auth.getSession()`, subscribes to `onAuthStateChange`, redirects to `/login` if no session
+- TanStack React Query is installed (`@tanstack/react-query@5`) but **not used** — all data fetching uses raw `fetch()` + `useState`
+- shadcn/ui + Tailwind CSS
+- Deployed to Vercel; SPA rewrites configured in `vercel.json`
 
 ### Backend
-- Supabase Edge Function (`supabase/functions/visual-api/`) — Deno serverless runtime
-- All API routes handled in `index.ts` via regex path matching → `visual/handlers.ts`
-- Screenshot capture via Browserless REST API (`/screenshot` and `/function` endpoints)
+- Supabase Edge Function (`supabase/functions/visual-api/`) — Deno runtime
+- Single deployed unit; all routes dispatched in `index.ts` via regex path matching → `visual/handlers.ts`
+- Screenshot capture via Browserless REST API (`/screenshot` for PNG, `/function` for DOM snapshot JS execution)
 - Image diffing via `pixelmatch` + `imagescript` (pure Deno, no native deps)
-- AI analysis via OpenAI GPT-4o-mini Vision — runs **asynchronously** after run is inserted
+- AI analysis via OpenAI `gpt-4o-mini` Vision — runs **asynchronously** after run row is inserted
+- Import map in `deno.json` uses `npm:@supabase/supabase-js@2` (not `jsr:`)
+
+### Auth Tiers (index.ts)
+1. `/health` — no auth
+2. `/cron/tick` — authenticated by comparing `Authorization: Bearer` value to `SUPABASE_SERVICE_ROLE_KEY` env var
+3. All other routes — user JWT validated via `supabase.auth.getUser(token)` with **explicit token** passed (not session-based)
 
 ### Database (Supabase Postgres)
 ```
@@ -42,188 +55,209 @@ design_baselines
   id, project_id, name, source_type, snapshot_path, viewport (JSONB),
   approved, approved_at, created_at,
   diff_threshold_pct (NUMERIC, default 0.2),
-  ignore_regions (JSONB, default [])
+  ignore_regions (JSONB, default []),
+  baseline_dom_path (TEXT, nullable)    ← path to stored baseline DOM snapshot JSON
 
 monitors
   id, project_id, baseline_id (FK → design_baselines), target_url,
-  cadence ('hourly'|'daily'), enabled, created_at
+  cadence ('hourly'|'daily'), enabled, created_at,
+  last_run_at (TIMESTAMPTZ, nullable)   ← used by cron cadence enforcement
 
 visual_runs
   id, monitor_id (FK → monitors), baseline_id (FK → design_baselines),
   project_id, status ('completed'|'failed'), mismatch_percentage, diff_pixels,
-  current_path, diff_path, result_path, severity ('minor'|'warning'|'critical'),
-  current_source_url, ai_json (JSONB), ai_status, ai_error, created_at,
-  baseline_dom_path (TEXT, nullable),    -- added, not yet populated
-  current_dom_path (TEXT, nullable),     -- added, not yet populated
-  css_diff_json (JSONB, nullable)        -- added, not yet populated
+  current_path, diff_path, result_path,
+  severity ('minor'|'warning'|'critical'),
+  current_source_url,
+  ai_json (JSONB, nullable),            ← populated async by OpenAI
+  ai_status (text, default 'skipped'),  ← 'skipped' | 'pending' | 'completed' | 'failed'
+  ai_error (text, nullable),
+  created_at,
+  baseline_dom_path (TEXT, nullable),   ← stored but not used in comparison (baseline path is on design_baselines)
+  current_dom_path (TEXT, nullable),    ← path to current run DOM snapshot
+  css_diff_json (JSONB, nullable)       ← populated by compareDomSnapshots() in runMonitor()
 ```
 
-### Storage (Supabase Storage, bucket: "visual")
+### Storage (Supabase Storage, bucket: `visual`)
 ```
 {projectId}/baselines/{baselineId}/baseline.png
+{projectId}/baselines/{baselineId}/baseline-dom.json      ← DOM snapshot captured at baseline creation
 {projectId}/monitors/{monitorId}/runs/{runId}/current.png
 {projectId}/monitors/{monitorId}/runs/{runId}/diff.png
-{projectId}/monitors/{monitorId}/runs/{runId}/result.json
+{projectId}/monitors/{monitorId}/runs/{runId}/current-dom.json  ← DOM snapshot captured at run time
 ```
 
 ### Scheduling
-- Vercel Cron: `0 * * * *` (every hour) → `GET /api/cron/tick` → `api/cron-tick.ts`
-- `api/cron-tick.ts` proxies a POST to the Edge Function `/cron/tick`
-- `handleCronTick()` fetches all `enabled = true` monitors (up to 50) and runs each
+- Vercel Cron: `0 2 * * *` (daily at 02:00 UTC — Hobby plan allows one cron per day) → `GET /api/cron/tick` → `api/cron-tick.ts`
+- `api/cron-tick.ts` proxies a POST to the Edge Function `/cron/tick` using `SUPABASE_SERVICE_ROLE_KEY`
+- `handleCronTick()` fetches all `enabled = true` monitors (up to 50), filters by cadence:
+  - hourly: `last_run_at < 1 hour ago` (or never run)
+  - daily: `last_run_at < 24 hours ago` (or never run)
+  - Returns `{ processed, succeeded, failed, skipped }` counts
+
+---
+
+## API Routes
+
+All user routes require `Authorization: Bearer <jwt>` header.
+
+| Method | Path | Handler | Auth |
+|--------|------|---------|------|
+| GET | `/health` | inline | none |
+| POST | `/cron/tick` | `handleCronTick` | service role key |
+| GET | `/baselines` | `handleListBaselines` | user JWT |
+| POST | `/baselines` | `handleCreateDesignBaseline` | user JWT |
+| POST | `/baselines/:id/approve` | `handleApproveBaseline` | user JWT |
+| GET | `/baselines/:id/runs` | `handleListRuns` | user JWT |
+| GET | `/baselines/:id/runs/:runId` | `handleGetRun` | user JWT |
+| GET | `/runs/:runId` | `handleGetRunById` | user JWT |
+| GET | `/monitors` | `handleListMonitors` | user JWT |
+| POST | `/monitors` | `handleCreateMonitor` | user JWT |
+| GET | `/monitors/:id/runs` | `handleListMonitorRuns` | user JWT |
+| DELETE | `/monitors/:id` | `handleDeleteMonitor` | user JWT |
+
+---
+
+## Core Pipeline: runMonitor()
+
+`runMonitor()` is the single source of truth for the capture → diff → CSS diff → store → AI pipeline.
+Called by both `handleCreateMonitor()` (inline, returns result) and `handleCronTick()` (background).
+
+**Execution order:**
+1. Fetch monitor row and approved baseline from DB
+2. Download baseline screenshot from storage
+3. Call `captureScreenshot()` for target URL (Browserless `/screenshot`)
+4. Call `comparePngExact()` → produces diff PNG + mismatch stats
+5. Upload `current.png` and `diff.png` to storage
+6. **CSS Diff (non-blocking, wrapped in try/catch):**
+   - Call `captureDomSnapshot()` for target URL (Browserless `/function`)
+   - Upload `current-dom.json` to storage
+   - Download `baseline-dom.json` from storage
+   - Call `compareDomSnapshots()` → returns `CssDiffItem[]`
+   - Store result in `css_diff_json` (null if step fails or baseline DOM missing)
+7. Get signed URLs for images
+8. Insert `visual_runs` row with: `css_diff_json`, `ai_json: null`, `ai_status: 'skipped'`
+9. **AI Analysis (non-blocking async IIFE, only if `OPENAI_API_KEY` set):**
+   - Call `generateAIInsights()` with image URLs + mismatch stats
+   - `UPDATE visual_runs SET ai_json=..., ai_status='completed'`
+   - On failure: `UPDATE visual_runs SET ai_status='failed', ai_error=...`
+10. Update `monitors.last_run_at = now()`
+11. Return `{ runId, mismatchPercentage }`
+
+---
+
+## Frontend Polling (Index.tsx)
+
+After monitor creation, frontend polls `visual_runs` every 1500ms.
+
+**Stop condition** (all three must be true):
+```ts
+run.status === 'completed'
+&& run.mismatch_percentage !== null
+&& (run.ai_status === 'completed' || run.ai_status === 'failed')
+```
+
+Polling continues while `ai_status` is `'skipped'` or `'pending'` — this prevents the race condition
+where the UI reads the run before async AI has finished updating the row.
+
+**Hard timeout:** 30 seconds → shows "Run timed out".
+
+**On successful stop:** reads `ai_json`, `ai_status`, `css_diff_json` directly from the polled row.
+
+**Render order (Index.tsx result panel):**
+1. Drift % card
+2. Three images (Baseline / Current / Diff)
+3. AI Analysis card (if `ai_status === 'completed'` or `=== 'failed'`)
+4. CSS Changes card (if `css_diff_json` is non-empty)
 
 ---
 
 ## Completed Milestones
 
 ### Milestone 1 — Core Infrastructure
-Completed in early commits. The foundation everything else builds on.
-
-- Supabase Edge Function deployed with full request router (`index.ts`)
+- Supabase Edge Function with full request router
 - Database schema for `design_baselines`, `monitors`, `visual_runs`
-- Supabase Storage bucket with signed URL generation (6-hour expiry)
-- SSRF protection (`ssrfGuard.ts`) — blocks localhost, private IP ranges (10.x, 172.16-31.x, 192.168.x, ::1)
+- Supabase Storage bucket with signed URL generation
+- SSRF protection (`ssrfGuard.ts`) — blocks localhost and private IP ranges
 - CORS headers on all responses
-- Screenshot capture via Browserless REST API with:
-  - 3 retries with exponential backoff (300ms → 900ms → 2000ms)
-  - Blank/white image detection (rejects images >98% white)
-  - Configurable viewport (width, height)
+- Screenshot capture via Browserless with 3 retries (exponential backoff), blank image detection
 
 ### Milestone 2 — Visual Diff Pipeline
-The core technical capability. Fully working end-to-end.
-
-- Pixel comparison using `pixelmatch` + `imagescript` — no native browser needed
-- Two-tone diff overlay: green = pixels in baseline but not current, red = pixels in current but not baseline
-- Per-baseline drift tolerance: `diff_threshold_pct` stored in DB, passed to `comparePngExact()`
-- Ignore regions: user draws rectangles on baseline preview canvas; regions masked (set to transparent) before comparison
-- `handleCreateMonitor()` executes first comparison inline (no cron dependency for initial result)
-- `runMonitor()` used by both initial creation and cron ticks
+- Pixel comparison via `pixelmatch` + `imagescript`
+- Two-tone diff overlay (green = removed, red = added)
+- Per-baseline drift tolerance (`diff_threshold_pct`)
+- Ignore regions (canvas-drawn rectangles, masked before comparison)
+- `handleCreateMonitor()` delegates to `runMonitor()` — no duplicate pipeline
 
 ### Milestone 3 — Async AI Analysis
-Fully working. AI does not block the run result.
-
-- GPT-4o-mini Vision receives baseline URL, current URL, diff URL + mismatch stats
-- Returns structured JSON: `{ summary, severity, issues[], quickWins[] }`
-- `filterAIIssues()` post-processes results to suppress false "duplication" reports caused by diff ghosting artifacts
-- Severity per AI: `pass | minor | major | critical`
-- Severity per pixel diff: `minor | warning | critical` (stored as `visual_runs.severity`)
-- AI result stored in `ai_json` column; `ai_status` tracks `skipped | completed | failed`
-- If `OPENAI_API_KEY` is not set, AI is skipped gracefully
+- GPT-4o-mini receives baseline + current + diff image URLs and mismatch stats
+- Structured output: `{ summary, severity, issues[], quickWins[] }`
+- `filterAIIssues()` suppresses false "duplication" reports caused by diff ghosting
+- `ai_status` lifecycle: `skipped → pending → completed | failed`
+- If `OPENAI_API_KEY` is not set, AI is skipped (run completes normally)
 
 ### Milestone 4 — Monitor Lifecycle
-Full create-approve-monitor-run loop working in production.
-
-- **Step 1:** User submits baseline name + source URL + viewport + tolerance → backend captures screenshot, stores PNG, returns signed preview URL
-- **Step 2:** User previews screenshot, draws ignore regions on canvas, clicks Approve → backend marks `approved = true`
-- **Step 3:** User submits target URL + cadence → backend creates monitor row + runs first comparison immediately → returns mismatch %
-- Frontend displays baseline / current / diff images after monitor creation
-- Cron: `handleCronTick()` processes all enabled monitors hourly
+- Step 1: capture baseline screenshot → store PNG → return signed preview URL
+- Step 2: approve baseline (sets `approved = true`)
+- Step 3: create monitor → runs first comparison immediately via `runMonitor()`
+- Cron picks up monitors that are due based on cadence + `last_run_at`
 
 ### Milestone 5 — Frontend MVP
-All core screens implemented and wired to the backend.
-
-- **Dashboard** (`/`): monitor table with baseline name, run status badge, drift %, trend sparkline, last check time, View / History actions
-- **Create Monitor** (`/create-monitor`): two-step wizard with canvas-based ignore region drawing
-- **MonitorHistory** (`/monitors/:id/history`): drift trend chart (Recharts LineChart) + paginated run table with severity badges and AI analysis display
-- **VisualRun** (`/visual/baselines/:id/runs/:id`): three-panel image viewer + full AI insights panel (issues, severity, quick wins)
-
-### Milestone 7 — Stage 1 Correctness Fixes *(2026-02-20)*
-Both bugs found in Stage 1 audit — fixed.
-
-- **First-run severity:** `handleCreateMonitor()` now delegates to `runMonitor()` instead of duplicating the comparison pipeline inline. Every run now has `severity` set correctly, including the first one.
-- **Cron cadence:** `monitors.last_run_at` column added (migration `20260220000000`). `runMonitor()` writes `last_run_at` after every run. `handleCronTick()` filters monitors by cadence: hourly monitors skip if run within the last hour, daily monitors skip if run within the last 24 hours. Cron response now includes a `skipped` count.
-- **Return type bug:** `runMonitor()` was typed as returning `aiStatus` but actually returned `severity`. Fixed the type signature and the `handleCronTick()` reference that was silently reading `undefined`.
+- **Dashboard** (`/`): monitor table (name, status badge, drift %, last check), View Result dialog, Delete button with confirm
+- **Create Monitor** (`/create-monitor`): two-step wizard, device preset picker, canvas ignore region drawing, polling for run results
+- **MonitorHistory** (`/monitors/:id/history`): drift trend chart (Recharts), paginated run table with AI and CSS change counts, run detail dialog
+- **VisualRun** (`/visual/baselines/:id/runs/:id`): status/stats cards, AI insights panel, CSS changes panel, three-panel image viewer
 
 ### Milestone 6 — Codebase Consolidation
-Cleanup of the old dual-baseline system. Completed as a dedicated session.
+- Removed: old `visual_baselines` / `visual_jobs` handlers, dead files (`rateLimit.ts`, `router.ts`, stubs), unused `src/core/` directory, stale docs
+- Removed legacy deps: `express`, `cors`, `playwright`, `pngjs`
+- All handlers query only `design_baselines` and `monitors`
 
-Removed:
-- Old `visual_baselines` / `baseline_sources` / `visual_jobs` handler functions
-- Dead files: `rateLimit.ts`, `router.ts`, `index-full-failed.ts`, `index-simple.ts`, empty `services/` stubs
-- Unused `src/core/` directory (analyzer, types, utils, defaultDesignSystem)
-- Stale docs (FIX_SUMMARY.md, IMPLEMENTATION_SUMMARY.md, etc.)
-- Legacy npm deps: `express`, `cors`, `playwright`, `pngjs`, `@types/express`, `@types/cors`
+### Milestone 7 — Correctness Fixes
+- **First-run severity:** `handleCreateMonitor()` now calls `runMonitor()` — every run has `severity` set
+- **Cron cadence:** `monitors.last_run_at` added; `handleCronTick()` enforces hourly/daily cadence
+- **Return type bug in cron:** `runMonitor()` return type corrected
 
-All handlers now query only `design_baselines` and `monitors`.
+### Milestone 8 — CSS Diff Pipeline (fully wired)
+- `captureDomSnapshot()` called in both `handleCreateDesignBaseline()` and `runMonitor()`
+- `compareDomSnapshots()` runs in `runMonitor()`, result stored in `css_diff_json`
+- `handleListMonitorRuns()` and `handleGetRun()` return `cssDiffJson` in response
+- Frontend (`MonitorHistory.tsx`, `VisualRun.tsx`, `Index.tsx`) renders CSS change panels
 
----
-
-## Partially Implemented Systems
-
-### CSS Diff Pipeline — ✅ FULLY WIRED (Stage 2 complete)
-
-~~Schema and Engine Done, Not Wired~~
-
-### ~~CSS Diff Pipeline — Schema and Engine Done, Not Wired~~
-
-**What exists:**
-- `supabase/functions/visual-api/visual/cssDiff.ts` — complete engine:
-  - `compareDomSnapshots(baseline, current)` — matches DOM elements by selector + bounding box + text, compares 20+ CSS properties, returns `CssDiffItem[]`
-  - `summarizeCssDiff(diffs)` — human-readable summary string
-  - Property category classification: typography / color / spacing / layout / border
-- `capture.ts` has `captureDomSnapshot()` — uses Browserless `/function` to capture 500 DOM elements with computed styles
-- `visual_runs` table has `baseline_dom_path`, `current_dom_path`, `css_diff_json` columns (migration applied)
-
-**What is NOT done:**
-- `captureDomSnapshot()` is never called in any handler — DOM snapshots are never captured
-- `compareDomSnapshots()` is never called — `css_diff_json` is always NULL in every run
-- API responses never include `css_diff_json`
-- No UI for displaying CSS diffs
-
-**Integration path** (straightforward):
-1. In `handleCreateDesignBaseline()`: call `captureDomSnapshot()`, upload JSON to storage, store path in `design_baselines`
-2. In `runMonitor()`: call `captureDomSnapshot()` for current URL, download baseline DOM, run `compareDomSnapshots()`, store result in `css_diff_json`, upload DOM JSONs
-3. Expose `css_diff_json` in `GET /monitors/:id/runs` and `GET /runs/:id`
-4. Add CSS Changes tab to `MonitorHistory.tsx` and `VisualRun.tsx`
-
-### Severity on Initial Run — Missing
-
-**What exists:**
-- `runMonitor()` correctly calculates and stores `severity` based on mismatch %
-
-**What is NOT done:**
-- `handleCreateMonitor()` runs its own inline comparison (not via `runMonitor()`) and does NOT set `severity` on the created run — first run always has `severity = NULL`
-
-**Fix:** Refactor `handleCreateMonitor()` to call `runMonitor()` instead of duplicating the comparison logic.
-
-### Cron Cadence Enforcement — Not Implemented
-
-**What exists:**
-- `handleCronTick()` queries `enabled = true` monitors and runs all of them on every tick
-
-**What is NOT done:**
-- No `last_run_at` column on `monitors` — cadence (hourly vs daily) is stored but never enforced
-- A "daily" monitor gets run every hour along with hourly monitors
-
-**Fix:** Add `last_run_at` to `monitors`, update it after each run, filter in `handleCronTick()` based on cadence + last run time.
+### Milestone 9 — Authentication & Multi-tenancy
+- RLS policies on `design_baselines`, `monitors`, `visual_runs`: `project_id = auth.uid()::text`
+- Storage RLS: users can only access objects under their own `{userId}/` prefix
+- `getUserFromRequest()` validates JWT via `supabase.auth.getUser(token)` (explicit token — not session-based)
+- Login page: email/password + Google OAuth with `redirectTo: window.location.origin`
+- Signup page with email confirmation support
+- `ProtectedRoute` wraps all app routes
+- `getAuthHeaders()` sends `Authorization: Bearer <token>` + `apikey` on all API calls
+- `.env` removed from Git tracking; `.gitignore` updated
 
 ---
 
 ## Remaining Gaps
 
-These are fully missing — no code exists for them.
+These have no implementation. Listed in priority order.
 
-### 1. Notifications & Alerting (Important)
-No alert mechanism of any kind exists. Drift can exceed threshold silently.
+### 1. Notifications & Alerting
+No alert mechanism exists. Drift can exceed threshold silently.
+- Add `webhook_url TEXT NULL`, `alert_threshold_pct NUMERIC NULL DEFAULT 5.0` to `monitors`
+- In `runMonitor()`: if mismatch exceeds threshold and webhook URL is set, POST payload (non-blocking async, same pattern as AI)
+- Payload should be Slack-compatible
+- UI: webhook + threshold fields in monitor creation form
 
-Required work:
-- SQL migration: add `webhook_url TEXT`, `alert_threshold_pct NUMERIC` to `monitors`
-- `runMonitor()`: if `mismatch_percentage > alert_threshold_pct`, POST JSON payload to `webhook_url`
-  - Webhook payload format should be compatible with Slack incoming webhooks and generic HTTP
-- UI: webhook URL + alert threshold fields in monitor creation form and a future monitor-edit page
-
-### 2. Tests (Important for production confidence)
+### 2. Tests & CI
 No tests of any kind exist.
-
-Required work:
-- Vitest unit tests for frontend utility functions (`cssDiff.ts` matching logic, `diff.ts` edge cases)
-- GitHub Actions workflow: `tsc --noEmit` + `vite build` + `vitest run` on every push to main
+- GitHub Actions: `tsc --noEmit` + `vite build` on every push to main
+- Vitest unit tests: `cssDiff.ts` matching logic, `filterAIIssues.ts`, diff edge cases
 - Optional: Deno tests for Edge Function handlers with mocked Supabase client
 
 ### 3. Minor Functional Gaps
-- Dashboard loads up to 200 runs from Supabase REST without pagination — will degrade with scale
-- No way to edit or delete a monitor after creation
-- No way to re-capture a baseline (must create a new one)
-- `DesignBaseline.snapshotUrl` is in the type interface but not returned by `handleCreateDesignBaseline()` (only `previewUrl` is returned)
+- Dashboard fetches up to 200 runs without pagination — will degrade at scale
+- No way to edit or pause a monitor (delete is implemented)
+- No way to re-capture or update a baseline (must create a new one)
+- No rate limiting (was removed, not replaced)
 
 ---
 
@@ -233,16 +267,17 @@ Required work:
 - [x] Supabase Edge Function deployed
 - [x] Supabase Storage bucket configured
 - [x] Vercel deployment with SPA rewrites
-- [x] Vercel Cron configured (hourly)
+- [x] Vercel Cron configured — daily at 02:00 UTC (`0 2 * * *`, Hobby plan)
 - [x] SSRF protection on all user-supplied URLs
-- [x] RLS policies enabled on all tables (migration `20260220000200`)
-- [ ] Environment variable audit (all secrets in Supabase secrets / Vercel env)
+- [x] RLS policies on all tables (migrations `20260220000200` + `20260220000300`)
+- [ ] Environment variable audit (all secrets confirmed in Supabase secrets + Vercel env)
 
 ### Security
 - [x] SSRF guard blocks internal network access
-- [x] Signed URLs for storage (6-hour expiry)
-- [x] Authentication — Supabase email/password auth, Login + Signup pages, ProtectedRoute
-- [x] Authorization — JWT validated in Edge Function; all queries scoped to user.id via RLS
+- [x] Signed URLs for storage (generated on demand, not stored)
+- [x] Email/password auth + Google OAuth (`redirectTo: window.location.origin`)
+- [x] JWT validated in Edge Function with explicit token; all DB queries scoped to `user.id` via RLS
+- [x] `.env` removed from Git history; ignored in `.gitignore`
 - [ ] Rate limiting — removed, not replaced
 
 ### Correctness
@@ -250,129 +285,82 @@ Required work:
 - [x] Ignore regions correctly masked before comparison
 - [x] Per-baseline tolerance applied in comparison
 - [x] AI analysis runs async without blocking run creation
-- [ ] Severity stored on first run (always NULL currently)
-- [ ] Cron cadence enforced (all monitors run every tick regardless of cadence)
-- [ ] CSS diffs populated (always NULL currently)
+- [x] AI polling race condition fixed — stop condition requires `ai_status` settled
+- [x] Severity stored on all runs including the first
+- [x] Cron cadence enforced (hourly/daily based on `last_run_at`)
+- [x] CSS diff populated in `visual_runs.css_diff_json` by `runMonitor()`
 
 ### Observability
 - [x] `console.log` / `console.error` throughout handlers (visible in Supabase Edge Function logs)
 - [x] `ai_status` + `ai_error` columns track AI pipeline state
 - [ ] No structured error reporting or alerting on backend failures
-- [ ] No health dashboard or uptime monitoring
+- [ ] No uptime monitoring
 
 ### Feature Completeness for Launch
 - [x] Baseline capture and approval
-- [x] Monitor creation with first run
+- [x] Monitor creation with immediate first run
 - [x] Continuous monitoring via cron
 - [x] Visual diff with image viewer
-- [x] AI-powered analysis
-- [x] Monitor history with trend chart
-- [x] Authentication / user accounts
+- [x] AI-powered analysis with full structured output
+- [x] CSS-level diff (wired end-to-end)
+- [x] Monitor history with drift trend chart
+- [x] Authentication (email/password + Google OAuth)
+- [x] Multi-tenant data isolation via RLS
+- [x] Monitor deletion
 - [ ] Notifications / alerts
-- [ ] Monitor management (edit, pause, delete)
-- [ ] CSS-level diff (engine built, not wired)
+- [ ] Monitor editing / pausing
+- [ ] Tests / CI
 
 ---
 
-## Execution Roadmap to Launch
+## Execution Roadmap
 
-Work should be done in this order. Each item is a self-contained coding session.
+### Stage 1 — Correctness Fixes ✅ COMPLETE
+- First-run severity fixed (`handleCreateMonitor` → `runMonitor`)
+- Cron cadence enforcement added (`last_run_at` + filter in `handleCronTick`)
+- Return type bug fixed in cron response
 
-### Stage 1 — Fix Correctness Issues ✅ COMPLETE
+### Stage 2 — CSS Diff Pipeline ✅ COMPLETE
+- `captureDomSnapshot()` wired in `handleCreateDesignBaseline` and `runMonitor`
+- `compareDomSnapshots()` result stored in `css_diff_json`
+- Frontend renders CSS Changes panel in all three result views
 
-**1a. Fix first-run severity** ✅
-- `handleCreateMonitor()` now delegates to `runMonitor()` — 40 lines of duplicated pipeline removed
-- Every run (including the first) now has `severity` set
+### Stage 3 — Authentication & Multi-tenancy ✅ COMPLETE
+- RLS policies on all tables and storage
+- JWT validation in Edge Function
+- Login / Signup / ProtectedRoute
+- Google OAuth with dynamic `redirectTo`
+- `.env` removed from repository
 
-**1b. Fix cron cadence enforcement** ✅
-- Migration `20260220000000_add_last_run_at_to_monitors.sql` adds `last_run_at TIMESTAMPTZ NULL`
-- `runMonitor()` writes `last_run_at` after every successful run
-- `handleCronTick()` filters by cadence before executing — daily monitors no longer run hourly
-- Cron response now includes `skipped` count for observability
+### Stage 4 — Notifications (next)
+- Add `webhook_url` + `alert_threshold_pct` to `monitors` table
+- Fire non-blocking webhook in `runMonitor()` when drift exceeds threshold
+- Add fields to monitor creation form
 
-### Stage 2 — Wire CSS Diff Pipeline ✅ COMPLETE
-
-**2a. Backend** ✅
-- Migration `20260220000100` adds `baseline_dom_path TEXT NULL` to `design_baselines`
-- `handleCreateDesignBaseline()`: after screenshot upload, calls `captureDomSnapshot()`, uploads DOM JSON to `{projectId}/baselines/{id}/baseline-dom.json`, stores path in `baseline_dom_path` (non-fatal)
-- `runMonitor()`: after screenshot uploads, calls `captureDomSnapshot()` for target URL, uploads to `{projectId}/monitors/{id}/runs/{runId}/current-dom.json`, downloads baseline DOM, runs `compareDomSnapshots()`, stores result in `css_diff_json`. All wrapped in try/catch — never blocks a run
-- `handleListMonitorRuns()` and `handleGetRun()` both return `cssDiffJson` in response
-- `cssDiffJson` added to the `Run` type in `_lib/types.ts`
-
-**2b. Frontend** ✅
-- `MonitorHistory.tsx`: `CssDiffItem`/`CssPropertyChange` types added; CSS Changes panel in run dialog with scrollable list of changed selectors + property rows (category badge, property name, red strikethrough → green); CSS change count column in run table
-- `VisualRun.tsx`: same types added; dedicated CSS Changes card section between AI panel and image viewer, with per-element cards showing all property changes with category colour-coding
-
-### Stage 3 — Authentication & Multi-tenancy ✅ COMPLETE *(2026-02-20)*
-
-**3a. Database: RLS policies** ✅
-- Migration `20260220000200_auth_rls_policies.sql`: RLS enabled on `design_baselines`, `monitors`, `visual_runs`
-- Policies: `ALL WHERE project_id = auth.uid()::text` on all three tables
-- Storage policy: authenticated users can sign/read objects under `{userId}/` prefix
-- Service role key bypasses RLS — Edge Function writes always succeed
-
-**3b. Backend: validate JWT** ✅
-- `supabaseServer.ts`: `AuthError` class + `getUserFromRequest(req)` validates Bearer JWT via `supabase.auth.getUser(token)`
-- `index.ts` rewritten with three auth tiers: `/health` (none), `/cron/tick` (service role key comparison), all user routes (JWT)
-- All 4 handlers that need ownership now receive `userId` as second param: `handleListBaselines`, `handleCreateDesignBaseline`, `handleCreateMonitor`, `handleListMonitors`
-- `project_id` from request body is ignored — always set to authenticated user's ID
-
-**3c. Frontend: auth pages** ✅
-- `src/lib/auth.ts`: `getAuthHeaders()` (returns `Authorization: Bearer <session.access_token>`), `getCurrentUserId()`
-- `src/pages/Login.tsx`: email/password form, redirects to `/` on success
-- `src/pages/Signup.tsx`: signup form, handles email confirmation flow
-- `src/components/ProtectedRoute.tsx`: listens to `onAuthStateChange`, redirects to `/login` if no session
-- `src/App.tsx`: `/login` + `/signup` routes added; all app routes wrapped with `<ProtectedRoute>`
-- `Dashboard.tsx`: uses `supabase` client for DB + storage queries (RLS auto-filters), auth headers for API; logout button + email in header
-- `Index.tsx`: `getApiHeaders()` → `await getAuthHeaders()`; `projectId: 'demo'` removed from all bodies
-- `MonitorHistory.tsx`: auth headers for API; `fetchBaselineUrl` uses supabase client (no manual REST)
-- `VisualRun.tsx`, `RunDetail.tsx`: auth headers for API calls
-
-### Stage 4 — Notifications (medium effort, high value)
-
-**4a. Database: alert fields**
-- SQL migration: add `webhook_url TEXT NULL`, `alert_threshold_pct NUMERIC NULL DEFAULT 5.0` to `monitors`
-
-**4b. Backend: fire webhooks**
-- In `runMonitor()`: after inserting run, if `mismatch_percentage > monitor.alert_threshold_pct` and `monitor.webhook_url` is set, POST JSON payload (non-blocking, same async pattern as AI)
-- Payload: `{ monitorId, runId, mismatchPercentage, severity, targetUrl, diffUrl, timestamp }`
-- Payload is Slack-compatible when `webhook_url` is a Slack Incoming Webhook URL
-
-**4c. Frontend: alert config in monitor form**
-- Add webhook URL + alert threshold fields to Step 2 of the create-monitor wizard
-- Pass values in the `POST /monitors` body
-
-### Stage 5 — Tests & CI/CD (final, stabilizes everything)
-
-**5a. GitHub Actions**
-- Workflow: on push to `main` → `npm ci` → `npx tsc --noEmit` → `npx vite build`
-- Add Vitest: `npx vitest run` for any unit tests created in 5b
-
-**5b. Unit tests**
-- `cssDiff.test.ts`: test element matching and property comparison with fixture DOM snapshots
-- `diff.test.ts` (frontend util if extracted): test mismatch % calculation edge cases
-- `filterAIIssues.test.ts`: ensure duplication suppression logic works correctly
+### Stage 5 — Tests & CI/CD
+- GitHub Actions: typecheck + build on every push
+- Vitest unit tests for CSS diff engine and AI filter logic
 
 ---
 
 ## Guiding Technical Principles
 
-1. **Async AI, sync everything else.** AI analysis must never block a run result being returned to the user or the cron tick completing. Always insert the run row first, then kick off AI in a detached async IIFE.
+1. **Async AI, sync everything else.** Insert the run row first, then kick off AI in a detached async IIFE. AI must never block run creation or cron completion.
 
-2. **Service role on the backend, anon key on the frontend.** The Edge Function uses `SUPABASE_SERVICE_ROLE_KEY` and bypasses RLS. Frontend uses `VITE_SUPABASE_ANON_KEY` and is subject to RLS. Never expose the service role key to the frontend.
+2. **Service role on the backend, anon key on the frontend.** Edge Function uses `SUPABASE_SERVICE_ROLE_KEY` (bypasses RLS). Frontend uses `VITE_SUPABASE_ANON_KEY` (subject to RLS). Never expose service role to the frontend.
 
-3. **SSRF check every user-supplied URL.** Before passing any URL to Browserless, call `isUrlSafe()`. This is non-negotiable — Browserless can reach internal network addresses if not guarded.
+3. **SSRF check every user-supplied URL.** Call `isUrlSafe()` before passing any URL to Browserless. Non-negotiable.
 
-4. **Signed URLs expire in 6 hours.** Never store signed URLs in the database. Generate them on demand in API responses only. Storage paths (e.g., `demo/baselines/abc/baseline.png`) are what gets stored.
+4. **Never store signed URLs.** Generate on demand in API responses only. Store storage paths (e.g. `userId/baselines/abc/baseline.png`).
 
-5. **No duplication of comparison logic.** `runMonitor()` is the single source of truth for the capture → diff → store → AI pipeline. `handleCreateMonitor()` must call `runMonitor()`, not re-implement it.
+5. **`runMonitor()` is the single pipeline.** `handleCreateMonitor()` calls `runMonitor()` — no duplicate comparison logic anywhere.
 
-6. **projectId = user.id after auth is added.** Every row in every table is scoped to a `project_id`. When auth lands, `project_id` becomes the authenticated user's UUID. No separate "project" entity is needed unless multi-project-per-user support is desired.
+6. **`projectId = auth.uid()`.** Every table row is scoped to `project_id`. The backend ignores any `projectId` in request bodies and always uses the authenticated user's ID.
 
-7. **Migrations are append-only.** Never modify an existing migration file. Always create a new timestamped `.sql` file for schema changes.
+7. **Migrations are append-only.** Never edit an existing `.sql` file. Always create a new timestamped migration.
 
-8. **Keep the Edge Function as one deployed unit.** All routes live in `supabase/functions/visual-api/`. Do not split into multiple functions — cold start overhead multiplies.
+8. **One Edge Function deployment.** All routes in `supabase/functions/visual-api/`. Do not split — cold start overhead multiplies.
 
-9. **cssDiff is supplementary, not gating.** CSS diff failures must never prevent a run from completing. Wrap all DOM snapshot logic in try/catch; if it fails, the run still succeeds with `css_diff_json = null`.
+9. **CSS diff is supplementary, never gating.** All DOM snapshot and diff logic is in try/catch. A failure results in `css_diff_json = null`; the run still completes and is marked `completed`.
 
-10. **Cron must be idempotent.** If the cron fires twice in the same minute (Vercel can do this), duplicate runs will be created. This is acceptable for now. A deduplication lock (e.g., Postgres advisory lock or a `running = true` flag on monitors) can be added later.
+10. **Cron is not exactly-once.** Vercel can fire a cron job twice. Duplicate runs are acceptable for now. A deduplication mechanism can be added later if needed.
