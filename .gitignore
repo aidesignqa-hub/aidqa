@@ -26,3 +26,7 @@ storage/
 *.sln
 *.sw?
 .aider*
+
+# Environment variables — never commit secrets
+.env
+.env.*
