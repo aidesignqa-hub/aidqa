@@ -30,3 +30,6 @@ storage/
 # Environment variables — never commit secrets
 .env
 .env.*
+
+# Claude Code local config
+.claude/
