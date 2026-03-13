@@ -33,3 +33,7 @@ storage/
 
 # Claude Code local config
 .claude/
+.vercel
+
+# Planning docs
+AIDQA_v2_CLAUDE.md
