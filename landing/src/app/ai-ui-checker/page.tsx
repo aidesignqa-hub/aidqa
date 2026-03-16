@@ -8,17 +8,17 @@ import LandingCTA from '@/components/LandingCTA';
 import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'AI UI Checker — AIDQA',
+  title: 'AI UI Quality Checker for AI-Generated Interfaces | AIDQA',
   description:
-    'Stop manually checking screenshots. AIDQA automatically detects visual changes and explains them in plain English.',
+    'AIDQA is an AI UI quality checker that audits AI-generated interfaces for layout drift, hierarchy issues, spacing inconsistency, and accessibility risk. No baseline required.',
 };
 
 const CTA_HREF = 'https://app.aidesignqa.com/signup?utm_source=lp&utm_campaign=ai-ui-checker';
 
 const VALUE_PROPS = [
-  'Catch regressions in production before users notice them',
-  'AI explains every visual change, not just a percentage',
-  'Works on any website — no integration, no code changes required',
+  'Audits AI-generated UI for layout drift, hierarchy failures, and spacing inconsistency',
+  'Structured findings with evidence regions — not vague "something looks off" reports',
+  'Works on screenshots and live URLs — no codebase access, no CI setup required',
 ];
 
 export default function AiUiCheckerPage() {
@@ -27,9 +27,9 @@ export default function AiUiCheckerPage() {
       <LandingNavBar />
       <main>
         <LandingHero
-          badge="AI UI Checker"
-          headline="Your AI UI checker that never sleeps."
-          subheadline="Stop manually clicking through your app after every deploy. AIDQA automatically checks for visual changes and tells you what broke — in plain English."
+          badge="AI UI Quality Checker"
+          headline="An AI UI quality checker built for AI-generated interfaces"
+          subheadline="When you build with v0, Lovable, or Cursor, the output moves fast. AIDQA audits each generated screen for measurable quality issues — layout drift, hierarchy weakness, inconsistency, and accessibility risk — and tells you exactly what to fix before you ship."
           ctaText="Check my UI for free"
           ctaHref={CTA_HREF}
         />
@@ -37,7 +37,7 @@ export default function AiUiCheckerPage() {
         <SocialProof />
         <HowItWorks />
         <LandingCTA
-          headline="Ready to stop eyeballing your UI after every deploy?"
+          headline="Stop guessing. Get objective design QA for your AI-generated UI."
           ctaText="Check my UI for free"
           ctaHref={CTA_HREF}
         />

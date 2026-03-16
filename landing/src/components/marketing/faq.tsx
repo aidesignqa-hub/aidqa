@@ -10,20 +10,20 @@ import {
 export function FAQ() {
   const faqs = [
     {
-      question: "Is this a design tool?",
-      answer: "No — it's a validation layer that checks UI quality.",
+      question: "Does AIDQA require a design system or Figma file to work?",
+      answer: "No. AIDQA runs checks against internal consistency and design rules without needing a baseline or token file. You can optionally provide a Tailwind config or token set to enable design-system compliance checks.",
     },
     {
-      question: "Do I need a design system?",
-      answer: "No. We flag practical UI issues and explain them in plain English.",
+      question: "How is this different from a visual regression testing tool?",
+      answer: "Visual regression tools like Percy or Chromatic compare screenshots against a known baseline and flag pixel differences. AIDQA doesn't need a baseline — it inspects a single interface for objective quality issues: spacing rhythm, hierarchy, consistency, and accessibility risk. You can use it on day one of a project.",
     },
     {
-      question: "How is this different from visual regression tools?",
-      answer: "We prioritize what matters (severity + clarity), not endless diffs.",
+      question: "What inputs does AIDQA accept?",
+      answer: "Screenshot uploads (PNG, JPG, WEBP up to 10MB) and public URLs. The URL scan renders a full desktop viewport and extracts DOM metadata for deeper structural analysis.",
     },
     {
-      question: "What can I scan?",
-      answer: "Figma frames, screenshots, or builder URLs (depending on your plan / current beta).",
+      question: "Who is AIDQA for?",
+      answer: "Primarily builders using AI tools to generate product UI — indie hackers, startup teams, and developers shipping fast without a dedicated design review process. Also useful for frontend engineers who want automated design QA in their pre-release workflow.",
     },
   ];
 

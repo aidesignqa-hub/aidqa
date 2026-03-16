@@ -2,27 +2,27 @@ export function HowItWorks() {
   const steps = [
     {
       number: "01",
-      title: "Import your UI",
-      description: "Figma frame, builder URL, or screenshot",
+      title: "Submit a screenshot or URL",
+      description: "Upload a PNG, JPG, or paste a public URL. AIDQA renders a normalized frame and extracts structural metadata.",
     },
     {
       number: "02",
-      title: "Click Scan",
-      description: "Get a Clarity Score + prioritized issues",
+      title: "Automated inspection runs",
+      description: "The rule engine checks layout, hierarchy, consistency, accessibility, and design-system patterns. No baseline required.",
     },
     {
       number: "03",
-      title: "Fix before publishing",
-      description: "Clear action items with what to change",
+      title: "Get prioritized findings",
+      description: "You receive 3–7 findings ranked by severity, each with an evidence region, explanation of impact, and concrete repair guidance.",
     },
   ];
 
   return (
     <section id="how-it-works" className="py-20 md:py-32 bg-[var(--card)]">
       <div className="max-w-[1200px] mx-auto px-6 md:px-8">
-        <h2 className="mb-4 text-center">Scan → Score → Fix</h2>
+        <h2 className="mb-4 text-center">How it works</h2>
         <p className="text-center text-xl mb-20" style={{ color: "var(--text-muted)" }}>
-          Simple workflow. Fast results.
+          Submit → Inspect → Fix. No setup required.
         </p>
 
         <div className="grid md:grid-cols-3 gap-8 md:gap-0">

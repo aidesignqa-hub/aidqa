@@ -8,7 +8,7 @@ export function Footer() {
               AIDQA
             </div>
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              Design Drift Monitoring
+              Design QA for AI-generated interfaces
             </p>
           </div>
 

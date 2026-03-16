@@ -3,30 +3,30 @@ import { CheckCircle } from "lucide-react";
 export function SolutionSection() {
   const features = [
     {
-      title: "a Clarity Score",
-      description: "(how ship-ready it is)",
+      title: "No baseline required",
+      description: "inspects internal consistency, design rules, and accessibility thresholds — works on screen one of a project",
     },
     {
-      title: "plain-English insights",
-      description: "(what's wrong + why it matters)",
+      title: "Prioritized findings with evidence",
+      description: "each issue includes an evidence region, explanation of impact, and concrete repair guidance",
     },
     {
-      title: "actionable fixes",
-      description: "(what to change before you publish)",
+      title: "The step most teams skip",
+      description: "Idea → AI generation → Design QA → Refinement → Production. AIDQA is the QA layer that fits fast workflows",
     },
   ];
 
   return (
     <section className="py-20 md:py-32">
       <div className="max-w-[900px] mx-auto px-6 md:px-8 text-center">
-        <h2 className="mb-8">A simple UI validation layer.</h2>
+        <h2 className="mb-8">The missing QA layer between AI generation and production</h2>
         <p className="text-xl md:text-2xl mb-16 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-          Think: <span style={{ fontWeight: 600, color: "var(--foreground)" }}>spell-check for AI-built interfaces.</span>
+          AIDQA is not a screenshot diff tool. It doesn't require a baseline. It inspects your interface against internal consistency, design rules, and accessibility thresholds — then returns prioritized findings with evidence and repair guidance.
         </p>
 
         <div className="bg-[var(--card)] rounded-2xl p-8 md:p-12 text-left">
           <p className="text-lg mb-8" style={{ color: "var(--text-muted)" }}>
-            AIDQA scans your UI and returns:
+            Design QA for AI-generated interfaces means:
           </p>
 
           <div className="space-y-6">

@@ -8,15 +8,15 @@ import LandingCTA from '@/components/LandingCTA';
 import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'Visual Regression Testing Without a Test Suite — AIDQA',
+  title: 'Visual Regression Testing Without a Baseline | AIDQA',
   description:
-    'Automated visual regression testing for any URL. No Playwright, no CI setup. Pixel-perfect diffs + AI analysis. Free tier available.',
+    'Most visual regression tools require a snapshot to compare against. AIDQA inspects for design quality issues on any interface — no baseline needed. Get layout, hierarchy, and consistency findings in seconds.',
   keywords: [
-    'visual regression testing',
-    'automated visual testing',
+    'visual regression testing without baseline',
+    'automated visual regression testing',
     'percy alternative',
     'chromatic alternative',
-    'screenshot testing tool',
+    'applitools alternative',
   ],
 };
 
@@ -24,9 +24,9 @@ const CTA_HREF =
   'https://app.aidesignqa.com/signup?utm_source=lp&utm_campaign=visual-regression';
 
 const VALUE_PROPS = [
-  'Pixel-precise diff via pixelmatch — zero false positives from anti-aliasing',
-  'CSS diff engine detects computed style mutations alongside visual changes',
-  'Configurable drift threshold and ignore regions per monitor',
+  'Works on day one — no baseline or approved snapshot required',
+  'Detects spacing rhythm breaks, edge misalignment, button drift, and heading scale failures',
+  'Catches accessibility risk: text contrast below WCAG AA, touch targets below 44×44px',
 ];
 
 const COMPARISON = [
@@ -50,9 +50,9 @@ export default function VisualRegressionPage() {
       <main>
         <LandingHero
           badge="Visual Regression Testing"
-          headline="Visual regression testing without the test suite."
-          subheadline="AIDQA runs automated visual regression checks on any URL — no Playwright setup, no CI pipeline required. Approve a baseline and let it monitor continuously."
-          ctaText="Start visual regression monitoring"
+          headline="Visual regression testing that works without a baseline"
+          subheadline="Traditional visual regression tools — Percy, Chromatic, Applitools — compare a new screenshot against a stored reference image. AIDQA takes a different approach: it inspects each interface against internal consistency rules, spacing patterns, hierarchy signals, and accessibility thresholds. You get actionable findings on screen one of a project."
+          ctaText="Run your first scan free"
           ctaHref={CTA_HREF}
         />
         <ValueProps items={VALUE_PROPS} />
@@ -93,8 +93,8 @@ export default function VisualRegressionPage() {
         <SocialProof />
         <HowItWorks />
         <LandingCTA
-          headline="Stop writing visual tests. Start monitoring visually."
-          ctaText="Start visual regression monitoring"
+          headline="Catch design quality issues without writing a single test."
+          ctaText="Run your first scan free"
           ctaHref={CTA_HREF}
         />
       </main>

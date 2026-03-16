@@ -5,27 +5,27 @@ export function WhyPeoplePay() {
     {
       icon: DollarSign,
       title: "Protect revenue flows",
-      description: "catch broken CTAs, forms, signup, checkout issues before customers bounce",
+      description: "Catch layout drift and broken interactive patterns before they cost conversions.",
     },
     {
       icon: Clock,
-      title: "Save hours every release",
-      description: 'replace manual "quick checks" with a fast scan and clear fix list',
+      title: "Save review time every iteration",
+      description: "Replace manual visual checks with a structured scan and a prioritized fix list.",
     },
     {
       icon: Shield,
-      title: "Avoid trust-killing polish bugs",
-      description: "your product can work—but still feel unreliable",
+      title: "Avoid trust-killing inconsistency",
+      description: "A product can function correctly but still feel unreliable. AIDQA catches the gap.",
     },
     {
       icon: AlertCircle,
-      title: "Reduce accessibility risk",
-      description: "catch basic contrast and focus issues before users complain",
+      title: "Catch accessibility risk early",
+      description: "Surface contrast failures below WCAG AA and touch targets below 44×44px before handoff.",
     },
     {
       icon: Smile,
-      title: "Ship with confidence",
-      description: 'less guessing, less stress, fewer "how did we miss this?" moments',
+      title: "Ship with objective confidence",
+      description: "Fewer missed issues, fewer regressions, fewer post-ship corrections.",
     },
   ];
 

@@ -9,9 +9,9 @@ export function DemoSection() {
     <section id="demo" className="py-20 md:py-32 bg-[var(--card)]">
       <div className="max-w-[1200px] mx-auto px-6 md:px-8">
         <div className="text-center mb-12">
-          <h2 className="mb-4">See a Clarity Score in 60 seconds</h2>
+          <h2 className="mb-4">See an AIDQA report in 60 seconds</h2>
           <p className="text-lg" style={{ color: "var(--text-muted)" }}>
-            Import → Scan → Fix. Plain-English issues grouped by Critical, Important, Minor.
+            Submit a URL or screenshot. Get prioritized findings with evidence regions and repair guidance — no setup required.
           </p>
         </div>
 

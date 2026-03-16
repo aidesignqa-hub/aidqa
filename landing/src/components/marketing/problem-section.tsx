@@ -1,18 +1,18 @@
 export function ProblemSection() {
   const problems = [
-    "inconsistent spacing & alignment",
-    "broken layout structure (especially on mobile)",
-    "weak visual hierarchy",
-    "accessibility risks (contrast, focus clarity)",
-    'messy component usage and "unpolished" feel',
+    "Spacing drifts between sections",
+    "Hierarchy collapses under secondary content",
+    "Components that should look the same don't",
+    "Accessibility risks appear quietly",
+    "Design debt compounds with every iteration",
   ];
 
   return (
     <section className="py-20 md:py-32 bg-[var(--card)]">
       <div className="max-w-[900px] mx-auto px-6 md:px-8 text-center">
-        <h2 className="mb-8">AI can generate UI in seconds.</h2>
+        <h2 className="mb-8">AI UI is fast. The quality gap is real.</h2>
         <p className="text-xl md:text-2xl mb-12 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-          But it doesn't guarantee the basics that users notice instantly:
+          AI builders can generate a screen in seconds. But the output usually lands in a dangerous middle zone: looks almost right, but something feels off.
         </p>
 
         <div className="grid sm:grid-cols-2 gap-4 mb-12">
@@ -27,7 +27,7 @@ export function ProblemSection() {
         </div>
 
         <p className="text-lg" style={{ color: "var(--text-muted)" }}>
-          Non-designers often can't see what's wrong. <span style={{ fontWeight: 600, color: "var(--foreground)" }}>Users can.</span>
+          Experienced designers catch this quickly. Most builders don't — and the cost is <span style={{ fontWeight: 600, color: "var(--foreground)" }}>design debt that compounds with every iteration.</span>
         </p>
       </div>
     </section>

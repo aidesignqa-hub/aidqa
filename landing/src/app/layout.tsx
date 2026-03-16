@@ -7,8 +7,8 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-gei
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://aidesignqa.com'),
-  title: 'AIDQA — AI Design QA',
-  description: 'Automated visual regression and design QA for your product.',
+  title: 'Design QA for AI-Generated UI | AIDQA',
+  description: 'AIDQA automatically audits AI-generated interfaces for layout drift, hierarchy issues, spacing inconsistency, and accessibility risk. Get prioritized findings and repair guidance before you ship.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
