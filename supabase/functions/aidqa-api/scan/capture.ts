@@ -1,6 +1,6 @@
 import type { DomElement } from '../_lib/types.ts'
 
-const BROWSERLESS_URL = Deno.env.get('BROWSERLESS_URL') ?? 'https://chrome.browserless.io'
+const BROWSERLESS_URL = Deno.env.get('BROWSERLESS_REST_ENDPOINT') ?? Deno.env.get('BROWSERLESS_URL') ?? 'https://chrome.browserless.io'
 const BROWSERLESS_API_KEY = Deno.env.get('BROWSERLESS_API_KEY') ?? ''
 
 export async function captureScreenshot(url: string): Promise<Uint8Array> {
