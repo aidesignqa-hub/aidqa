@@ -2,7 +2,7 @@ import { supabase, getUserFromRequest, AuthError } from '../_lib/supabaseServer.
 import { corsResponse, corsError } from '../_lib/cors.ts'
 import { isUrlSafe } from '../_lib/ssrfGuard.ts'
 import { uploadFile, getSignedUrl } from '../_lib/storage.ts'
-import { callClaudeVision, callClaudeRepairGuidance } from '../_lib/anthropic.ts'
+import { callGeminiVision, callGeminiRepairGuidance } from '../_lib/gemini.ts'
 import { captureScreenshot, captureDomSnapshot } from './capture.ts'
 import { normalizeImage, generateOverlay } from './normalize.ts'
 import { runAllChecks } from './deterministic.ts'
@@ -134,10 +134,10 @@ async function processScan(
 
     try {
       const normalizedUrl = await getSignedUrl(`${basePath}/normalized.png`, 3600)
-      aiFindings = await callClaudeVision(normalizedUrl, deterministicFindings)
+      aiFindings = await callGeminiVision(normalizedUrl, deterministicFindings)
       await supabase.from('scans').update({ ai_status: 'completed' }).eq('id', scanId)
     } catch (aiErr) {
-      console.error(`[${scanId}] Claude Vision failed:`, aiErr)
+      console.error(`[${scanId}] Gemini Vision failed:`, aiErr)
       await supabase.from('scans').update({
         ai_status: 'failed',
         ai_error: String(aiErr),
@@ -153,7 +153,7 @@ async function processScan(
       try {
         const detOnly = merged.filter(f => f.source === 'deterministic')
         if (detOnly.length > 0) {
-          const improved = await callClaudeRepairGuidance(detOnly)
+          const improved = await callGeminiRepairGuidance(detOnly)
           const improvedMap = new Map(improved.map(f => [f.title, f]))
           finalFindings = merged.map(f => f.source === 'deterministic' ? (improvedMap.get(f.title) ?? f) : f)
         }

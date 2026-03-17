@@ -1,7 +1,11 @@
 import type { Finding } from './types.ts'
+import { encodeBase64 } from 'jsr:@std/encoding/base64'
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
-const MODEL = 'claude-sonnet-4-6'
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
+const MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.0-flash'
+
+const GEMINI_URL = (model: string, key: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`
 
 function buildPrompt(deterministicFindings: Finding[]): string {
   const alreadyFound = deterministicFindings.map(f => ({ category: f.category, title: f.title }))
@@ -53,66 +57,63 @@ Rules:
 - Be specific. "Button has no hover state" is better than "interactive feedback missing".`
 }
 
-export async function callClaudeVision(
+export async function callGeminiVision(
   imageSignedUrl: string,
   deterministicFindings: Finding[]
 ): Promise<Finding[]> {
-  if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not set')
+  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set')
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  console.log('[AI] Fetching image for Gemini vision call')
+  const imageResponse = await fetch(imageSignedUrl)
+  if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.status}`)
+  const imageBytes = new Uint8Array(await imageResponse.arrayBuffer())
+  const base64Image = encodeBase64(imageBytes)
+
+  console.log('[AI] Sending vision request to Gemini, model:', MODEL)
+  const response = await fetch(GEMINI_URL(MODEL, GEMINI_API_KEY), {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'url', url: imageSignedUrl },
-            },
-            {
-              type: 'text',
-              text: buildPrompt(deterministicFindings),
-            },
-          ],
-        },
-      ],
+      contents: [{
+        parts: [
+          { inlineData: { mimeType: 'image/png', data: base64Image } },
+          { text: buildPrompt(deterministicFindings) },
+        ],
+      }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        maxOutputTokens: 2000,
+        temperature: 0.3,
+      },
     }),
   })
 
   if (!response.ok) {
     const text = await response.text()
-    throw new Error(`Claude API error ${response.status}: ${text}`)
+    throw new Error(`Gemini API error ${response.status}: ${text}`)
   }
 
   const result = await response.json()
-  const text = result.content?.[0]?.text ?? ''
+  console.log('[AI] Gemini vision response received, usage:', result.usageMetadata)
 
-  // Extract JSON from response
-  const jsonMatch = text.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error('No JSON in Claude response')
+  const text = result.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+  if (!text) throw new Error('Empty response from Gemini')
 
-  const parsed = JSON.parse(jsonMatch[0])
+  const parsed = JSON.parse(text)
   const findings: Finding[] = (parsed.findings ?? []).map((f: Finding) => ({
     ...f,
     source: 'ai' as const,
     score_impact: f.score_impact ?? undefined,
   }))
 
+  console.log('[AI] Gemini vision findings:', findings.length)
   return findings
 }
 
-export async function callClaudeRepairGuidance(
+export async function callGeminiRepairGuidance(
   findings: Finding[]
 ): Promise<Finding[]> {
-  if (!ANTHROPIC_API_KEY) return findings
+  if (!GEMINI_API_KEY) return findings
 
   const prompt = `You are a senior product designer. Below are design QA findings detected by automated analysis.
 For each finding, rewrite the "repair_guidance" and "ai_fix_instruction" fields to be more specific and actionable.
@@ -122,31 +123,30 @@ Return ONLY a JSON object: { "findings": [...] }
 
 ${JSON.stringify({ findings }, null, 2)}`
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
-
-  if (!response.ok) return findings
-
-  const result = await response.json()
-  const text = result.content?.[0]?.text ?? ''
-  const jsonMatch = text.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) return findings
-
   try {
-    const parsed = JSON.parse(jsonMatch[0])
+    const response = await fetch(GEMINI_URL(MODEL, GEMINI_API_KEY), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          maxOutputTokens: 2000,
+          temperature: 0.3,
+        },
+      }),
+    })
+
+    if (!response.ok) return findings
+
+    const result = await response.json()
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    if (!text) return findings
+
+    const parsed = JSON.parse(text)
     return parsed.findings ?? findings
   } catch {
+    // Non-fatal — return original guidance
     return findings
   }
 }
