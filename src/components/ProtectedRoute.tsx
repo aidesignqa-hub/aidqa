@@ -8,8 +8,12 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+      } else if (session) {
+        setSession(session);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);

@@ -21,14 +21,13 @@ export function Navigation() {
       <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-4">
         <div className="flex items-center justify-between">
           {/* Left: Logo + Desktop Links */}
-          <div className="flex items-center gap-12">
+          <div className="flex items-center gap-12 min-w-0 shrink-0">
             <button
-              className={`text-2xl tracking-tight rounded ${focusRing}`}
-              style={{ fontWeight: 800 }}
+              className={`rounded ${focusRing}`}
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               aria-label="Back to top"
             >
-              AIDQA
+              <img src="/aidqa-logo.png" alt="AIDQA" className="h-8 w-auto" />
             </button>
 
             <div className="hidden md:flex items-center gap-8">
@@ -45,24 +44,26 @@ export function Navigation() {
           </div>
 
           {/* Right: CTAs + Theme Toggle + Hamburger */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 min-w-0">
             <button
-              className={`hidden sm:block px-6 py-3 min-h-[44px] rounded-full hover:bg-[var(--card)] transition-colors ${focusRing}`}
+              className={`hidden sm:block px-6 py-3 min-h-[44px] rounded-full hover:bg-[var(--card)] transition-colors shrink-0 ${focusRing}`}
               onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
             >
               Watch demo
             </button>
             <button
-              className={`px-6 py-3 min-h-[44px] rounded-full bg-[var(--accent-orange)] text-white hover:opacity-90 transition-opacity ${focusRing}`}
+              className={`px-4 py-2 sm:px-6 sm:py-3 text-sm min-h-[44px] rounded-full bg-[var(--accent-orange)] text-white hover:opacity-90 transition-opacity shrink-0 ${focusRing}`}
               onClick={() => document.getElementById("early-access")?.scrollIntoView({ behavior: "smooth" })}
             >
               Join early access
             </button>
-            <ThemeToggle />
+            <div className="shrink-0">
+              <ThemeToggle />
+            </div>
 
             {/* Hamburger — mobile only */}
             <button
-              className={`md:hidden p-2 rounded-lg hover:bg-[var(--card)] transition-colors ${focusRing}`}
+              className={`md:hidden p-2 rounded-lg hover:bg-[var(--card)] transition-colors shrink-0 ${focusRing}`}
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
               onClick={() => setMobileOpen(!mobileOpen)}
