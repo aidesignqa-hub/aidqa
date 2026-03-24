@@ -1,12 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
-
-export const dynamic = 'force-dynamic';
+import { unstable_noStore as noStore } from 'next/cache';
 import { LogoutButton } from './logout-button';
 
+export const dynamic = 'force-dynamic';
+
 async function getWaitlist() {
+  noStore();
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { global: { fetch: (url, init) => fetch(url, { ...init, cache: 'no-store' }) } }
   );
   const { data, error } = await supabase
     .from('join_waitlist')
