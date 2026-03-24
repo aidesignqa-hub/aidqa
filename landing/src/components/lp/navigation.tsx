@@ -17,7 +17,7 @@ export function Navigation() {
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               aria-label="Back to top"
             >
-              <img src="/aidqa_logo_full.svg" alt="AIDQA" className="h-8 w-auto" />
+              <img src="/aidqa_logo_full.svg" alt="AIDQA" className="h-11 w-auto" />
             </button>
           </div>
 
