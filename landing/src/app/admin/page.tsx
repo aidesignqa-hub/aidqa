@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+
+export const dynamic = 'force-dynamic';
 import { LogoutButton } from './logout-button';
 
 async function getWaitlist() {
