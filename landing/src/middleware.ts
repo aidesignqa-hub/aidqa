@@ -11,6 +11,17 @@ export function middleware(req: NextRequest) {
     return NextResponse.rewrite(url)
   }
 
+  // Protect /admin routes (except /admin/login)
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+    const token = req.cookies.get('admin_token')?.value
+    const password = process.env.ADMIN_PASSWORD
+    if (!password || token !== password) {
+      const loginUrl = req.nextUrl.clone()
+      loginUrl.pathname = '/admin/login'
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
   return NextResponse.next()
 }
 

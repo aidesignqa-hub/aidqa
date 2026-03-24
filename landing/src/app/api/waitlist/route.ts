@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     if (supabaseUrl && supabaseKey) {
       const supabase = createClient(supabaseUrl, supabaseKey);
-      const { error } = await supabase.from('waitlist').insert({
+      const { error } = await supabase.from('join_waitlist').insert({
         email,
         role: role || null,
         company_size: companySize || null,
