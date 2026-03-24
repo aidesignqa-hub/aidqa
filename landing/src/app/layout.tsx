@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     images: ['/og-image.png'],
   },
   icons: {
-    icon: '/favicon.svg',
+    icon: '/aidqa_logo_homepage.png',
   },
 };
 

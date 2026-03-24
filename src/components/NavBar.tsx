@@ -13,7 +13,9 @@ export default function NavBar() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="font-bold text-lg tracking-tight">AIDQA</Link>
+        <Link to="/">
+            <img src="/aidqa_logo_full.svg" alt="AIDQA" className="h-8 w-auto" />
+          </Link>
         <nav className="flex items-center gap-2">
           <Link to="/">
             <Button variant="ghost" size="sm">New scan</Button>

@@ -14,6 +14,7 @@ import { PromiseSection } from '@/components/marketing/promise-section';
 import { PricingSection } from '@/components/lp/pricing-section';
 import { EarlyAccessForm } from '@/components/lp/early-access-form';
 import { FAQ } from '@/components/lp/faq';
+import { GameSection } from '@/components/lp/game-section';
 import { Footer } from '@/components/marketing/footer';
 
 export default function LPPage() {
@@ -29,6 +30,7 @@ export default function LPPage() {
       <WhyPeoplePay />
       <WhoItsFor />
       <DemoSection />
+      <GameSection />
       <PromiseSection />
       <PricingSection />
       <EarlyAccessForm />

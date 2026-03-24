@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spot the Drift — AIDQA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:  #0D1221;
+  --s1:  #121828;
+  --s2:  #19223A;
+  --brd: rgba(255,255,255,.08);
+  --or:  #F5741D;
+  --w:   #FFFFFF;
+  --d1:  rgba(255,255,255,.65);
+  --d2:  rgba(255,255,255,.40);
+  --d3:  rgba(255,255,255,.20);
+  --gr:  #3ECFA0;
+  --rd:  #F04060;
+  --yw:  #F5C138;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--w);overflow:hidden;}
+
+/* ── SCREENS ── */
+.scr{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:300;opacity:0;pointer-events:none;transition:opacity .32s;padding:24px;}
+.scr.on{opacity:1;pointer-events:all;}
+
+/* INTRO */
+.i-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(245,116,29,.1);border:1px solid rgba(245,116,29,.22);color:var(--or);font-size:.6rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;padding:4px 12px 4px 10px;border-radius:100px;margin-bottom:24px;}
+.i-badge-dot{width:5px;height:5px;border-radius:50%;background:var(--or);animation:bl 1.4s ease infinite;}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.18}}
+.i-h{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:clamp(1.9rem,4.8vw,3.2rem);line-height:1.04;text-align:center;max-width:560px;margin-bottom:10px;}
+.i-h em{font-style:normal;color:var(--or);}
+.i-sub{font-size:.82rem;color:var(--d2);text-align:center;max-width:400px;line-height:1.8;margin-bottom:32px;font-weight:400;}
+.i-rules{display:flex;flex-direction:column;gap:7px;width:100%;max-width:400px;margin-bottom:36px;}
+.i-rule{display:flex;align-items:flex-start;gap:12px;background:var(--s1);border:1px solid var(--brd);border-radius:10px;padding:10px 14px;}
+.i-rn{font-size:.58rem;font-weight:800;color:var(--or);width:14px;flex-shrink:0;padding-top:2px;}
+.i-rt{font-size:.72rem;color:var(--d1);line-height:1.5;font-weight:400;}
+.i-rt strong{color:var(--w);font-weight:700;}
+.go-btn{background:var(--or);color:var(--w);border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;font-weight:700;padding:13px 40px;border-radius:100px;cursor:pointer;transition:opacity .15s,transform .15s,box-shadow .2s;}
+.go-btn:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 8px 28px rgba(245,116,29,.32);}
+
+/* ── RESULTS SCREEN ── */
+.r-kicker{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--or);margin-bottom:12px;font-weight:700;}
+.r-score-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;}
+.r-score-row{display:flex;align-items:baseline;gap:2px;}
+.r-big{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:clamp(5rem,14vw,9rem);line-height:.9;color:var(--w);}
+.r-sep{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:clamp(2.5rem,6vw,4.5rem);color:var(--d3);line-height:.9;}
+.r-score-label{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--d3);margin-top:8px;font-weight:500;}
+.r-h{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:clamp(1.4rem,3.2vw,2.1rem);text-align:center;margin-bottom:8px;max-width:480px;line-height:1.1;}
+.r-msg{font-size:.8rem;color:var(--d2);text-align:center;max-width:400px;line-height:1.9;margin-bottom:24px;font-weight:400;}
+.r-cta-block{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:20px;}
+.r-cta-prize{background:var(--or);color:var(--w);font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.04em;padding:11px 28px;border-radius:100px;box-shadow:0 6px 24px rgba(245,116,29,.35);}
+.r-cta-soft{background:rgba(245,116,29,.1);border:1px solid rgba(245,116,29,.25);color:var(--or);font-size:.7rem;font-weight:600;padding:9px 22px;border-radius:100px;letter-spacing:.03em;}
+.r-cta-note{font-size:.6rem;color:var(--d3);letter-spacing:.05em;text-align:center;font-weight:400;}
+.r-replay{background:none;border:1px solid var(--brd);color:var(--d2);font-family:'Plus Jakarta Sans',sans-serif;font-size:.64rem;padding:8px 22px;border-radius:100px;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;font-weight:600;transition:all .15s;}
+.r-replay:hover{color:var(--w);border-color:var(--d2);}
+
+/* ── GAME ── */
+#game{display:none;flex-direction:column;height:100vh;max-width:1080px;margin:0 auto;padding:0 18px;}
+
+.g-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 0 10px;border-bottom:1px solid var(--brd);flex-shrink:0;}
+.g-logo{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:.9rem;letter-spacing:.06em;}
+.g-logo-o{color:var(--or);}
+.g-right{display:flex;align-items:center;gap:12px;}
+.g-pips{display:flex;gap:3px;}
+.g-pip{width:18px;height:3px;border-radius:2px;background:var(--brd);transition:background .3s;}
+.g-pip.done{background:var(--or);}
+.g-pip.cur{background:var(--w);}
+.g-pts{background:rgba(245,116,29,.1);border:1px solid rgba(245,116,29,.22);color:var(--or);font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:.7rem;letter-spacing:.05em;padding:4px 12px;border-radius:100px;min-width:52px;text-align:center;}
+.g-pts.pop{animation:pop .22s ease;}
+@keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+
+.g-meta{display:flex;align-items:center;gap:8px;padding:9px 0 4px;flex-shrink:0;}
+.g-diff{font-size:.52rem;font-weight:700;letter-spacing:.17em;text-transform:uppercase;padding:3px 9px;border-radius:100px;border:1px solid;}
+.d-easy {color:var(--gr);border-color:rgba(62,207,160,.35);background:rgba(62,207,160,.07);}
+.d-med  {color:var(--yw);border-color:rgba(245,193,56,.35);background:rgba(245,193,56,.07);}
+.d-hard {color:var(--or);border-color:rgba(245,116,29,.35);background:rgba(245,116,29,.07);}
+.d-xhard{color:var(--rd);border-color:rgba(240,64,96,.35);background:rgba(240,64,96,.07);}
+.g-cat{font-size:.52rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--d2);background:var(--s1);border:1px solid var(--brd);padding:3px 9px;border-radius:100px;}
+.g-rn{font-size:.56rem;letter-spacing:.17em;text-transform:uppercase;color:var(--d3);margin-left:auto;font-weight:500;}
+
+.g-q{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:clamp(.9rem,1.8vw,1.15rem);color:var(--w);flex-shrink:0;margin-bottom:1px;}
+.g-clue{font-size:.68rem;color:var(--d2);flex-shrink:0;margin-bottom:6px;min-height:16px;font-weight:400;}
+
+.t-wrap{height:2px;background:var(--brd);border-radius:1px;flex-shrink:0;overflow:hidden;margin-bottom:8px;}
+.t-fill{height:100%;border-radius:1px;background:var(--or);transition:width .07s linear,background .3s;}
+.t-fill.hot{background:var(--rd);}
+
+.frames{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:0;overflow:hidden;padding-bottom:6px;}
+.fw{display:flex;flex-direction:column;gap:5px;min-height:0;}
+.f-lbl{font-size:.52rem;letter-spacing:.24em;text-transform:uppercase;color:var(--d3);text-align:center;font-weight:600;}
+.frame{flex:1;border:1.5px solid var(--brd);border-radius:16px;background:var(--s1);cursor:pointer;transition:border-color .15s,transform .12s,box-shadow .18s;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:14px;position:relative;min-height:0;}
+.frame:hover:not(.locked){border-color:rgba(245,116,29,.42);transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.5);}
+.frame.locked{cursor:default;}
+.frame.is-drift{border-color:var(--rd)!important;background:rgba(240,64,96,.025);}
+.frame.is-clean{border-color:var(--gr)!important;background:rgba(62,207,160,.025);}
+.frame.shook{animation:shk .3s ease;}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+
+.fbadge{position:absolute;top:8px;right:8px;font-size:.48rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:100px;border:1px solid;opacity:0;transform:scale(.8);transition:opacity .22s,transform .22s;}
+.fbadge.on{opacity:1;transform:scale(1);}
+.fbadge-d{color:var(--rd);border-color:var(--rd);background:rgba(240,64,96,.12);}
+.fbadge-c{color:var(--gr);border-color:var(--gr);background:rgba(62,207,160,.12);}
+
+.g-res{flex-shrink:0;height:48px;display:flex;align-items:center;gap:12px;opacity:0;pointer-events:none;transition:opacity .25s;}
+.g-res.on{opacity:1;pointer-events:all;}
+.g-res-txt{font-size:.7rem;color:var(--d2);flex:1;line-height:1.45;font-weight:400;}
+.g-res-txt strong{font-weight:700;}
+.g-res-txt.ok strong{color:var(--gr);}
+.g-res-txt.err strong{color:var(--rd);}
+.nxt{background:var(--or);color:var(--w);border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.7rem;font-weight:700;padding:9px 20px;border-radius:100px;cursor:pointer;white-space:nowrap;letter-spacing:.02em;flex-shrink:0;transition:opacity .15s;}
+.nxt:hover{opacity:.86;}
+
+/* CONFETTI */
+#cnv{position:fixed;inset:0;z-index:400;pointer-events:none;}
+
+/* ═══════════════════════════════════════════════
+   MOCK UI — shared base styles (tiny scale)
+   All sizes tuned to fit inside frame at 14px base
+═══════════════════════════════════════════════ */
+.mk{width:100%;max-width:210px;display:flex;flex-direction:column;align-items:flex-start;}
+.mk-hdr{display:flex;align-items:center;justify-content:space-between;width:100%;padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:11px;}
+.mk-logo{font-family:'Plus Jakarta Sans',sans-serif;font-size:.55rem;font-weight:800;letter-spacing:.08em;}
+.mk-logo-o{color:#F5741D;}
+.mk-nav{display:flex;gap:4px;align-items:center;}
+.mk-nd{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.2);}
+.mk-kicker{font-size:.44rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.32);margin-bottom:5px;font-weight:600;}
+.mk-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;color:#fff;line-height:1.15;margin-bottom:6px;}
+.mk-body{font-size:.55rem;color:rgba(255,255,255,.42);line-height:1.65;font-weight:300;}
+.mk-btn{display:block;width:100%;background:#F5741D;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:.55rem;font-weight:700;padding:6px 0;border-radius:100px;border:none;text-align:center;cursor:default;letter-spacing:.02em;}
+.mk-pill{display:inline-flex;align-items:center;gap:4px;background:rgba(245,116,29,.12);border:1px solid rgba(245,116,29,.25);color:#F5741D;font-size:.48rem;font-weight:600;padding:2px 7px;border-radius:100px;}
+.mk-stat-row{display:flex;gap:5px;width:100%;}
+.mk-stat{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:7px;padding:6px 5px;display:flex;flex-direction:column;gap:2px;}
+.mk-sv{font-family:'Plus Jakarta Sans',sans-serif;color:#fff;line-height:1;}
+.mk-sl{font-size:.4rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.28);font-weight:600;}
+.mk-div{width:100%;height:1px;background:rgba(255,255,255,.07);}
+.mk-row{display:flex;align-items:center;gap:6px;width:100%;}
+.mk-icon{width:19px;height:19px;border-radius:5px;background:rgba(245,116,29,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mk-icon svg{width:9px;height:9px;fill:none;stroke:#F5741D;stroke-width:1.8;stroke-linecap:round;}
+.mk-avatar{width:24px;height:24px;border-radius:50%;background:rgba(245,116,29,.18);display:flex;align-items:center;justify-content:center;font-size:.48rem;color:#F5741D;font-weight:800;flex-shrink:0;}
+.mk-tag-row{display:flex;gap:3px;flex-wrap:wrap;}
+.mk-tag{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.45);font-size:.42rem;padding:1px 6px;border-radius:100px;font-weight:500;}
+.mk-toggle-row{display:flex;align-items:center;justify-content:space-between;width:100%;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.mk-toggle{width:22px;height:12px;border-radius:100px;background:#F5741D;position:relative;flex-shrink:0;}
+.mk-toggle-knob{position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:#fff;}
+.mk-toggle.off{background:rgba(255,255,255,.12);}
+.mk-toggle.off .mk-toggle-knob{right:auto;left:2px;}
+.mk-badge{display:inline-flex;align-items:center;gap:3px;font-size:.44rem;padding:2px 6px;border-radius:100px;font-weight:700;}
+.mk-badge-or{background:rgba(245,116,29,.15);border:1px solid rgba(245,116,29,.3);color:#F5741D;}
+.mk-badge-gr{background:rgba(62,207,160,.12);border:1px solid rgba(62,207,160,.3);color:#3ECFA0;}
+.mk-badge-rd{background:rgba(240,64,96,.12);border:1px solid rgba(240,64,96,.3);color:#F04060;}
+
+/* finding card used in multi-card rounds — compact */
+.fc{border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:6px 8px;display:flex;align-items:center;justify-content:space-between;width:100%;flex-shrink:0;}
+.fc-txt{display:flex;flex-direction:column;gap:1px;}
+.fc-t{font-size:.52rem;font-weight:700;color:#fff;}
+.fc-s{font-size:.42rem;color:rgba(255,255,255,.32);font-weight:400;}
+</style>
+</head>
+<body>
+<canvas id="cnv"></canvas>
+
+<!-- ── INTRO ─────────────────────────────────── -->
+<div class="scr on" id="s-intro">
+  <div class="i-badge"><div class="i-badge-dot"></div>Conference Challenge</div>
+  <div class="i-h">Can you see what<br><em>AI builders miss?</em></div>
+  <div class="i-sub">Two screens. One is broken. Spot the design drift before it ships to users — just like AIDQA does. Automatically.</div>
+  <div class="i-rules">
+    <div class="i-rule"><div class="i-rn">1</div><div class="i-rt">Two nearly identical UIs. <strong>One has a subtle design error.</strong></div></div>
+    <div class="i-rule"><div class="i-rn">2</div><div class="i-rt">Tap the broken version. <strong>10 seconds</strong> per round. Difficulty increases.</div></div>
+    <div class="i-rule"><div class="i-rn">3</div><div class="i-rt">Score <strong>10/10</strong> and claim your prize. The drift changes every game.</div></div>
+  </div>
+  <button class="go-btn" id="btn-go">Start challenge →</button>
+</div>
+
+<!-- ── RESULTS ────────────────────────────────── -->
+<div class="scr" id="s-res">
+  <div class="r-kicker" id="r-kicker">Challenge complete</div>
+  <div class="r-score-wrap">
+    <div class="r-score-row">
+      <div class="r-big" id="r-n">0</div>
+      <div class="r-sep">&thinsp;/&thinsp;10</div>
+    </div>
+    <div class="r-score-label">correct answers</div>
+  </div>
+  <div class="r-h" id="r-h"></div>
+  <div class="r-msg" id="r-msg"></div>
+  <div class="r-cta-block" id="r-cta"></div>
+  <button class="r-replay" id="btn-replay">Try again</button>
+</div>
+
+<!-- ── GAME ───────────────────────────────────── -->
+<div id="game">
+  <div class="g-bar">
+    <div class="g-logo">AID<span class="g-logo-o">QA</span></div>
+    <div class="g-right">
+      <div class="g-pips" id="pips"></div>
+      <div class="g-pts" id="pts">0 / 10</div>
+    </div>
+  </div>
+  <div class="g-meta">
+    <div class="g-diff" id="diff-chip"></div>
+    <div class="g-cat" id="cat-chip"></div>
+    <div class="g-rn" id="rn-lbl"></div>
+  </div>
+  <div class="g-q">Which version has the design drift?</div>
+  <div class="g-clue" id="clue"></div>
+  <div class="t-wrap"><div class="t-fill" id="tfill" style="width:100%"></div></div>
+  <div class="frames">
+    <div class="fw"><div class="f-lbl">Version A</div><div class="frame" id="fa" onclick="pick('a')"><div id="ma"></div><div class="fbadge" id="ba"></div></div></div>
+    <div class="fw"><div class="f-lbl">Version B</div><div class="frame" id="fb" onclick="pick('b')"><div id="mb"></div><div class="fbadge" id="bb"></div></div></div>
+  </div>
+  <div class="g-res" id="gres">
+    <div class="g-res-txt" id="restxt"></div>
+    <button class="nxt" id="btn-nxt" onclick="nextRound()">Next →</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// 15-ROUND POOL
+// ═══════════════════════════════════════════════
+const POOL = [
+
+  /* 1 — EASY: Border radius */
+  { cat:'RADIUS', diff:'easy', dlbl:'Easy',
+    clue:'Check the shape of the primary button.',
+    drift:'<strong>Border-radius drift</strong> — the CTA lost its pill shape (4px vs 100px). One rogue value breaks the entire rounded design language.',
+    render: d => `<div class="mk" style="gap:9px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-kicker">Design QA Platform</div>
+      <div class="mk-title" style="font-size:.86rem">Catch UI drift<br>before users do.</div>
+      <div class="mk-body">Automated design checks for every AI-generated interface.</div>
+      <div class="mk-btn" style="border-radius:${d?'4px':'100px'};margin-top:3px">Scan your UI free</div>
+    </div>`
+  },
+
+  /* 2 — EASY: Brand color shift */
+  { cat:'COLOR', diff:'easy', dlbl:'Easy',
+    clue:'Focus on the brand accent color.',
+    drift:'<strong>Color drift</strong> — brand orange shifted from #F5741D to #C24A0E. Lower vibrancy, weaker contrast, broken brand identity.',
+    render: d => {
+      const c = d ? '#C24A0E' : '#F5741D';
+      return `<div class="mk" style="gap:9px">
+        <div class="mk-hdr"><div class="mk-logo">AID<span style="color:${c}">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+        <div class="mk-pill" style="background:${c}18;border-color:${c}44;color:${c}">3 issues found</div>
+        <div class="mk-title" style="font-size:.84rem;margin-top:3px">Latest scan<br>report</div>
+        <div class="mk-body">2 critical · 1 major · 0 minor</div>
+        <div class="mk-btn" style="background:${c};margin-top:5px">View findings →</div>
+      </div>`;
+    }
+  },
+
+  /* 3 — EASY: Spacing rhythm */
+  { cat:'SPACING', diff:'easy', dlbl:'Easy',
+    clue:'Look at the vertical breathing room between sections.',
+    drift:'<strong>Spacing collapse</strong> — gap between elements dropped from 11px to 2px. Sections fuse together, visual rhythm disappears.',
+    render: d => `<div class="mk" style="gap:${d?'2px':'11px'}">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-kicker">Inspection complete</div>
+      <div class="mk-title" style="font-size:.86rem">4 findings<br>detected</div>
+      <div class="mk-body">Spacing errors · Hierarchy drift · Radius inconsistency</div>
+      <div class="mk-btn">View full report</div>
+    </div>`
+  },
+
+  /* 4 — MEDIUM: Font weight */
+  { cat:'HIERARCHY', diff:'med', dlbl:'Medium',
+    clue:'Compare the three metric numbers carefully.',
+    drift:'<strong>Font weight drift</strong> — "Critical" dropped from 800 to 400. It loses its status as a primary data point and hierarchy collapses.',
+    render: d => `<div class="mk" style="gap:9px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-kicker">Scan summary</div>
+      <div class="mk-stat-row">
+        <div class="mk-stat"><div class="mk-sv" style="font-size:1rem;font-weight:800">12</div><div class="mk-sl">Issues</div></div>
+        <div class="mk-stat"><div class="mk-sv" style="font-size:1rem;font-weight:${d?'400':'800'}">3</div><div class="mk-sl">Critical</div></div>
+        <div class="mk-stat"><div class="mk-sv" style="font-size:1rem;font-weight:800">94<span style="font-size:.6em">%</span></div><div class="mk-sl">Score</div></div>
+      </div>
+      <div class="mk-body" style="margin-top:1px">Last scanned 2 min ago. 4 components affected.</div>
+      <div class="mk-btn" style="margin-top:2px">View full report</div>
+    </div>`
+  },
+
+  /* 5 — MEDIUM: Center alignment break */
+  { cat:'ALIGNMENT', diff:'med', dlbl:'Medium',
+    clue:'Check if all text shares the same alignment axis.',
+    drift:'<strong>Alignment break</strong> — body text switched to center while everything else stays left. Invisible on first glance, jarring on second.',
+    render: d => `<div class="mk" style="gap:8px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-badge mk-badge-rd">● Critical issue</div>
+      <div class="mk-title" style="font-size:.84rem">Spacing rhythm<br>breakdown</div>
+      <div class="mk-body" style="text-align:${d?'center':'left'}">Found 6 components where vertical spacing doesn't follow the 4px grid. Affects consistency across views.</div>
+      <div class="mk-row" style="margin-top:1px">
+        <div class="mk-icon"><svg viewBox="0 0 9 9"><polyline points="1,4.5 3.5,7 8,2"/></svg></div>
+        <div style="font-size:.52rem;color:rgba(255,255,255,.42)">View component map</div>
+      </div>
+    </div>`
+  },
+
+  /* 6 — MEDIUM: Semantic badge color */
+  { cat:'COLOR', diff:'med', dlbl:'Medium',
+    clue:'Look at the severity badge colors across the list.',
+    drift:'<strong>Semantic color drift</strong> — Critical badge switched from red to orange. Erases urgency signal. Critical and Medium now look identical.',
+    render: d => `<div class="mk" style="gap:7px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-kicker">Findings · 3 total</div>
+      <div style="display:flex;flex-direction:column;gap:4px;width:100%">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);border-radius:7px;padding:6px 8px;">
+          <div style="font-size:.55rem;color:#fff;font-weight:700">Touch target too small</div>
+          <div class="mk-badge ${d?'mk-badge-or':'mk-badge-rd'}">Critical</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);border-radius:7px;padding:6px 8px;">
+          <div style="font-size:.55rem;color:#fff;font-weight:700">Spacing inconsistency</div>
+          <div class="mk-badge mk-badge-or">Medium</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);border-radius:7px;padding:6px 8px;">
+          <div style="font-size:.55rem;color:#fff;font-weight:700">Radius drift</div>
+          <div class="mk-badge mk-badge-gr">Low</div>
+        </div>
+      </div>
+    </div>`
+  },
+
+  /* 7 — HARD: Letter-spacing lost */
+  { cat:'TYPOGRAPHY', diff:'hard', dlbl:'Hard',
+    clue:'Read the eyebrow label above the heading very closely.',
+    drift:'<strong>Letter-spacing drift</strong> — eyebrow label lost its tracking (0em vs 0.22em). It no longer reads as metadata — it clashes visually with the heading.',
+    render: d => `<div class="mk" style="gap:9px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div>
+        <div style="font-size:.44rem;letter-spacing:${d?'0em':'.2em'};text-transform:uppercase;color:rgba(255,255,255,.32);margin-bottom:4px;font-weight:600">Accessibility check</div>
+        <div class="mk-title" style="font-size:.84rem">Contrast ratio<br>failure detected</div>
+      </div>
+      <div class="mk-body">Text on surface falls below WCAG AA 4.5:1. 3 components affected.</div>
+      <div class="mk-tag-row"><div class="mk-tag">WCAG AA</div><div class="mk-tag">Contrast</div><div class="mk-tag">Critical</div></div>
+    </div>`
+  },
+
+  /* 8 — HARD: Line height */
+  { cat:'SPACING', diff:'hard', dlbl:'Hard',
+    clue:'Read both body text blocks. Notice how they breathe.',
+    drift:'<strong>Line-height drift</strong> — body dropped from 1.75 to 1.2. Dense, hard to parse. WCAG recommends minimum 1.5 for body copy.',
+    render: d => `<div class="mk" style="gap:8px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-badge mk-badge-or">● 2 findings</div>
+      <div class="mk-title" style="font-size:.8rem;margin-top:1px">Hierarchy<br>analysis</div>
+      <div class="mk-body" style="line-height:${d?'1.2':'1.75'}">Primary heading is not dominant. Secondary content competes for attention. Consider increasing weight or reducing surrounding element scale.</div>
+      <div class="mk-div" style="margin-top:3px"></div>
+      <div style="display:flex;justify-content:space-between;width:100%;margin-top:3px">
+        <div style="font-size:.48rem;color:rgba(255,255,255,.28)">Impact: Medium</div>
+        <div style="font-size:.48rem;color:#F5741D;font-weight:700">View fix →</div>
+      </div>
+    </div>`
+  },
+
+  /* 9 — HARD: Muted text opacity too high */
+  { cat:'HIERARCHY', diff:'hard', dlbl:'Hard',
+    clue:'Compare how secondary text relates to the primary text.',
+    drift:'<strong>Opacity drift</strong> — secondary text jumped from 0.35 to 0.65. It now competes with primary content, flattening the entire hierarchy.',
+    render: d => `<div class="mk" style="gap:8px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-row" style="gap:7px;margin-bottom:2px">
+        <div class="mk-avatar">J</div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <div style="font-size:.6rem;font-weight:700;color:#fff">James Cole</div>
+          <div style="font-size:.48rem;color:rgba(255,255,255,${d?'.65':'.32'});font-weight:400">Designer · joined 3 days ago</div>
+        </div>
+      </div>
+      <div class="mk-div"></div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">
+        <div class="mk-toggle-row"><div style="font-size:.54rem;color:#fff;font-weight:500">Email notifications</div><div class="mk-toggle"><div class="mk-toggle-knob"></div></div></div>
+        <div class="mk-toggle-row"><div style="font-size:.54rem;color:rgba(255,255,255,${d?'.65':'.32'});font-weight:400">Weekly digest</div><div class="mk-toggle off"><div class="mk-toggle-knob"></div></div></div>
+        <div class="mk-toggle-row" style="border:none"><div style="font-size:.54rem;color:rgba(255,255,255,${d?'.65':'.32'});font-weight:400">Auto-scan on upload</div><div class="mk-toggle"><div class="mk-toggle-knob"></div></div></div>
+      </div>
+    </div>`
+  },
+
+  /* 10 — HARD: Radius inconsistency across finding cards (FIXED — compact fc class) */
+  { cat:'CONSISTENCY', diff:'hard', dlbl:'Hard',
+    clue:'Inspect the corner radius of each finding card.',
+    drift:'<strong>Radius inconsistency</strong> — the middle card uses 4px while others use 8px. One rogue token breaks the entire spatial language.',
+    render: d => `<div class="mk" style="gap:6px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-kicker">3 findings · last scan</div>
+      <div style="display:flex;flex-direction:column;gap:4px;width:100%">
+        <div class="fc" style="border-radius:8px">
+          <div class="fc-txt"><div class="fc-t">Spacing drift</div><div class="fc-s">4 components</div></div>
+          <div class="mk-badge mk-badge-or">Medium</div>
+        </div>
+        <div class="fc" style="border-radius:${d?'4px':'8px'}">
+          <div class="fc-txt"><div class="fc-t">Contrast failure</div><div class="fc-s">2 components</div></div>
+          <div class="mk-badge mk-badge-rd">Critical</div>
+        </div>
+        <div class="fc" style="border-radius:8px">
+          <div class="fc-txt"><div class="fc-t">Radius inconsistency</div><div class="fc-s">1 component</div></div>
+          <div class="mk-badge mk-badge-gr">Low</div>
+        </div>
+      </div>
+    </div>`
+  },
+
+  /* 11 — HARD: Heading scale */
+  { cat:'TYPOGRAPHY', diff:'hard', dlbl:'Hard',
+    clue:'Compare the heading size relative to surrounding text.',
+    drift:'<strong>Heading scale drift</strong> — H1 shrank from 0.9rem to 0.7rem. It no longer dominates. Secondary text becomes the visual focus.',
+    render: d => `<div class="mk" style="gap:8px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-badge mk-badge-gr">✓ Scan complete</div>
+      <div class="mk-title" style="font-size:${d?'.7rem':'.9rem'}">Design score:<br>94 / 100</div>
+      <div class="mk-body">2 minor spacing issues found. No critical violations. Hierarchy and contrast pass all thresholds.</div>
+      <div class="mk-div" style="margin-top:2px"></div>
+      <div style="font-size:.46rem;color:rgba(255,255,255,.28);margin-top:3px;font-weight:400">Scanned 847ms · aidesignqa.com</div>
+    </div>`
+  },
+
+  /* 12 — HARD: CTA alignment */
+  { cat:'ALIGNMENT', diff:'hard', dlbl:'Hard',
+    clue:'Look at where the button sits relative to the content block.',
+    drift:'<strong>CTA alignment drift</strong> — button drifted to right-align while all content stays left. A tiny change that creates invisible visual friction.',
+    render: d => `<div class="mk" style="gap:9px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-kicker">New scan available</div>
+      <div class="mk-title" style="font-size:.84rem">7 issues found<br>in your last build</div>
+      <div class="mk-body">3 critical spacing violations and 4 hierarchy inconsistencies detected across main views.</div>
+      <div style="width:100%;display:flex;justify-content:${d?'flex-end':'flex-start'};margin-top:2px">
+        <div style="background:#F5741D;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:.55rem;font-weight:700;padding:6px 14px;border-radius:100px;cursor:default">View report →</div>
+      </div>
+    </div>`
+  },
+
+  /* 13 — VERY HARD: Icon border-radius */
+  { cat:'CONSISTENCY', diff:'xhard', dlbl:'Very Hard',
+    clue:'Inspect each icon container shape carefully.',
+    drift:'<strong>Icon container inconsistency</strong> — one icon uses a circle (50%) while others use a rounded square (5px). Systematically wrong but nearly invisible.',
+    render: d => `<div class="mk" style="gap:8px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-kicker">What AIDQA checks</div>
+      <div style="display:flex;flex-direction:column;gap:6px;width:100%">
+        <div class="mk-row">
+          <div style="width:19px;height:19px;border-radius:5px;background:rgba(245,116,29,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="9" height="9" fill="none" stroke="#F5741D" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 9 9"><rect x="1" y="1" width="7" height="7" rx="1"/></svg>
+          </div>
+          <div style="font-size:.55rem;color:rgba(255,255,255,.65);font-weight:400">Layout & spacing</div>
+        </div>
+        <div class="mk-row">
+          <div style="width:19px;height:19px;border-radius:${d?'50%':'5px'};background:rgba(245,116,29,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="9" height="9" fill="none" stroke="#F5741D" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 9 9"><polyline points="1,4.5 3.5,7 8,2"/></svg>
+          </div>
+          <div style="font-size:.55rem;color:rgba(255,255,255,.65);font-weight:400">Hierarchy & consistency</div>
+        </div>
+        <div class="mk-row">
+          <div style="width:19px;height:19px;border-radius:5px;background:rgba(245,116,29,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="9" height="9" fill="none" stroke="#F5741D" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3"/></svg>
+          </div>
+          <div style="font-size:.55rem;color:rgba(255,255,255,.65);font-weight:400">Accessibility risk</div>
+        </div>
+      </div>
+    </div>`
+  },
+
+  /* 14 — VERY HARD: Card border prominence */
+  { cat:'CONTRAST', diff:'xhard', dlbl:'Very Hard',
+    clue:'Feel the visual weight of the card borders.',
+    drift:'<strong>Border prominence drift</strong> — card borders jumped from rgba(255,255,255,0.07) to 0.22. Cards now compete with content. Structure overpowers substance.',
+    render: d => {
+      const op = d ? '.22' : '.07';
+      return `<div class="mk" style="gap:6px">
+        <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+        <div class="mk-kicker">Scan report · aidqa.com</div>
+        <div style="display:flex;flex-direction:column;gap:4px;width:100%">
+          <div class="fc" style="border:1px solid rgba(255,255,255,${op});border-radius:8px">
+            <div class="fc-txt"><div class="fc-t">Spacing rhythm</div><div class="fc-s">3 sections</div></div>
+            <div class="mk-badge mk-badge-or">Medium</div>
+          </div>
+          <div class="fc" style="border:1px solid rgba(255,255,255,${op});border-radius:8px">
+            <div class="fc-txt"><div class="fc-t">Touch target size</div><div class="fc-s">2 buttons</div></div>
+            <div class="mk-badge mk-badge-rd">Critical</div>
+          </div>
+          <div class="fc" style="border:1px solid rgba(255,255,255,${op});border-radius:8px">
+            <div class="fc-txt"><div class="fc-t">Component variance</div><div class="fc-s">1 component</div></div>
+            <div class="mk-badge mk-badge-gr">Low</div>
+          </div>
+        </div>
+      </div>`;
+    }
+  },
+
+  /* 15 — VERY HARD: Padding compression in stat card */
+  { cat:'SPACING', diff:'xhard', dlbl:'Very Hard',
+    clue:'Look at the internal padding of each stat card.',
+    drift:'<strong>Internal padding drift</strong> — one stat card compressed from 8px to 3px padding. It feels squeezed in a group that breathes. Nearly invisible.',
+    render: d => `<div class="mk" style="gap:9px">
+      <div class="mk-hdr"><div class="mk-logo">AID<span class="mk-logo-o">QA</span></div><div class="mk-nav"><div class="mk-nd"></div><div class="mk-nd"></div></div></div>
+      <div class="mk-kicker">Scan summary</div>
+      <div class="mk-stat-row">
+        <div class="mk-stat" style="padding:8px 6px"><div class="mk-sv" style="font-size:1rem;font-weight:800">12</div><div class="mk-sl">Issues</div></div>
+        <div class="mk-stat" style="padding:${d?'3px 6px':'8px 6px'}"><div class="mk-sv" style="font-size:1rem;font-weight:800">3</div><div class="mk-sl">Critical</div></div>
+        <div class="mk-stat" style="padding:8px 6px"><div class="mk-sv" style="font-size:1rem;font-weight:800">94%</div><div class="mk-sl">Score</div></div>
+      </div>
+      <div class="mk-body">4 components affected. Est. fix time: 12 min.</div>
+      <div class="mk-btn" style="margin-top:2px">View full report</div>
+    </div>`
+  }
+
+];
+
+// ═══ RESULT COPY — coffee/tea angle ════════════════════════════
+const RESULTS = [
+  { kicker:'Challenge complete',
+    h:'Design drift is a silent killer.',
+    msg:'0/10. While you played this round, AIDQA scanned 3 full products. No coffee needed — just a URL.' },
+  { kicker:'Challenge complete',
+    h:'1 catch. Infinite to go.',
+    msg:'1/10. The ones you missed are shipping right now in AI-generated UIs. AIDQA catches all of them — while you finish your coffee.' },
+  { kicker:'Challenge complete',
+    h:'2 down. Drift wins.',
+    msg:'2/10. Manual design review takes hours. AIDQA does it in under 60 seconds — enough time to brew a proper espresso.' },
+  { kicker:'Challenge complete',
+    h:'Getting there. Slowly.',
+    msg:'3/10. Three sharp eyes. Seven blind spots. AIDQA has no blind spots — and it doesn\'t need a second cup to stay focused.' },
+  { kicker:'Challenge complete',
+    h:'Halfway to sharp.',
+    msg:'4/10. You caught the obvious ones. The subtle drift — line-height, opacity, border weight — slips past everyone. Except AIDQA.' },
+  { kicker:'Challenge complete',
+    h:'50%. Good. Not enough.',
+    msg:'5/10. Flip a coin, get the same result. AIDQA goes 10/10 every time. Before you\'ve even opened your tea.' },
+  { kicker:'Challenge complete',
+    h:'You have the instinct.',
+    msg:'6/10. Strong eye. But you spent 60 seconds on 10 screens. AIDQA scans your entire product in that time — then sends you the fix list.' },
+  { kicker:'Challenge complete',
+    h:'Above average. Genuinely.',
+    msg:'7/10. You think like a designer. But even senior designers miss the 30% that AIDQA catches automatically. Let it cover your blind spot.' },
+  { kicker:'Challenge complete',
+    h:'Sharp. Impressively so.',
+    msg:'8/10. Two slipped through — the kind that compound into user-visible design debt. AIDQA flags them before the first build hits staging.' },
+  { kicker:'Challenge complete',
+    h:'One pixel from perfect.',
+    msg:'9/10. One drift escaped. It always does — even for the best eyes. That\'s not failure. That\'s why AIDQA exists. Grab a coffee. Let it run.' },
+  { kicker:'🎉 Perfect score',
+    h:'You see what others ship.',
+    msg:'10/10. Flawless. You have the eye. Now imagine having it on every screen, every build, every time — without lifting a finger. That\'s AIDQA.' },
+];
+
+// ═══ CONFETTI ══════════════════════════════════════════════════
+const cnvEl = document.getElementById('cnv');
+const ctx2d = cnvEl.getContext('2d');
+let confetti = [], cRaf = null;
+
+function fireConfetti() {
+  cnvEl.width = window.innerWidth;
+  cnvEl.height = window.innerHeight;
+  confetti = [];
+  const cols = ['#F5741D','#FFFFFF','#3ECFA0','#F5C138','#8BAFDC','#F04060','#A78BFA'];
+  for (let i = 0; i < 240; i++) {
+    confetti.push({
+      x: Math.random() * cnvEl.width,
+      y: -20 - Math.random() * cnvEl.height * .5,
+      w: 4 + Math.random() * 9, h: 3 + Math.random() * 6,
+      col: cols[~~(Math.random() * cols.length)],
+      r: Math.random() * Math.PI * 2,
+      vx: (Math.random() - .5) * 3.2,
+      vy: 2.2 + Math.random() * 4,
+      vr: (Math.random() - .5) * .16,
+      op: 1,
+    });
+  }
+  if (cRaf) cancelAnimationFrame(cRaf);
+  drawC(0);
+}
+
+function drawC(age) {
+  ctx2d.clearRect(0, 0, cnvEl.width, cnvEl.height);
+  let alive = false;
+  for (const p of confetti) {
+    p.x += p.vx + Math.sin(age * .04 + p.r) * .5;
+    p.y += p.vy;
+    p.r += p.vr;
+    if (age > 90) p.op = Math.max(0, p.op - .014);
+    ctx2d.save();
+    ctx2d.globalAlpha = p.op;
+    ctx2d.translate(p.x, p.y);
+    ctx2d.rotate(p.r);
+    ctx2d.fillStyle = p.col;
+    ctx2d.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    ctx2d.restore();
+    if (p.y < cnvEl.height + 40 && p.op > 0) alive = true;
+  }
+  if (alive) cRaf = requestAnimationFrame(() => drawC(age + 1));
+  else ctx2d.clearRect(0, 0, cnvEl.width, cnvEl.height);
+}
+
+// ═══ UTILS ════════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = ~~(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ═══ GAME STATE ════════════════════════════════════════════════
+let rounds = [], cur = 0, score = 0, answered = false, driftSide = '';
+let rafId = null, t0 = 0;
+const DUR = 10000;
+const $ = id => document.getElementById(id);
+
+function showScr(id) {
+  document.querySelectorAll('.scr').forEach(s => s.classList.remove('on'));
+  $('game').style.display = 'none';
+  if (id === 'game') $('game').style.display = 'flex';
+  else $(id).classList.add('on');
+}
+
+function buildPips() {
+  const c = $('pips'); c.innerHTML = '';
+  rounds.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'g-pip' + (i < cur ? ' done' : i === cur ? ' cur' : '');
+    c.appendChild(d);
+  });
+}
+
+function startTimer() {
+  t0 = performance.now();
+  const fill = $('tfill');
+  (function tick(now) {
+    if (answered) return;
+    const p = Math.max(0, 1 - (now - t0) / DUR);
+    fill.style.width = (p * 100) + '%';
+    fill.classList.toggle('hot', p < .3);
+    if (p <= 0) { timeout(); return; }
+    rafId = requestAnimationFrame(tick);
+  })(t0);
+}
+
+function stopTimer() { cancelAnimationFrame(rafId); }
+
+function loadRound() {
+  answered = false;
+  driftSide = Math.random() < .5 ? 'a' : 'b';
+  const rd = rounds[cur];
+
+  const dm = {easy:'d-easy',med:'d-med',hard:'d-hard',xhard:'d-xhard'};
+  $('diff-chip').className = 'g-diff ' + dm[rd.diff];
+  $('diff-chip').textContent = rd.dlbl;
+  $('cat-chip').textContent = rd.cat;
+  $('rn-lbl').textContent = `${cur + 1} / 10`;
+  $('clue').textContent = rd.clue;
+
+  $('ma').innerHTML = rd.render(driftSide === 'a');
+  $('mb').innerHTML = rd.render(driftSide === 'b');
+
+  ['a','b'].forEach(s => {
+    $('f'+s).className = 'frame';
+    const b = $('b'+s);
+    b.className = 'fbadge';
+    b.textContent = '';
+  });
+
+  $('gres').classList.remove('on');
+  $('tfill').style.width = '100%';
+  $('tfill').classList.remove('hot');
+  $('btn-nxt').textContent = cur < 9 ? 'Next →' : 'See results →';
+
+  buildPips();
+  startTimer();
+}
+
+function pick(side) {
+  if (answered) return;
+  answered = true; stopTimer();
+  const correct = side === driftSide;
+  if (correct) { score++; updateScore(); }
+  reveal(correct, side);
+}
+
+function timeout() {
+  if (answered) return;
+  answered = true;
+  reveal(false, null, true);
+}
+
+function reveal(correct, picked, timedOut) {
+  const ds = driftSide, cs = ds==='a'?'b':'a';
+  $('f'+ds).classList.add('locked','is-drift');
+  $('f'+cs).classList.add('locked','is-clean');
+  const bd=$('b'+ds); bd.className='fbadge fbadge-d on'; bd.textContent='✗ Drift';
+  const bc=$('b'+cs); bc.className='fbadge fbadge-c on'; bc.textContent='✓ Clean';
+  if (picked && picked !== ds) $('f'+picked).classList.add('shook');
+
+  const t = $('restxt'), rd = rounds[cur];
+  if (timedOut) {
+    t.className='g-res-txt err';
+    t.innerHTML=`<strong>Time's up.</strong> ${rd.drift}`;
+  } else if (correct) {
+    t.className='g-res-txt ok';
+    t.innerHTML=`<strong>Caught it!</strong> ${rd.drift}`;
+  } else {
+    t.className='g-res-txt err';
+    t.innerHTML=`<strong>Missed.</strong> ${rd.drift}`;
+  }
+  $('gres').classList.add('on');
+}
+
+function updateScore() {
+  $('pts').textContent = score + ' / 10';
+  $('pts').classList.remove('pop');
+  void $('pts').offsetWidth;
+  $('pts').classList.add('pop');
+}
+
+function nextRound() {
+  cur++;
+  if (cur >= 10) endGame();
+  else loadRound();
+}
+
+function endGame() {
+  const r = RESULTS[score];
+  $('r-kicker').textContent = r.kicker;
+  $('r-n').textContent = score;
+  $('r-h').textContent = r.h;
+  $('r-msg').textContent = r.msg;
+
+  const ctaEl = $('r-cta');
+  ctaEl.innerHTML = '';
+
+  if (score === 10) {
+    ctaEl.innerHTML = `
+      <div class="r-cta-prize">🎁 Claim your prize — Stand #42 · Hall B</div>
+      <div class="r-cta-note">Show this screen to our team</div>`;
+    setTimeout(fireConfetti, 350);
+  } else {
+    ctaEl.innerHTML = `
+      <div class="r-cta-soft">Try AIDQA free · aidesignqa.com</div>
+      <div class="r-cta-note">Find us at Stand #42 · Hall B</div>`;
+  }
+
+  showScr('s-res');
+}
+
+function startGame() {
+  score = 0; cur = 0;
+  rounds = shuffle(POOL).slice(0, 10);
+  $('pts').textContent = '0 / 10';
+  showScr('game');
+  loadRound();
+}
+
+$('btn-go').addEventListener('click', startGame);
+$('btn-replay').addEventListener('click', startGame);
+</script>
+</body>
+</html>
