@@ -117,6 +117,7 @@ async function processScan(
         await uploadFile(domPath, domJson, 'application/json')
       } catch (domErr) {
         console.error(`[${scanId}] DOM snapshot failed:`, domErr)
+        await supabase.from('scans').update({ ai_error: `DOM: ${String(domErr)}` }).eq('id', scanId)
       }
 
       await supabase.from('scans').update({

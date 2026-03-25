@@ -2,10 +2,10 @@ import type { DomElement, Finding } from '../_lib/types.ts'
 
 // --- Helpers ---
 
-function parseRgb(cssColor: string): [number, number, number] | null {
-  const m = cssColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+function parseRgb(cssColor: string): [number, number, number, number] | null {
+  const m = cssColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/)
   if (!m) return null
-  return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])]
+  return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3]), m[4] !== undefined ? parseFloat(m[4]) : 1]
 }
 
 function relativeLuminance(r: number, g: number, b: number): number {
@@ -16,9 +16,9 @@ function relativeLuminance(r: number, g: number, b: number): number {
   return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
 }
 
-function contrastRatio(fg: [number, number, number], bg: [number, number, number]): number {
-  const l1 = relativeLuminance(...fg)
-  const l2 = relativeLuminance(...bg)
+function contrastRatio(fg: [number, number, number, number], bg: [number, number, number, number]): number {
+  const l1 = relativeLuminance(fg[0], fg[1], fg[2])
+  const l2 = relativeLuminance(bg[0], bg[1], bg[2])
   const lighter = Math.max(l1, l2)
   const darker = Math.min(l1, l2)
   return (lighter + 0.05) / (darker + 0.05)
@@ -54,7 +54,7 @@ function checkContrast(elements: DomElement[]): Finding[] {
 
     const fg = parseRgb(el.computedStyles.color)
     const bg = parseRgb(el.computedStyles.backgroundColor)
-    if (!fg || !bg) continue
+    if (!fg || !bg || bg[3] < 0.1) continue  // skip transparent backgrounds
 
     const ratio = contrastRatio(fg, bg)
     const fontSize = parsePx(el.computedStyles.fontSize)
@@ -133,7 +133,7 @@ function checkSpacingRhythm(elements: DomElement[]): Finding[] {
     spacingValues.push(...vals)
   }
 
-  if (spacingValues.length < 5) return []
+  if (spacingValues.length < 3) return []
 
   const dominant = mode(spacingValues)
   const outliers = elements.filter(el => {
@@ -268,7 +268,7 @@ function checkSpacingTokens(elements: DomElement[]): Finding[] {
     }
   }
 
-  if (values.length < 10) return []
+  if (values.length < 6) return []
 
   const nonMultiples = values.filter(v => v % 4 !== 0)
   const ratio = nonMultiples.length / values.length
@@ -306,7 +306,7 @@ function checkTypographyScale(elements: DomElement[]): Finding[] {
     if (size > 0) sizes.add(size)
   }
 
-  if (sizes.size > 6) {
+  if (sizes.size > 4) {
     return [{
       category: 'design_system',
       severity: 'low',
@@ -315,12 +315,12 @@ function checkTypographyScale(elements: DomElement[]): Finding[] {
       evidence: {
         type: 'metric',
         measured: `${sizes.size} distinct font sizes`,
-        threshold: '6 or fewer for a clean type scale',
+        threshold: '4 or fewer for a clean type scale',
         element: `Sizes: ${[...sizes].sort((a, b) => a - b).slice(0, 8).join(', ')}px`,
       },
       why_it_matters: 'Too many font sizes signal an absence of a type system and create visual noise.',
-      repair_guidance: 'Consolidate to a type scale of 6 or fewer sizes (e.g. 12, 14, 16, 20, 24, 32px).',
-      ai_fix_instruction: 'Define a type scale with 6 sizes maximum and replace all font-size declarations with tokens from that scale.',
+      repair_guidance: 'Consolidate to a type scale of 4 or fewer sizes (e.g. 14, 16, 24, 32px).',
+      ai_fix_instruction: 'Define a type scale with 4 sizes maximum and replace all font-size declarations with tokens from that scale.',
       metric_value: `${sizes.size} sizes`,
       score_impact: -3,
       source: 'deterministic',

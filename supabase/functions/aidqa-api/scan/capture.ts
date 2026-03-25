@@ -50,10 +50,9 @@ export async function captureDomSnapshot(url: string): Promise<DomElement[]> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      url,
       context: { url },
       code: `
-        module.exports = async ({ page, context }) => {
+        export default async ({ page, context }) => {
           await page.setViewport({ width: 1440, height: 900 });
           await page.goto(context.url, { waitUntil: 'networkidle2', timeout: 15000 });
 
@@ -113,6 +112,10 @@ export async function captureDomSnapshot(url: string): Promise<DomElement[]> {
 
   clearTimeout(timeout)
 
-  if (!response.ok) throw new Error(`Browserless DOM snapshot failed: ${response.status}`)
-  return response.json()
+  if (!response.ok) {
+    const body = await response.text().catch(() => '')
+    throw new Error(`Browserless DOM snapshot failed: ${response.status} — ${body}`)
+  }
+  const raw = await response.json()
+  return Array.isArray(raw) ? raw : (raw?.data ?? raw?.result ?? [])
 }

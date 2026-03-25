@@ -7,11 +7,15 @@ export function calculateScore(findings: Finding[]): { overall: number; category
   const categoryDeductions: Record<string, number> = {}
   const penalizedRules = new Set<string>()
 
-  for (const finding of findings.filter(f => f.source === 'deterministic')) {
+  for (const finding of findings) {
     const ruleKey = `${finding.category}:${finding.title}`
     if (penalizedRules.has(ruleKey)) continue
 
-    const deduction = WEIGHTS[finding.severity] ?? 0
+    // Deterministic findings: full weight. AI findings: only high/critical apply at 40% weight.
+    const baseWeight = WEIGHTS[finding.severity] ?? 0
+    const deduction = finding.source === 'deterministic'
+      ? baseWeight
+      : (finding.severity === 'critical' || finding.severity === 'high') ? Math.round(baseWeight * 0.4) : 0
     total -= deduction
     categoryDeductions[finding.category] = (categoryDeductions[finding.category] ?? 0) + deduction
     penalizedRules.add(ruleKey)
