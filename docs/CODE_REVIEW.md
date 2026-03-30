@@ -35,15 +35,15 @@ return parsed.findings ?? findings
 
 ---
 
-### Bug: Broken mobile touch target dedup guard — `deterministic.ts:660`
+### ~~Bug: Broken mobile touch target dedup guard — `deterministic.ts:660`~~ ✅ Fixed
 
-```ts
+~~```ts
 if (existingTitles.has('interactive element below 44×44px touch target')) return []
-```
+```~~
 
-The desktop check emits a count-prefixed title like `'3 interactive elements below 44×44px touch target'`. This guard string never matches — both desktop and mobile checks always fire and produce duplicate findings.
+~~The desktop check emits a count-prefixed title like `'3 interactive elements below 44×44px touch target'`. This guard string never matches — both desktop and mobile checks always fire and produce duplicate findings.~~
 
-**Fix:** Change the guard to check with `.some()` and a partial string match, or normalize the title format across both checks.
+~~**Fix:** Change the guard to check with `.some()` and a partial string match, or normalize the title format across both checks.~~
 
 ---
 
@@ -89,7 +89,7 @@ The app-layer guard validates the user-supplied URL, but Browserless may follow 
 
 ~~RLS policies and all handlers filter by `user_id`, but there is no database-level index on this column. Every query does a full table scan.~~
 
-~~**Fix:** Added migration `20260330000100_add_user_id_indexes.sql`.~~
+~~**Fix:** Added migration `20260330000100_add_user_id_indexes.sql`.~~ ⚠️ **Still needs `supabase db push` to apply to the live database.**
 
 ---
 
@@ -211,12 +211,12 @@ Migrations `20260215*` create `visual_jobs`, `visual_runs`, `monitors`, `design_
 | Priority | Issue | File |
 |---|---|---|
 | ~~Fix now~~ | ~~CORS wildcard~~ | ✅ `_lib/cors.ts` |
-| Fix now | Broken mobile touch target dedup | `deterministic.ts:660` |
+| ~~Fix now~~ | ~~Broken mobile touch target dedup~~ | ✅ `deterministic.ts` |
 | Fix now | AI output not validated | `_lib/gemini.ts:213` |
 | Fix now | Admin email in source | `_lib/supabaseServer.ts:31` |
 | ~~Soon~~ | ~~Dismiss returns 200 on no-op~~ | ✅ `handlers.ts` |
 | ~~Soon~~ | ~~Rate-limit logic duplicated~~ | ✅ `handlers.ts` |
-| ~~Soon~~ | ~~Missing `user_id` indexes~~ | ✅ migrations |
+| ~~Soon~~ | ~~Missing `user_id` indexes~~ | ✅ migration written — **run `supabase db push` to apply** |
 | ~~Soon~~ | ~~AI findings null `score_impact`~~ | ✅ `handlers.ts` |
 | ~~Soon~~ | ~~Polling swallows errors~~ | ✅ `ScanResult.tsx` |
 | Improve | Dead code in `capture.ts` | `capture.ts:8` |

@@ -657,7 +657,7 @@ export function checkMobileOverflow(elements375: DomElement[], elements1440: Dom
 
 export function checkMobileTouchTargets(elements375: DomElement[], existingTitles: Set<string>): Finding[] {
   // Same as desktop touch target check but only for new violations at mobile size
-  if (existingTitles.has('interactive element below 44×44px touch target')) return []
+  if ([...existingTitles].some(t => t.includes('interactive element') && t.includes('44×44px touch target'))) return []
 
   const INTERACTIVE_TAGS = new Set(['a', 'button', 'input', 'select', 'textarea'])
   const small = elements375.filter(el =>
