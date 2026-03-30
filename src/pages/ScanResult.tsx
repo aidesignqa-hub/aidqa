@@ -86,8 +86,19 @@ export default function ScanResult() {
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!scanId || !UUID_RE.test(scanId)) { navigate('/'); return }
 
+    let consecutiveFailures = 0
+
     const fetchScan = async () => {
-      const headers = await getAuthHeaders()
+      let headers: HeadersInit
+      try {
+        headers = await getAuthHeaders()
+      } catch {
+        if (pollRef.current) clearInterval(pollRef.current)
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+        navigate('/login')
+        return
+      }
+
       const res = await fetch(`${getApiBaseUrl()}/v1/scans/${scanId}`, { headers })
       if (res.status === 401) {
         if (pollRef.current) clearInterval(pollRef.current)
@@ -95,7 +106,14 @@ export default function ScanResult() {
         navigate('/login')
         return
       }
-      if (!res.ok) return
+      if (!res.ok) {
+        consecutiveFailures++
+        if (consecutiveFailures >= 4) {
+          setScan(prev => prev ? { ...prev, error_message: 'Connection problem. Retrying…' } : prev)
+        }
+        return
+      }
+      consecutiveFailures = 0
       const data: Scan = await res.json()
       setScan(data)
 

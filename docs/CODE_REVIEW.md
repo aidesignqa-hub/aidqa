@@ -2,6 +2,7 @@
 
 > Reviewed: 2026-03-30 by Code Reviewer agent
 > Scope: Full codebase — backend (Edge Functions), frontend (React/Vite), landing (Next.js), migrations
+> Last updated: 2026-03-30 — 6 issues fixed
 
 Overall the code quality is good. RLS is applied correctly, SSRF guard is present, service role stays on the backend, and the async `waitUntil` patterns are correct. The issues below are correctness gaps and hardening tasks rather than fundamental design problems.
 
@@ -9,15 +10,15 @@ Overall the code quality is good. RLS is applied correctly, SSRF guard is presen
 
 ## Fix Before Production Traffic Grows
 
-### BLOCKER: CORS wildcard — `_lib/cors.ts:2`
+### ~~BLOCKER: CORS wildcard — `_lib/cors.ts:2`~~ ✅ Fixed
 
-```ts
+~~```ts
 'Access-Control-Allow-Origin': '*'
-```
+```~~
 
-Any website can make authenticated requests to your Edge Function on behalf of a user whose browser holds a valid JWT. Scans contain screenshots and personal design data — this is a meaningful risk.
+~~Any website can make authenticated requests to your Edge Function on behalf of a user whose browser holds a valid JWT. Scans contain screenshots and personal design data — this is a meaningful risk.~~
 
-**Fix:** Inspect `req.headers.get('origin')` and echo it back only if it's in an allowlist of known domains (production domain + localhost dev URL).
+~~**Fix:** Inspect `req.headers.get('origin')` and echo it back only if it's in an allowlist of known domains (production domain + localhost dev URL).~~
 
 ---
 
@@ -68,54 +69,49 @@ The app-layer guard validates the user-supplied URL, but Browserless may follow 
 
 ## Fix in the Near Term
 
-### `handleDismissFinding` returns 200 on no-op — `handlers.ts:526`
+### ~~`handleDismissFinding` returns 200 on no-op — `handlers.ts:526`~~ ✅ Fixed
 
-Supabase `.update()` does not error when zero rows are matched. If a caller sends a finding ID that doesn't belong to them, RLS ensures nothing updates, but the server still returns `{ success: true }`. The frontend shows a success toast while nothing changed.
+~~Supabase `.update()` does not error when zero rows are matched. If a caller sends a finding ID that doesn't belong to them, RLS ensures nothing updates, but the server still returns `{ success: true }`. The frontend shows a success toast while nothing changed.~~
 
-**Fix:** Use `.select()` after the update to confirm at least one row was affected; return 404 if none.
-
----
-
-### Rate-limit logic duplicated — `handlers.ts:61` and `handlers.ts:481`
-
-The month-start calculation, count query, and threshold check are copy-pasted between `handleCreateScan` and `handleRescan`. If the threshold changes or a new plan tier is introduced, both places must be updated.
-
-**Fix:** Extract into a shared `checkRateLimit(userId: string): Promise<boolean>` function.
+~~**Fix:** Use `.select()` after the update to confirm at least one row was affected; return 404 if none.~~
 
 ---
 
-### No `user_id` index on `scans` or `findings` tables
+### ~~Rate-limit logic duplicated — `handlers.ts:61` and `handlers.ts:481`~~ ✅ Fixed
 
-RLS policies and all handlers filter by `user_id`, but there is no database-level index on this column. Every query does a full table scan.
+~~The month-start calculation, count query, and threshold check are copy-pasted between `handleCreateScan` and `handleRescan`. If the threshold changes or a new plan tier is introduced, both places must be updated.~~
 
-**Fix:**
-```sql
-CREATE INDEX scans_user_id_idx ON scans(user_id);
-CREATE INDEX findings_user_id_idx ON findings(user_id);
-```
-Add as a new timestamped migration.
+~~**Fix:** Extract into a shared `checkRateLimit(userId: string): Promise<boolean>` function.~~
 
 ---
 
-### AI findings have null `score_impact` — `handlers.ts` / `score.ts`
+### ~~No `user_id` index on `scans` or `findings` tables~~ ✅ Fixed
 
-The Gemini Vision path never sets `score_impact` on AI findings. The findings list is sorted by `score_impact` ascending, so Postgres places NULLs after all deterministic findings in arbitrary order — AI findings are not ordered by severity.
+~~RLS policies and all handlers filter by `user_id`, but there is no database-level index on this column. Every query does a full table scan.~~
 
-**Fix:** Set a `score_impact` value on AI findings based on their `severity` field using the same weights as the scoring logic, or handle NULLs explicitly in the sort.
+~~**Fix:** Added migration `20260330000100_add_user_id_indexes.sql`.~~
 
 ---
 
-### Polling error handling in `ScanResult.tsx:89`
+### ~~AI findings have null `score_impact` — `handlers.ts` / `score.ts`~~ ✅ Fixed
 
-```ts
+~~The Gemini Vision path never sets `score_impact` on AI findings. The findings list is sorted by `score_impact` ascending, so Postgres places NULLs after all deterministic findings in arbitrary order — AI findings are not ordered by severity.~~
+
+~~**Fix:** Set a `score_impact` value on AI findings based on their `severity` field using the same weights as the scoring logic, or handle NULLs explicitly in the sort.~~
+
+---
+
+### ~~Polling error handling in `ScanResult.tsx:89`~~ ✅ Fixed
+
+~~```ts
 if (!res.ok) return  // poll continues silently
-```
+```~~
 
-Network errors and 5xx responses silently keep the interval running until the 120-second timeout. Also, `getAuthHeaders()` is called on every tick — if the session expires mid-poll it throws and the exception is swallowed.
+~~Network errors and 5xx responses silently keep the interval running until the 120-second timeout. Also, `getAuthHeaders()` is called on every tick — if the session expires mid-poll it throws and the exception is swallowed.~~
 
-**Fix:**
-- Count consecutive failures; show a "slow connection" warning after 3–4 failed polls
-- Wrap `getAuthHeaders()` in a try/catch; clear the interval and show an error on auth failure
+~~**Fix:**~~
+~~- Count consecutive failures; show a "slow connection" warning after 3–4 failed polls~~
+~~- Wrap `getAuthHeaders()` in a try/catch; clear the interval and show an error on auth failure~~
 
 ---
 
@@ -214,15 +210,15 @@ Migrations `20260215*` create `visual_jobs`, `visual_runs`, `monitors`, `design_
 
 | Priority | Issue | File |
 |---|---|---|
-| Fix now | CORS wildcard | `_lib/cors.ts:2` |
+| ~~Fix now~~ | ~~CORS wildcard~~ | ✅ `_lib/cors.ts` |
 | Fix now | Broken mobile touch target dedup | `deterministic.ts:660` |
 | Fix now | AI output not validated | `_lib/gemini.ts:213` |
 | Fix now | Admin email in source | `_lib/supabaseServer.ts:31` |
-| Soon | Dismiss returns 200 on no-op | `handlers.ts:526` |
-| Soon | Rate-limit logic duplicated | `handlers.ts:61`, `handlers.ts:481` |
-| Soon | Missing `user_id` indexes | migrations |
-| Soon | AI findings null `score_impact` | `handlers.ts` / `score.ts` |
-| Soon | Polling swallows errors | `ScanResult.tsx:89` |
+| ~~Soon~~ | ~~Dismiss returns 200 on no-op~~ | ✅ `handlers.ts` |
+| ~~Soon~~ | ~~Rate-limit logic duplicated~~ | ✅ `handlers.ts` |
+| ~~Soon~~ | ~~Missing `user_id` indexes~~ | ✅ migrations |
+| ~~Soon~~ | ~~AI findings null `score_impact`~~ | ✅ `handlers.ts` |
+| ~~Soon~~ | ~~Polling swallows errors~~ | ✅ `ScanResult.tsx` |
 | Improve | Dead code in `capture.ts` | `capture.ts:8` |
 | Improve | `processScan` monolith | `handlers.ts:102` |
 | Improve | Sequential uploads in screenshot path | `handlers.ts` |

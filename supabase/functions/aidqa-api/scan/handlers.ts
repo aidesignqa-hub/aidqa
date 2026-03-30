@@ -11,6 +11,21 @@ import { embedText } from '../_lib/embedding.ts'
 import { retrieveRAGContext } from '../_lib/rag.ts'
 import type { Finding, DesignSystemConfig } from '../_lib/types.ts'
 
+// ─── Shared helpers ────────────────────────────────────────────────────────────
+
+async function isRateLimited(userId: string, userEmail: string | undefined): Promise<boolean> {
+  if (ADMIN_EMAILS.has(userEmail ?? '')) return false
+  const monthStart = new Date()
+  monthStart.setDate(1)
+  monthStart.setHours(0, 0, 0, 0)
+  const { count } = await supabase.from('scans')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'completed')
+    .gte('created_at', monthStart.toISOString())
+  return (count ?? 0) >= 7
+}
+
 // ─── POST /v1/scans ────────────────────────────────────────────────────────────
 
 export async function handleCreateScan(req: Request): Promise<Response> {
@@ -59,17 +74,7 @@ export async function handleCreateScan(req: Request): Promise<Response> {
   }
 
   // Rate limit: 7 completed scans per calendar month on free plan (admin accounts exempt)
-  if (!ADMIN_EMAILS.has(userEmail ?? '')) {
-    const rlMonthStart = new Date()
-    rlMonthStart.setDate(1)
-    rlMonthStart.setHours(0, 0, 0, 0)
-    const { count: scanCount } = await supabase.from('scans')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('status', 'completed')
-      .gte('created_at', rlMonthStart.toISOString())
-    if ((scanCount ?? 0) >= 7) return corsError('Rate limit: max 7 scans per month on free plan', 429)
-  }
+  if (await isRateLimited(userId, userEmail)) return corsError('Rate limit: max 7 scans per month on free plan', 429)
 
   // Insert scan row immediately, return scan_id
   const { data: scan, error: insertError } = await supabase
@@ -246,7 +251,7 @@ async function processScan(
           repair_guidance: f.repair_guidance,
           ai_fix_instruction: f.ai_fix_instruction,
           metric_value: f.metric_value ?? null,
-          score_impact: f.score_impact ?? null,
+          score_impact: f.score_impact ?? ({ critical: -20, high: -12, medium: -7, low: -3 }[f.severity] ?? null),
           source: f.source,
         }))
       ).select('id, title, why_it_matters')
@@ -485,17 +490,7 @@ export async function handleRescan(req: Request, scanId: string): Promise<Respon
   if (parent.input_type === 'screenshot') return corsError('Screenshot scans cannot be rescanned — submit a new URL scan', 400)
 
   // Rate limit check
-  if (!ADMIN_EMAILS.has(userEmail ?? '')) {
-    const rlMonthStart = new Date()
-    rlMonthStart.setDate(1)
-    rlMonthStart.setHours(0, 0, 0, 0)
-    const { count: scanCount } = await supabase.from('scans')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('status', 'completed')
-      .gte('created_at', rlMonthStart.toISOString())
-    if ((scanCount ?? 0) >= 7) return corsError('Rate limit: max 7 scans per month on free plan', 429)
-  }
+  if (await isRateLimited(userId, userEmail)) return corsError('Rate limit: max 7 scans per month on free plan', 429)
 
   const { data: newScan, error: insertErr } = await supabase
     .from('scans')
@@ -532,13 +527,15 @@ export async function handleDismissFinding(req: Request, findingId: string): Pro
   let userId: string
   try { userId = await getUserFromRequest(req) } catch (e) { return corsError(String(e), 401) }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('findings')
     .update({ dismissed: true, dismissed_at: new Date().toISOString() })
     .eq('id', findingId)
     .eq('user_id', userId)
+    .select('id')
 
   if (error) return corsError(error.message, 500)
+  if (!data || data.length === 0) return corsError('Finding not found', 404)
 
   return corsResponse({ success: true })
 }
