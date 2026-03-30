@@ -1,16 +1,17 @@
 // @deno-types="https://deno.land/x/imagescript@1.2.15/mod.d.ts"
 import { Image } from 'https://deno.land/x/imagescript@1.2.15/mod.ts'
 
-export async function normalizeImage(input: Uint8Array): Promise<Uint8Array> {
+export async function normalizeImage(input: Uint8Array, targetWidth = 1440): Promise<Uint8Array> {
   const img = await Image.decode(input)
 
-  if (img.width !== 1440) {
-    const scale = 1440 / img.width
-    img.resize(1440, Math.round(img.height * scale))
+  if (img.width !== targetWidth) {
+    const scale = targetWidth / img.width
+    img.resize(targetWidth, Math.round(img.height * scale))
   }
 
-  if (img.height > 6000) {
-    img.crop(0, 0, 1440, 6000)
+  const maxHeight = Math.round(6000 * (targetWidth / 1440))
+  if (img.height > maxHeight) {
+    img.crop(0, 0, targetWidth, maxHeight)
   }
 
   return img.encode() as unknown as Uint8Array

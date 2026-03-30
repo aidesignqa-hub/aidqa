@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "start": "npx serve -s dist -l $PORT",
+    "start": "npx serve -s dist -l 8080",
     "lint": "eslint .",
     "test": "vitest run",
     "supabase:functions": "npx supabase functions serve aidqa-api --no-verify-jwt",
