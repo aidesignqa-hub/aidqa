@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Share2, Copy, FileDown, Twitter, Wand2 } from 'lucide-react'
+import { Share2, Copy, FileDown, Twitter, Wand2, RefreshCw, X } from 'lucide-react'
 import { toast } from 'sonner'
 import DesignPreview from '@/components/DesignPreview'
 import { getApiBaseUrl, getAuthHeaders } from '@/lib/apiBase'
@@ -23,6 +23,7 @@ type Scan = {
   ai_status: string
   error_message?: string
   created_at: string
+  parent_scan_id?: string
 }
 
 type Evidence =
@@ -72,10 +73,12 @@ export default function ScanResult() {
   const navigate = useNavigate()
   const [scan, setScan] = useState<Scan | null>(null)
   const [findings, setFindings] = useState<Finding[]>([])
+  const [parentFindings, setParentFindings] = useState<Finding[]>([])
   const [artifacts, setArtifacts] = useState<Artifacts>({})
   const [selectedFinding, setSelectedFinding] = useState<string | null>(null)
   const [expandedFix, setExpandedFix] = useState<string | null>(null)
   const [showOverlay, setShowOverlay] = useState(true)
+  const [rescanLoading, setRescanLoading] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -88,6 +91,7 @@ export default function ScanResult() {
       const res = await fetch(`${getApiBaseUrl()}/v1/scans/${scanId}`, { headers })
       if (res.status === 401) {
         if (pollRef.current) clearInterval(pollRef.current)
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
         navigate('/login')
         return
       }
@@ -112,6 +116,15 @@ export default function ScanResult() {
             const ad = await artifactsRes.json()
             setArtifacts(ad)
           }
+
+          // Fetch parent findings for delta view
+          if (data.parent_scan_id) {
+            const parentRes = await fetch(`${getApiBaseUrl()}/v1/scans/${data.parent_scan_id}/findings`, { headers })
+            if (parentRes.ok) {
+              const pd = await parentRes.json()
+              setParentFindings(pd.findings ?? [])
+            }
+          }
         }
       }
     }
@@ -134,6 +147,41 @@ export default function ScanResult() {
 
   const [showPreview, setShowPreview] = useState(false)
 
+  const handleRescan = async () => {
+    if (!scanId) return
+    setRescanLoading(true)
+    try {
+      const headers = await getAuthHeaders()
+      const res = await fetch(`${getApiBaseUrl()}/v1/scans/${scanId}/rescan`, {
+        method: 'POST',
+        headers,
+      })
+      if (!res.ok) throw new Error('Rescan failed')
+      const { scan_id } = await res.json()
+      navigate(`/scans/${scan_id}`)
+    } catch {
+      toast.error('Could not start rescan. Please try again.')
+    } finally {
+      setRescanLoading(false)
+    }
+  }
+
+  const handleDismiss = async (findingId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      const headers = await getAuthHeaders()
+      const res = await fetch(`${getApiBaseUrl()}/v1/findings/${findingId}/dismiss`, {
+        method: 'POST',
+        headers,
+      })
+      if (!res.ok) throw new Error('Dismiss failed')
+      setFindings(prev => prev.filter(f => f.id !== findingId))
+      toast.success('Finding marked as intentional')
+    } catch {
+      toast.error('Could not dismiss finding.')
+    }
+  }
+
   const handleCopyLink = async () => {
     await navigator.clipboard.writeText(window.location.href)
     toast.success('Link copied to clipboard')
@@ -145,6 +193,14 @@ export default function ScanResult() {
     const url = encodeURIComponent(window.location.href)
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
   }
+
+  // Delta calculations
+  const parentTitles = new Set(parentFindings.map(f => f.title))
+  const currentTitles = new Set(findings.map(f => f.title))
+  const resolvedFindings = parentFindings.filter(f => !currentTitles.has(f.title))
+  const newFindings = findings.filter(f => !parentTitles.has(f.title))
+  const unchangedCount = findings.filter(f => parentTitles.has(f.title)).length
+  const hasDelta = scan?.parent_scan_id && parentFindings.length > 0
 
   const isLoading = !scan || scan.status === 'pending' || scan.status === 'processing'
   const imageUrl = showOverlay ? artifacts.overlay_path : artifacts.normalized_path
@@ -175,24 +231,37 @@ export default function ScanResult() {
           </div>
           <div className="flex items-center gap-2 no-print">
             {scan?.status === 'completed' && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Share2 className="w-4 h-4 mr-1" /> Share
+              <>
+                {scan.input_type !== 'screenshot' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRescan}
+                    disabled={rescanLoading}
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-1 ${rescanLoading ? 'animate-spin' : ''}`} />
+                    Scan again
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => window.print()}>
-                    <FileDown className="w-4 h-4 mr-2" /> Download PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleCopyLink}>
-                    <Copy className="w-4 h-4 mr-2" /> Copy link
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleShareX}>
-                    <Twitter className="w-4 h-4 mr-2" /> Share on X
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Share2 className="w-4 h-4 mr-1" /> Share
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => window.print()}>
+                      <FileDown className="w-4 h-4 mr-2" /> Download PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleCopyLink}>
+                      <Copy className="w-4 h-4 mr-2" /> Copy link
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleShareX}>
+                      <Twitter className="w-4 h-4 mr-2" /> Share on X
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             )}
             <Button variant="outline" size="sm" onClick={() => navigate('/history')}>
               History
@@ -296,12 +365,27 @@ export default function ScanResult() {
                 </Button>
               )}
 
+              {/* Delta summary */}
+              {hasDelta && (
+                <div className="flex items-center gap-3 text-xs px-3 py-2 bg-muted rounded-lg">
+                  {resolvedFindings.length > 0 && (
+                    <span className="text-green-600 font-medium">{resolvedFindings.length} resolved</span>
+                  )}
+                  {newFindings.length > 0 && (
+                    <span className="text-orange-600 font-medium">{newFindings.length} new</span>
+                  )}
+                  {unchangedCount > 0 && (
+                    <span className="text-muted-foreground">{unchangedCount} unchanged</span>
+                  )}
+                </div>
+              )}
+
               {/* Findings */}
               <div className="space-y-3">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   {findings.length} finding{findings.length !== 1 ? 's' : ''}
                 </h2>
-                {findings.length === 0 && (
+                {findings.length === 0 && resolvedFindings.length === 0 && (
                   <Card>
                     <CardContent className="py-6 text-center text-sm text-muted-foreground">
                       No issues found — looks clean!
@@ -327,6 +411,13 @@ export default function ScanResult() {
                           </div>
                           <CardTitle className="text-sm font-semibold leading-snug">{f.title}</CardTitle>
                         </div>
+                        <button
+                          title="Mark as intentional"
+                          className="shrink-0 ml-1 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          onClick={(e) => handleDismiss(f.id, e)}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-3 space-y-2">
@@ -371,6 +462,32 @@ export default function ScanResult() {
                     </CardContent>
                   </Card>
                 ))}
+
+                {/* Resolved findings (shown at bottom with strikethrough) */}
+                {hasDelta && resolvedFindings.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-green-600 uppercase tracking-wide">
+                      {resolvedFindings.length} resolved
+                    </h3>
+                    {resolvedFindings.map(f => (
+                      <Card key={f.id} className="opacity-50">
+                        <CardHeader className="pb-2 pt-3 px-4">
+                          <div className="flex items-start gap-2">
+                            <span className="mt-1 w-2 h-2 rounded-full shrink-0 bg-green-500" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                <Badge variant="outline" className="text-xs capitalize">{f.category.replace('_', ' ')}</Badge>
+                              </div>
+                              <CardTitle className="text-sm font-semibold leading-snug line-through text-muted-foreground">
+                                {f.title}
+                              </CardTitle>
+                            </div>
+                          </div>
+                        </CardHeader>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
 
             </div>

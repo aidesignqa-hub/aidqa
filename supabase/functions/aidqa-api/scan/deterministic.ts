@@ -1,4 +1,4 @@
-import type { DomElement, Finding } from '../_lib/types.ts'
+import type { DomElement, Finding, AxeViolation, DesignSystemConfig } from '../_lib/types.ts'
 
 // --- Helpers ---
 
@@ -43,10 +43,25 @@ function mode(values: number[]): number {
 
 // --- Rules ---
 
-function checkContrast(elements: DomElement[]): Finding[] {
+function hexToRgb(hex: string): [number, number, number] | null {
+  const m = hex.replace('#', '').match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
+  if (!m) return null
+  return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
+}
+
+function checkContrast(elements: DomElement[], config?: DesignSystemConfig): Finding[] {
   const textTags = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'a', 'label', 'li', 'td', 'th', 'button'])
   const findings: Finding[] = []
   const seen = new Set<string>()
+
+  // Build safe color set from design system config — suppress false positives for brand colors
+  const safeBrandColors = new Set<string>()
+  if (config?.colors?.length) {
+    for (const hex of config.colors) {
+      const rgb = hexToRgb(hex)
+      if (rgb) safeBrandColors.add(`rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`)
+    }
+  }
 
   for (const el of elements) {
     if (!textTags.has(el.tag)) continue
@@ -55,6 +70,9 @@ function checkContrast(elements: DomElement[]): Finding[] {
     const fg = parseRgb(el.computedStyles.color)
     const bg = parseRgb(el.computedStyles.backgroundColor)
     if (!fg || !bg || bg[3] < 0.1) continue  // skip transparent backgrounds
+
+    // If this color pair matches brand colors in design system, skip
+    if (safeBrandColors.has(el.computedStyles.color) && safeBrandColors.has(el.computedStyles.backgroundColor)) continue
 
     const ratio = contrastRatio(fg, bg)
     const fontSize = parsePx(el.computedStyles.fontSize)
@@ -259,7 +277,7 @@ function checkHeadingScale(elements: DomElement[]): Finding[] {
   return []
 }
 
-function checkSpacingTokens(elements: DomElement[]): Finding[] {
+function checkSpacingTokens(elements: DomElement[], config?: DesignSystemConfig): Finding[] {
   const values: number[] = []
 
   for (const el of elements) {
@@ -272,25 +290,33 @@ function checkSpacingTokens(elements: DomElement[]): Finding[] {
 
   if (values.length < 6) return []
 
-  const nonMultiples = values.filter(v => v % 4 !== 0)
+  // If user provided explicit spacing tokens, validate against those instead of generic 4px grid
+  const isValidSpacing = config?.spacing?.length
+    ? (v: number) => config.spacing.some(s => Math.abs(v - s) <= 1)
+    : (v: number) => v % 4 === 0
+
+  const nonMultiples = values.filter(v => !isValidSpacing(v))
   const ratio = nonMultiples.length / values.length
+  const thresholdLabel = config?.spacing?.length
+    ? `design system tokens: ${config.spacing.slice(0, 6).join(', ')}px`
+    : 'multiples of 4px'
 
   if (ratio > 0.3) {
     const offenders = [...new Set(nonMultiples)].slice(0, 5)
     return [{
       category: 'design_system',
       severity: 'medium',
-      title: 'Spacing values not aligned to 4px grid',
+      title: 'Spacing values not aligned to design grid',
       evidence_type: 'metric',
       evidence: {
         type: 'metric',
         measured: `${Math.round(ratio * 100)}% of spacing values`,
-        threshold: 'All values should be multiples of 4px',
+        threshold: `All values should be ${thresholdLabel}`,
         element: `Offending values: ${offenders.join(', ')}px`,
       },
       why_it_matters: 'Off-grid spacing creates subtle visual inconsistency and signals missing design tokens.',
-      repair_guidance: 'Round all spacing values to the nearest 4px increment.',
-      ai_fix_instruction: 'Replace all padding and margin values with multiples of 4px (4, 8, 12, 16, 20, 24, 32, 40, 48, 64...).',
+      repair_guidance: `Round all spacing values to the nearest values from your design grid (${thresholdLabel}).`,
+      ai_fix_instruction: `Replace all padding and margin values with values from your design grid: ${thresholdLabel}.`,
       metric_value: `${Math.round(ratio * 100)}% off-grid`,
       score_impact: -7,
       source: 'deterministic',
@@ -520,16 +546,202 @@ function checkFontWeightDiscipline(elements: DomElement[]): Finding[] {
   }]
 }
 
+// --- axe-core violation converter ---
+
+// Axe rules already covered by our deterministic checks — skip to avoid duplicates
+const AXE_SKIP_RULES = new Set(['color-contrast', 'target-size', 'target-size-2'])
+
+const AXE_IMPACT_SEVERITY: Record<string, string> = {
+  critical: 'critical',
+  serious: 'high',
+  moderate: 'medium',
+  minor: 'low',
+}
+
+const AXE_SCORE_IMPACT: Record<string, number> = {
+  critical: -20,
+  serious: -12,
+  moderate: -7,
+  minor: -3,
+}
+
+export function convertAxeToFindings(violations: AxeViolation[]): Finding[] {
+  const findings: Finding[] = []
+
+  for (const v of violations) {
+    if (AXE_SKIP_RULES.has(v.id)) continue
+
+    const severity = (AXE_IMPACT_SEVERITY[v.impact] ?? 'medium') as Finding['severity']
+    const nodesWithBbox = v.nodes.filter(n => n.boundingBox !== null)
+
+    let evidence: Finding['evidence']
+    let evidence_type: Finding['evidence_type']
+
+    if (nodesWithBbox.length === 1) {
+      evidence_type = 'bbox'
+      evidence = { type: 'bbox', ...nodesWithBbox[0].boundingBox! }
+    } else if (nodesWithBbox.length > 1) {
+      evidence_type = 'multi_bbox'
+      evidence = {
+        type: 'multi_bbox',
+        boxes: nodesWithBbox.slice(0, 8).map(n => n.boundingBox!),
+        description: `${v.nodes.length} element${v.nodes.length !== 1 ? 's' : ''} — ${v.nodes[0]?.failureSummary?.split('\n')[0] ?? v.help}`,
+      }
+    } else {
+      evidence_type = 'explanation'
+      evidence = { type: 'explanation' }
+    }
+
+    const firstNode = v.nodes[0]
+    findings.push({
+      category: 'accessibility',
+      severity,
+      title: v.help,
+      evidence_type,
+      evidence,
+      why_it_matters: v.description,
+      repair_guidance: firstNode?.failureSummary
+        ? firstNode.failureSummary.replace(/^Fix (any|all) of the following:\s*/i, '').split('\n')[0].trim()
+        : `See ${v.helpUrl}`,
+      ai_fix_instruction: `Fix WCAG violation "${v.id}": ${v.help}. Affected elements: ${v.nodes.slice(0, 3).map(n => n.html.slice(0, 80)).join(' | ')}. Reference: ${v.helpUrl}`,
+      score_impact: AXE_SCORE_IMPACT[v.impact] ?? -7,
+      source: 'deterministic',
+    })
+
+    if (findings.length >= 6) break
+  }
+
+  return findings
+}
+
+// --- Responsive / mobile rules ---
+
+export function checkMobileOverflow(elements375: DomElement[], elements1440: DomElement[]): Finding[] {
+  // Elements that are wider than the 375px mobile viewport
+  const FIXED_WIDTH_PATTERN = /^\d+px$/
+  const overflowing = elements1440.filter(el => {
+    if (el.boundingBox.width <= 375) return false
+    // Only flag elements with hard-coded pixel widths (likely not responsive)
+    const widthStyle = el.computedStyles['width'] ?? ''
+    if (!FIXED_WIDTH_PATTERN.test(widthStyle)) return false
+    // Skip very small elements and elements outside main content area
+    if (el.boundingBox.height < 20) return false
+    // Check if same element exists in 375 DOM with matching overflow
+    const match375 = elements375.find(m =>
+      m.tag === el.tag &&
+      Math.abs(m.boundingBox.y - el.boundingBox.y) < 50 &&
+      m.boundingBox.width > 360
+    )
+    return !!match375
+  })
+
+  if (overflowing.length === 0) return []
+
+  return [{
+    category: 'layout',
+    severity: 'high',
+    title: `${overflowing.length} element${overflowing.length > 1 ? 's' : ''} overflow on mobile viewport`,
+    evidence_type: 'multi_bbox',
+    evidence: {
+      type: 'multi_bbox',
+      boxes: overflowing.slice(0, 6).map(el => ({ ...el.boundingBox })),
+      description: `${overflowing.length} elements with fixed pixel widths exceed 375px mobile viewport`,
+    },
+    why_it_matters: 'Fixed-width elements cause horizontal scroll on mobile, breaking the layout entirely for most users.',
+    repair_guidance: 'Replace fixed px widths with max-width, %, or responsive Tailwind classes (w-full, max-w-*).',
+    ai_fix_instruction: 'Replace all fixed pixel width declarations on these elements with responsive equivalents: use max-width + width: 100%, percentage widths, or Tailwind responsive prefixes (sm:, md:).',
+    score_impact: -12,
+    source: 'deterministic',
+  }]
+}
+
+export function checkMobileTouchTargets(elements375: DomElement[], existingTitles: Set<string>): Finding[] {
+  // Same as desktop touch target check but only for new violations at mobile size
+  if (existingTitles.has('interactive element below 44×44px touch target')) return []
+
+  const INTERACTIVE_TAGS = new Set(['a', 'button', 'input', 'select', 'textarea'])
+  const small = elements375.filter(el =>
+    (INTERACTIVE_TAGS.has(el.tag) || !!el.role) &&
+    (el.boundingBox.width < 44 || el.boundingBox.height < 44) &&
+    el.boundingBox.width > 0 &&
+    el.boundingBox.height > 0
+  )
+
+  if (small.length === 0) return []
+
+  return [{
+    category: 'accessibility',
+    severity: 'high',
+    title: `${small.length} touch target${small.length > 1 ? 's' : ''} too small on mobile`,
+    evidence_type: small.length === 1 ? 'bbox' : 'multi_bbox',
+    evidence: small.length === 1
+      ? { type: 'bbox', ...small[0].boundingBox, label: small[0].tag }
+      : {
+          type: 'multi_bbox',
+          boxes: small.slice(0, 8).map(el => ({ ...el.boundingBox, label: el.tag })),
+          description: `${small.length} interactive elements below 44×44px at 375px viewport`,
+        },
+    why_it_matters: 'Touch targets that are adequate on desktop can shrink below the 44px minimum on mobile, making them impossible to tap accurately.',
+    repair_guidance: 'Add min-height: 44px and sufficient padding to all interactive elements. Check at 375px viewport.',
+    ai_fix_instruction: 'Add min-height: 44px; min-width: 44px to all interactive elements. Use padding to reach the minimum without affecting layout.',
+    score_impact: -12,
+    source: 'deterministic',
+  }]
+}
+
+export function checkMobileFontSize(elements375: DomElement[]): Finding[] {
+  const TEXT_TAGS = new Set(['p', 'span', 'a', 'li', 'td', 'label', 'button', 'dd'])
+  const small = elements375.filter(el => {
+    if (!TEXT_TAGS.has(el.tag)) return false
+    if (!el.textContent.trim() || el.textContent.length < 3) return false
+    const size = parsePx(el.computedStyles.fontSize)
+    return size > 0 && size < 14
+  })
+
+  if (small.length === 0) return []
+
+  const sizes = [...new Set(small.map(el => parsePx(el.computedStyles.fontSize)))]
+
+  return [{
+    category: 'accessibility',
+    severity: 'medium',
+    title: 'Text too small for mobile readability',
+    evidence_type: 'multi_bbox',
+    evidence: {
+      type: 'multi_bbox',
+      boxes: small.slice(0, 6).map(el => ({ ...el.boundingBox })),
+      description: `${small.length} text elements below 14px on mobile (sizes: ${sizes.join(', ')}px)`,
+    },
+    why_it_matters: 'Text below 14px is hard to read on mobile screens without zooming. Mobile readability requires a minimum of 14–16px.',
+    repair_guidance: 'Increase all visible text to at least 14px on mobile viewports. Use Tailwind responsive prefixes: text-sm (14px) as the minimum.',
+    ai_fix_instruction: `Set minimum font-size of 14px for mobile. Use responsive Tailwind classes: text-xs → text-sm on mobile (add sm: prefix). Sizes to fix: ${sizes.join(', ')}px.`,
+    score_impact: -7,
+    source: 'deterministic',
+  }]
+}
+
 // --- Main export ---
 
-export function runAllChecks(elements: DomElement[]): Finding[] {
+export function runAllChecks(
+  elements: DomElement[],
+  axeViolations?: AxeViolation[],
+  elements375?: DomElement[],
+  designSystemConfig?: DesignSystemConfig
+): Finding[] {
+  // Build set of safe colors from design system config (suppress false positive contrast failures)
+  const safeColorPairs = new Set<string>()
+  if (designSystemConfig?.colors?.length) {
+    // We don't suppress per-pair, but pass config into checkContrast indirectly via elements filter
+    // The actual suppression happens in checkContrast below
+  }
+
   const all: Finding[] = [
-    ...checkContrast(elements),
+    ...checkContrast(elements, designSystemConfig),
     ...checkTouchTargets(elements),
     ...checkSpacingRhythm(elements),
     ...checkButtonDrift(elements),
     ...checkHeadingScale(elements),
-    ...checkSpacingTokens(elements),
+    ...checkSpacingTokens(elements, designSystemConfig),
     ...checkTypographyScale(elements),
     ...checkLineHeight(elements),
     ...checkColorDiversity(elements),
@@ -538,7 +750,30 @@ export function runAllChecks(elements: DomElement[]): Finding[] {
     ...checkFontWeightDiscipline(elements),
   ]
 
+  // Add axe-core findings (Phase 2)
+  if (axeViolations && axeViolations.length > 0) {
+    all.push(...convertAxeToFindings(axeViolations))
+  }
+
+  // Add responsive/mobile findings (Phase 2)
+  if (elements375 && elements375.length > 0) {
+    const existingTitles = new Set(all.map(f => f.title.toLowerCase()))
+    all.push(...checkMobileOverflow(elements375, elements))
+    all.push(...checkMobileTouchTargets(elements375, existingTitles))
+    all.push(...checkMobileFontSize(elements375))
+  }
+
+  // Deduplicate by title prefix (first 40 chars)
+  const seen = new Set<string>()
+  const deduped: Finding[] = []
+  for (const f of all) {
+    const key = f.title.toLowerCase().slice(0, 40)
+    if (seen.has(key)) continue
+    seen.add(key)
+    deduped.push(f)
+  }
+
   // Sort by severity weight
   const weight: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 }
-  return all.sort((a, b) => (weight[b.severity] ?? 0) - (weight[a.severity] ?? 0))
+  return deduped.sort((a, b) => (weight[b.severity] ?? 0) - (weight[a.severity] ?? 0))
 }

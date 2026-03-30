@@ -167,13 +167,23 @@ export async function callGeminiVision(
 }
 
 export async function callGeminiRepairGuidance(
-  findings: Finding[]
+  findings: Finding[],
+  ragContext = ''
 ): Promise<Finding[]> {
   if (!GEMINI_API_KEY) return findings
+
+  const referenceSection = ragContext
+    ? `\n## Reference material (WCAG / design standards)\nUse the following authoritative references to make repair_guidance and ai_fix_instruction specific, accurate, and grounded. Include exact WCAG success criterion numbers, specific CSS property values, or Tailwind class names where applicable.\n\n${ragContext}\n`
+    : ''
 
   const prompt = `You are a senior product designer. Below are design QA findings detected by automated analysis.
 For each finding, rewrite the "repair_guidance" and "ai_fix_instruction" fields to be more specific and actionable.
 Keep all other fields identical.
+${referenceSection}
+Rules:
+- repair_guidance: 1–2 sentences, concrete, references specific CSS values or design system tokens
+- ai_fix_instruction: paste-ready instruction a developer can give to an AI coding tool; include specific property names, values, and selectors
+- Do not change title, category, severity, evidence, why_it_matters, or any other field
 
 Return ONLY a JSON object: { "findings": [...] }
 

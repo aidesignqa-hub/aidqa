@@ -8,6 +8,8 @@ import {
   handleDeleteScan,
   handlePreviewScan,
   handleGetUsage,
+  handleRescan,
+  handleDismissFinding,
 } from './scan/handlers.ts'
 
 Deno.serve(async (req: Request) => {
@@ -61,6 +63,12 @@ Deno.serve(async (req: Request) => {
     return handlePreviewScan(req, previewMatch[1])
   }
 
+  // POST /v1/scans/:id/rescan
+  const rescanMatch = path.match(/^\/v1\/scans\/([^/]+)\/rescan$/)
+  if (rescanMatch && req.method === 'POST') {
+    return handleRescan(req, rescanMatch[1])
+  }
+
   // GET | DELETE /v1/scans/:id
   const scanMatch = path.match(/^\/v1\/scans\/([^/]+)$/)
   if (scanMatch && req.method === 'GET') {
@@ -68,6 +76,14 @@ Deno.serve(async (req: Request) => {
   }
   if (scanMatch && req.method === 'DELETE') {
     return handleDeleteScan(req, scanMatch[1])
+  }
+
+  // ── Finding routes ────────────────────────────────────────────────────────────
+
+  // POST /v1/findings/:id/dismiss
+  const dismissMatch = path.match(/^\/v1\/findings\/([^/]+)\/dismiss$/)
+  if (dismissMatch && req.method === 'POST') {
+    return handleDismissFinding(req, dismissMatch[1])
   }
 
   return corsError('Not found', 404)

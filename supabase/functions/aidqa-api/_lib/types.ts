@@ -78,3 +78,32 @@ export interface ScanInput {
   fileBuffer?: Uint8Array
   filename?: string
 }
+
+export interface AxeViolationNode {
+  html: string
+  target: string[]
+  failureSummary: string
+  boundingBox: { x: number; y: number; width: number; height: number } | null
+}
+
+export interface AxeViolation {
+  id: string
+  impact: 'critical' | 'serious' | 'moderate' | 'minor'
+  description: string
+  help: string
+  helpUrl: string
+  tags: string[]
+  nodes: AxeViolationNode[]
+}
+
+export interface EnhancedCapture {
+  dom1440: DomElement[]
+  axeViolations: AxeViolation[]
+  dom375: DomElement[]
+  screenshotBase64?: string  // base64-encoded PNG from the 1440px viewport
+}
+
+export interface DesignSystemConfig {
+  colors: string[]   // hex values e.g. ['#172B4D', '#2563EB']
+  spacing: number[]  // px values e.g. [4, 8, 16, 24, 32]
+}
