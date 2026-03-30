@@ -2,7 +2,35 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import NavBar from '@/components/NavBar'
 import { Input } from '@/components/ui/input'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { getApiBaseUrl, getAuthHeaders } from '@/lib/apiBase'
+
+function parseDesignSystemConfig(raw: string): { colors: string[]; spacing: number[] } | null {
+  if (!raw.trim()) return null
+  const colors: string[] = []
+  const spacing: number[] = []
+
+  // Extract hex colors
+  const hexMatches = raw.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []
+  for (const hex of hexMatches) {
+    if (!colors.includes(hex.toUpperCase())) colors.push(hex.toUpperCase())
+  }
+
+  // Extract px/rem spacing values
+  const pxMatches = raw.match(/(\d+(?:\.\d+)?)px/g) ?? []
+  for (const px of pxMatches) {
+    const val = parseFloat(px)
+    if (!spacing.includes(val)) spacing.push(val)
+  }
+  const remMatches = raw.match(/(\d+(?:\.\d+)?)rem/g) ?? []
+  for (const rem of remMatches) {
+    const val = Math.round(parseFloat(rem) * 16)
+    if (!spacing.includes(val)) spacing.push(val)
+  }
+
+  if (colors.length === 0 && spacing.length === 0) return null
+  return { colors, spacing }
+}
 
 function Spinner() {
   return (
@@ -21,6 +49,8 @@ export default function ScanInput() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [usage, setUsage] = useState<{ scans_this_month: number; limit: number; plan: string } | null>(null)
+  const [dsRaw, setDsRaw] = useState('')
+  const [dsOpen, setDsOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const submitting = useRef(false)
 
@@ -56,7 +86,7 @@ export default function ScanInput() {
       const res = await fetch(`${getApiBaseUrl()}/v1/scans`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'url', url: trimmed }),
+        body: JSON.stringify({ type: 'url', url: trimmed, design_system_config: parseDesignSystemConfig(dsRaw) }),
         signal: controller.signal,
       })
       const data = await res.json()
@@ -275,6 +305,34 @@ export default function ScanInput() {
                 </p>
               </div>
             )}
+
+            {/* Design system config */}
+            <div className="mt-3">
+              <button
+                type="button"
+                className="flex items-center gap-1 text-xs font-medium"
+                style={{ color: '#5A6679' }}
+                onClick={() => setDsOpen(o => !o)}
+              >
+                {dsOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                Design system tokens (optional)
+              </button>
+              {dsOpen && (
+                <div className="mt-2 space-y-1.5">
+                  <textarea
+                    className="w-full rounded-lg border text-xs font-mono resize-none px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ borderColor: '#DFE1E6', color: '#172B4D', minHeight: '80px' }}
+                    placeholder={`Paste Tailwind config or CSS variables, e.g.\n:root { --color-brand: #FF8B00; --spacing-4: 16px; }`}
+                    value={dsRaw}
+                    onChange={e => setDsRaw(e.target.value)}
+                    rows={4}
+                  />
+                  <p className="text-xs" style={{ color: '#5A6679' }}>
+                    Custom tokens suppress false positives for your design system's brand colors and spacing values.
+                  </p>
+                </div>
+              )}
+            </div>
 
             {error && (
               <p className="mt-3 text-xs font-medium" style={{ color: '#C9372C' }}>{error}</p>
