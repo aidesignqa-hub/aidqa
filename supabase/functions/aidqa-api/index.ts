@@ -1,4 +1,4 @@
-import { CORS_HEADERS, corsError } from './_lib/cors.ts'
+import { getCorsHeaders, makeCors } from './_lib/cors.ts'
 import {
   handleCreateScan,
   handleListScans,
@@ -13,8 +13,10 @@ import {
 } from './scan/handlers.ts'
 
 Deno.serve(async (req: Request) => {
+  const { corsError } = makeCors(req)
+
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: CORS_HEADERS })
+    return new Response(null, { status: 204, headers: getCorsHeaders(req) })
   }
 
   const url = new URL(req.url)
@@ -22,9 +24,8 @@ Deno.serve(async (req: Request) => {
 
   // ── Health check ─────────────────────────────────────────────────────────────
   if (path === '/health' && req.method === 'GET') {
-    return new Response(JSON.stringify({ status: 'ok' }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-    })
+    const { corsResponse } = makeCors(req)
+    return corsResponse({ status: 'ok' })
   }
 
   // ── Usage route ──────────────────────────────────────────────────────────────

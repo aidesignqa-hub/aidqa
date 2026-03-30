@@ -1,5 +1,5 @@
 import { supabase, getUserFromRequest, getUserInfoFromRequest, AuthError, ADMIN_EMAILS } from '../_lib/supabaseServer.ts'
-import { corsResponse, corsError } from '../_lib/cors.ts'
+import { makeCors } from '../_lib/cors.ts'
 import { isUrlSafe } from '../_lib/ssrfGuard.ts'
 import { uploadFile, getSignedUrl } from '../_lib/storage.ts'
 import { callGeminiVision, callGeminiRepairGuidance, callGeminiDesignPreview } from '../_lib/gemini.ts'
@@ -14,6 +14,7 @@ import type { Finding, DesignSystemConfig } from '../_lib/types.ts'
 // ─── POST /v1/scans ────────────────────────────────────────────────────────────
 
 export async function handleCreateScan(req: Request): Promise<Response> {
+  const { corsResponse, corsError } = makeCors(req)
   let userId: string
   let userEmail: string | undefined
   try {
@@ -298,6 +299,7 @@ async function embedAndStoreFindingsAsync(
 // ─── GET /v1/scans ─────────────────────────────────────────────────────────────
 
 export async function handleListScans(req: Request): Promise<Response> {
+  const { corsResponse, corsError } = makeCors(req)
   let userId: string
   try { userId = await getUserFromRequest(req) } catch (e) { return corsError(String(e), 401) }
 
@@ -321,6 +323,7 @@ export async function handleListScans(req: Request): Promise<Response> {
 // ─── GET /v1/scans/:id ─────────────────────────────────────────────────────────
 
 export async function handleGetScan(req: Request, scanId: string): Promise<Response> {
+  const { corsResponse, corsError } = makeCors(req)
   let userId: string
   try { userId = await getUserFromRequest(req) } catch (e) { return corsError(String(e), 401) }
 
@@ -339,6 +342,7 @@ export async function handleGetScan(req: Request, scanId: string): Promise<Respo
 // ─── GET /v1/scans/:id/findings ────────────────────────────────────────────────
 
 export async function handleGetFindings(req: Request, scanId: string): Promise<Response> {
+  const { corsResponse, corsError } = makeCors(req)
   let userId: string
   try { userId = await getUserFromRequest(req) } catch (e) { return corsError(String(e), 401) }
 
@@ -366,6 +370,7 @@ export async function handleGetFindings(req: Request, scanId: string): Promise<R
 // ─── GET /v1/scans/:id/artifacts ───────────────────────────────────────────────
 
 export async function handleGetArtifacts(req: Request, scanId: string): Promise<Response> {
+  const { corsResponse, corsError } = makeCors(req)
   let userId: string
   try { userId = await getUserFromRequest(req) } catch (e) { return corsError(String(e), 401) }
 
@@ -398,6 +403,7 @@ export async function handleGetArtifacts(req: Request, scanId: string): Promise<
 // ─── POST /v1/scans/:id/preview ───────────────────────────────────────────────
 
 export async function handlePreviewScan(req: Request, scanId: string): Promise<Response> {
+  const { corsResponse, corsError } = makeCors(req)
   let userId: string
   try { userId = await getUserFromRequest(req) } catch (e) { return corsError(String(e), 401) }
 
@@ -457,6 +463,7 @@ export async function handlePreviewScan(req: Request, scanId: string): Promise<R
 // ─── POST /v1/scans/:id/rescan ────────────────────────────────────────────────
 
 export async function handleRescan(req: Request, scanId: string): Promise<Response> {
+  const { corsResponse, corsError } = makeCors(req)
   let userId: string
   let userEmail: string | undefined
   try {
@@ -521,6 +528,7 @@ export async function handleRescan(req: Request, scanId: string): Promise<Respon
 // ─── POST /v1/findings/:id/dismiss ────────────────────────────────────────────
 
 export async function handleDismissFinding(req: Request, findingId: string): Promise<Response> {
+  const { corsResponse, corsError } = makeCors(req)
   let userId: string
   try { userId = await getUserFromRequest(req) } catch (e) { return corsError(String(e), 401) }
 
@@ -538,6 +546,7 @@ export async function handleDismissFinding(req: Request, findingId: string): Pro
 // ─── GET /v1/usage ─────────────────────────────────────────────────────────────
 
 export async function handleGetUsage(req: Request): Promise<Response> {
+  const { corsResponse, corsError } = makeCors(req)
   let userId: string
   let userEmail: string | undefined
   try {
@@ -566,6 +575,7 @@ export async function handleGetUsage(req: Request): Promise<Response> {
 // ─── DELETE /v1/scans/:id ──────────────────────────────────────────────────────
 
 export async function handleDeleteScan(req: Request, scanId: string): Promise<Response> {
+  const { corsResponse, corsError } = makeCors(req)
   let userId: string
   try { userId = await getUserFromRequest(req) } catch (e) { return corsError(String(e), 401) }
 
