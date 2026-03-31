@@ -1,5 +1,8 @@
 const ALLOWED_ORIGINS = new Set([
   'https://app.aidesignqa.com',
+  'https://aidqa-six.vercel.app',
+  'https://aidqa-aidesignqa-6662s-projects.vercel.app',
+  'https://aidqa-git-main-aidesignqa-6662s-projects.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000',
 ])
