@@ -37,3 +37,13 @@ storage/
 
 # Build artifacts
 *.tsbuildinfo
+.env*.local
+
+# Generated test coverage reports
+coverage/
+
+# Compiled plugin build output
+plugin/
+
+# Video files (host on CDN/Supabase Storage instead)
+*.mp4
