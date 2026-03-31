@@ -28,8 +28,8 @@ export default function Signup() {
       } else {
         setDone(true);
       }
-    } catch (e: any) {
-      setError(e.message || 'Signup failed');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Signup failed');
     } finally {
       setLoading(false);
     }

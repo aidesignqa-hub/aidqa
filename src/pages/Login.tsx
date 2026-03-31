@@ -24,8 +24,8 @@ export default function Login() {
         options: { redirectTo: window.location.origin },
       });
       if (error) throw error;
-    } catch (e: any) {
-      setError(e.message || 'Google sign-in failed');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Google sign-in failed');
       setGoogleLoading(false);
     }
   };
@@ -38,8 +38,8 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       navigate('/');
-    } catch (e: any) {
-      setError(e.message || 'Login failed');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Login failed');
     } finally {
       setLoading(false);
     }

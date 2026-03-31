@@ -29,3 +29,51 @@ Before making changes spanning 2+ files, provide:
 - If a tool fails, show the error verbatim
 - Propose fix OR ask for clarification (never guess silently)
 - When stuck after 2 attempts, stop and ask user for input
+
+---
+
+## Pre-Production Checklist
+
+Run these checks after every code change, before every commit.
+
+### 1. TypeScript — Vite app
+```bash
+npx tsc --noEmit
+```
+Must produce **no output**. Any output = fix before committing.
+
+### 2. TypeScript — Landing (Next.js)
+```bash
+cd landing && npx tsc --noEmit
+```
+Must produce **no output**.
+
+### 3. Build — Vite app
+```bash
+npm run build
+```
+Must complete without errors. The bundle size warning (`>500 kB`) is pre-existing — acceptable until code-splitting is addressed. Any new error = fix before pushing.
+
+### 4. ESLint
+```bash
+npx eslint "src/" --ignore-pattern "src/components/ui/**" --max-warnings=0
+```
+Must produce **0 errors, 0 warnings**. `src/components/ui/` is excluded — it is auto-generated shadcn code with pre-existing `react-refresh` warnings that must not be modified.
+
+### 5. Tests
+```bash
+npm run test -- --run
+```
+All 40 tests must pass. No new failures.
+
+### 6. Deploy via Vercel only
+**Never** manually copy files or trigger deployments outside of Vercel.
+Commit → push to `main` → Vercel auto-deploys both the Vite app (`app.aidesignqa.com`) and the landing site (`aidesignqa.com`).
+
+Landing deploys from the `landing/` subdirectory via its own Vercel project (`prj_ozaUqs...`).
+
+### 7. Edge Function deploy (when supabase/functions/ changed)
+```bash
+npx supabase@latest functions deploy aidqa-api --no-verify-jwt
+```
+Must complete without errors. Requires `SUPABASE_ACCESS_TOKEN` in env or active `supabase login` session.
