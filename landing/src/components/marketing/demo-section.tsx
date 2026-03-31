@@ -26,7 +26,7 @@ export function DemoSection() {
               aria-label="Watch demo video fullscreen"
             >
               <video
-                src="/demo.mp4"
+                src="https://eboaqtbktyaxzrbcntzy.supabase.co/storage/v1/object/public/aidqa/public/demo.mp4"
                 autoPlay
                 loop
                 muted
@@ -75,7 +75,7 @@ export function DemoSection() {
             <X className="w-6 h-6" />
           </button>
           <video
-            src="/demo.mp4"
+            src="https://eboaqtbktyaxzrbcntzy.supabase.co/storage/v1/object/public/aidqa/public/demo.mp4"
             autoPlay
             controls
             className="max-w-5xl w-full rounded-xl shadow-2xl"

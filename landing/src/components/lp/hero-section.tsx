@@ -45,7 +45,7 @@ export function HeroSection() {
             aria-label="Scroll to demo video"
           >
             <video
-              src="/demo.mp4"
+              src="https://eboaqtbktyaxzrbcntzy.supabase.co/storage/v1/object/public/aidqa/public/demo.mp4"
               autoPlay
               loop
               muted
