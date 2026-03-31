@@ -6,7 +6,7 @@ const ALLOWED_ORIGINS = new Set([
   'http://localhost:5173',
   'http://localhost:3000',
 ])
-
+// In production, you should replace the above with your actual allowed origins and ensure that this list is secure.
 function getAllowedOrigin(req: Request): string {
   const origin = req.headers.get('origin') ?? ''
   return ALLOWED_ORIGINS.has(origin) ? origin : ''
