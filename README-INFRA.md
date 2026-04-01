@@ -12,3 +12,4 @@ Domain routing is handled by apps/landing/src/middleware.ts — lp.* requests ar
 
 Purpose
 This document prevents future contributors from accidentally restructuring the repository.
+<!-- test -->
