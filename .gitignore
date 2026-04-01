@@ -38,6 +38,7 @@ storage/
 # Build artifacts
 *.tsbuildinfo
 .env*.local
+.next/
 
 # Generated test coverage reports
 coverage/

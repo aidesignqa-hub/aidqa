@@ -2,7 +2,7 @@
 
 > This file is the authoritative reference for AI assistants working on this codebase.
 > Update it whenever a milestone is completed or architecture changes.
-> Last audited: 2026-03-18 (full code audit, migrated to Gemini, dead v1 code removed)
+> Last audited: 2026-04-01 (monorepo restructure — apps/ layout, paths updated)
 
 ---
 
@@ -16,6 +16,26 @@ AIDQA is a design QA tool for AI-generated UI. A user submits a URL or screensho
 - A replacement for designers
 
 **The core user:** indie hackers and startup teams shipping UI fast with AI builders (v0, Lovable, Cursor) who can tell the output feels off but cannot diagnose why.
+
+---
+
+## Deployment architecture
+
+The project has **two Vercel deployments** serving three domains:
+
+| Domain | Deployment | Purpose |
+|---|---|---|
+| `app.aidesignqa.com` | `apps/app/` (React/Vite SPA) | The product — auth-gated, scan/results UI |
+| `aidesignqa.com` | `apps/landing/` (Next.js) | Homepage — stable, broad audience, SEO-optimised |
+| `lp.aidesignqa.com` | `apps/landing/` (Next.js) | Marketing funnel LP — evolving, sent to prospects |
+
+The `apps/landing/` Next.js app serves both `aidesignqa.com` and `lp.aidesignqa.com` from a single deployment. Routing is handled by `apps/landing/src/middleware.ts`: requests from `lp.*` are internally rewritten to `/lp`, so the URL stays clean.
+
+### Homepage vs LP — intentional distinction
+
+- **Homepage** (`/`) uses `components/marketing/` — stable brand page, not frequently changed.
+- **LP** (`/lp`) uses `components/lp/` — actively experimented on (different pricing, hero copy, CTAs). Sent in cold outreach and campaigns.
+- The two component trees start similar but are expected to diverge as the LP is iterated on. Duplication between `marketing/` and `lp/` is intentional.
 
 ---
 
@@ -39,23 +59,34 @@ AIDQA is a design QA tool for AI-generated UI. A user submits a URL or screensho
 
 ```
 /
-├── src/                          # React frontend
-│   ├── pages/
-│   │   ├── ScanInput.tsx         # Upload or URL entry
-│   │   ├── ScanResult.tsx        # Score + findings + overlay viewer
-│   │   ├── ScanHistory.tsx       # Past scans list
-│   │   ├── Login.tsx
-│   │   └── Signup.tsx
-│   ├── components/
-│   │   ├── NavBar.tsx
-│   │   ├── FindingCard.tsx
-│   │   ├── EvidenceOverlay.tsx   # Canvas overlay on screenshot
-│   │   └── ScoreBar.tsx
-│   ├── lib/
-│   │   ├── supabaseClient.ts
-│   │   ├── auth.ts               # getAuthHeaders()
-│   │   └── apiBase.ts
-│   └── main.tsx
+├── apps/
+│   ├── app/                      # React/Vite SPA (app.aidesignqa.com)
+│   │   ├── src/
+│   │   │   ├── pages/
+│   │   │   │   ├── ScanInput.tsx         # Upload or URL entry
+│   │   │   │   ├── ScanResult.tsx        # Score + findings + overlay viewer
+│   │   │   │   ├── ScanHistory.tsx       # Past scans list
+│   │   │   │   ├── Login.tsx
+│   │   │   │   └── Signup.tsx
+│   │   │   ├── components/
+│   │   │   │   ├── NavBar.tsx
+│   │   │   │   ├── DesignPreview.tsx
+│   │   │   │   └── ProtectedRoute.tsx
+│   │   │   ├── lib/
+│   │   │   │   ├── supabaseClient.ts
+│   │   │   │   ├── auth.ts               # getAuthHeaders()
+│   │   │   │   └── apiBase.ts
+│   │   │   └── main.tsx
+│   │   ├── vercel.json
+│   │   └── vite.config.ts
+│   └── landing/                  # Next.js marketing site (aidesignqa.com + lp.aidesignqa.com)
+│       ├── src/
+│       │   ├── app/              # Next.js App Router pages
+│       │   ├── components/
+│       │   │   ├── marketing/    # Homepage components (stable)
+│       │   │   └── lp/           # LP components (actively iterated)
+│       │   └── middleware.ts     # Routes lp.* → /lp internally
+│       └── vercel.json
 ├── supabase/
 │   ├── functions/
 │   │   └── aidqa-api/            # Single Edge Function, all routes
@@ -66,23 +97,22 @@ AIDQA is a design QA tool for AI-generated UI. A user submits a URL or screensho
 │   │       │   ├── supabaseServer.ts
 │   │       │   ├── types.ts
 │   │       │   ├── storage.ts
-│   │       │   └── gemini.ts     # Gemini API call (vision + repair guidance)
+│   │       │   ├── gemini.ts     # Gemini API call (vision + repair guidance)
+│   │       │   ├── embedding.ts  # Vector embedding helpers
+│   │       │   └── rag.ts        # RAG retrieval for repair guidance
 │   │       └── scan/
 │   │           ├── handlers.ts   # HTTP handlers
 │   │           ├── capture.ts    # Browserless screenshot + DOM
 │   │           ├── normalize.ts  # Image resize pipeline
 │   │           ├── deterministic.ts  # Rule engine
-│   │           ├── evidence.ts   # Evidence model builders
 │   │           └── score.ts      # Scoring logic
-│   └── migrations/
-│       ├── 20260312000100_create_scans.sql
-│       ├── 20260312000200_create_findings.sql
-│       ├── 20260312000300_rls_policies.sql
-│       └── 20260312000400_storage_policies.sql
-├── landing/                      # Next.js marketing site
-├── vercel.json
-├── vite.config.ts
-└── package.json
+│   └── migrations/               # Append-only, timestamped
+│       ├── 20260314000100_create_scans.sql
+│       ├── 20260314000200_create_findings.sql
+│       ├── 20260314000300_rls_policies.sql
+│       ├── 20260314000400_storage_policies.sql
+│       └── ...                   # Additional migrations in supabase/migrations/
+└── package.json                  # Root (workspace tooling only)
 ```
 
 ---
@@ -268,7 +298,7 @@ Score is secondary to findings. Never lead with the number in the UI.
 ## Auth
 
 ```typescript
-// Frontend — src/lib/auth.ts
+// Frontend — apps/app/src/lib/auth.ts
 export async function getAuthHeaders(): Promise<HeadersInit> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('Not authenticated')

@@ -38,31 +38,31 @@ Run these checks after every code change, before every commit.
 
 ### 1. TypeScript — Vite app
 ```bash
-npx tsc --noEmit
+cd apps/app && npx tsc --noEmit
 ```
 Must produce **no output**. Any output = fix before committing.
 
 ### 2. TypeScript — Landing (Next.js)
 ```bash
-cd landing && npx tsc --noEmit
+cd apps/landing && npx tsc --noEmit
 ```
 Must produce **no output**.
 
 ### 3. Build — Vite app
 ```bash
-npm run build
+cd apps/app && npm run build
 ```
 Must complete without errors. The bundle size warning (`>500 kB`) is pre-existing — acceptable until code-splitting is addressed. Any new error = fix before pushing.
 
 ### 4. ESLint
 ```bash
-npx eslint "src/" --ignore-pattern "src/components/ui/**" --max-warnings=0
+cd apps/app && npx eslint "src/" --ignore-pattern "src/components/ui/**" --max-warnings=0
 ```
 Must produce **0 errors, 0 warnings**. `src/components/ui/` is excluded — it is auto-generated shadcn code with pre-existing `react-refresh` warnings that must not be modified.
 
 ### 5. Tests
 ```bash
-npm run test -- --run
+cd apps/app && npm run test -- --run
 ```
 All 40 tests must pass. No new failures.
 
@@ -70,7 +70,7 @@ All 40 tests must pass. No new failures.
 **Never** manually copy files or trigger deployments outside of Vercel.
 Commit → push to `main` → Vercel auto-deploys both the Vite app (`app.aidesignqa.com`) and the landing site (`aidesignqa.com`).
 
-Landing deploys from the `landing/` subdirectory via its own Vercel project (`prj_ozaUqs...`).
+Landing deploys from the `apps/landing/` subdirectory via its own Vercel project (`prj_ozaUqs...`).
 
 ### 7. Edge Function deploy (when supabase/functions/ changed)
 ```bash
