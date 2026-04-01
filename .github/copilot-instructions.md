@@ -3,20 +3,20 @@
 ## Code Generation Rules
 - **No narration**: Never claim files were created/edited/tests ran unless terminal output confirms it
 - **Minimal diffs**: Make smallest safe change; no refactors unless explicitly requested
-- **Respect boundaries**: Core module (`src/core/`) must have zero dependencies (React/DOM/Figma)
+- **Respect boundaries**: Core module (`apps/app/src/core/`) must have zero dependencies (React/DOM/Figma)
 
 ## Architecture (Three-Layer Separation)
 
-**Core** (`src/core/`)
+**Core** (`apps/app/src/core/`)
 - Pure TypeScript: `types.ts`, `analyzer.ts`, `utils.ts`
-- Import: `import { analyzeDesign } from '../src/core/analyzer'`
+- Import: `import { analyzeDesign } from '../apps/app/src/core/analyzer'`
 
 **Server** (`server/`)
 - Express app via `createApp()` → `server/index.ts`
 - Services: `captureScreenshot`, `comparePngExact`, `fetchFigmaContent`, `storage`
 - File-based storage in `storage/` (no DB yet)
 
-**Frontend** (`src/`)
+**Frontend** (`apps/app/src/`)
 - React + Vite + shadcn/ui + TanStack Query
 - Pages: `Index.tsx`, `VisualRun.tsx`
 

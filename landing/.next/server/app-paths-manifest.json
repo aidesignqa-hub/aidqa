@@ -1,0 +1,20 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/login/page": "app/admin/login/page.js",
+  "/api/admin/logout/route": "app/api/admin/logout/route.js",
+  "/api/admin/login/route": "app/api/admin/login/route.js",
+  "/api/waitlist/route": "app/api/waitlist/route.js",
+  "/lp/page": "app/lp/page.js",
+  "/page": "app/page.js",
+  "/robots.txt/route": "app/robots.txt/route.js",
+  "/sitemap.xml/route": "app/sitemap.xml/route.js",
+  "/ai-ui-checker/page": "app/ai-ui-checker/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/automated-visual-regression-testing/page": "app/automated-visual-regression-testing/page.js",
+  "/accessibility-audit/page": "app/accessibility-audit/page.js",
+  "/design-qa/page": "app/design-qa/page.js",
+  "/vibe-coding/page": "app/vibe-coding/page.js",
+  "/playwright-visual-testing/page": "app/playwright-visual-testing/page.js",
+  "/visual-regression-testing-tools/page": "app/visual-regression-testing-tools/page.js",
+  "/visual-regression/page": "app/visual-regression/page.js"
+}
