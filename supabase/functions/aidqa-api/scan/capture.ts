@@ -116,8 +116,15 @@ export async function captureEnhanced(url: string): Promise<EnhancedCapture> {
               // 1. Capture DOM at 1440px desktop
               const dom1440 = await page.evaluate(() => { ${DOM_EXTRACTOR} });
 
-              // 2. Take screenshot at 1440px (base64) — replaces separate /screenshot call
-              const screenshotBase64 = await page.screenshot({ type: 'png', fullPage: false, encoding: 'base64' });
+              // 2. Take full-page screenshot at 1440px (base64), capped at 8000px to avoid infinite-scroll pages
+              const pageHeight = await page.evaluate(() =>
+                Math.min(document.documentElement.scrollHeight, 8000)
+              );
+              const screenshotBase64 = await page.screenshot({
+                type: 'png',
+                encoding: 'base64',
+                clip: { x: 0, y: 0, width: 1440, height: pageHeight },
+              });
 
               // 3. Inject axe-core and run full accessibility audit
               let axeViolations = [];
