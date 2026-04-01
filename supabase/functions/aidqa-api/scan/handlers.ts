@@ -116,6 +116,41 @@ async function processScan(
     designSystemConfig: DesignSystemConfig | null
   }
 ): Promise<void> {
+  let deadlineTimer: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<never>((_, reject) => {
+    deadlineTimer = setTimeout(
+      () => reject(new Error('Scan timed out — the page may be too slow to capture. Please retry.')),
+      150_000
+    )
+  })
+
+  try {
+    await Promise.race([_runProcessScan(scanId, userId, input), deadline])
+    clearTimeout(deadlineTimer)
+  } catch (err) {
+    clearTimeout(deadlineTimer)
+    console.error(`[${scanId}] processScan failed:`, err)
+    await supabase.from('scans').update({
+      status: 'failed',
+      error_message: err instanceof Error ? err.message : 'Scan processing failed',
+    }).eq('id', scanId)
+  }
+}
+
+async function _runProcessScan(
+  scanId: string,
+  userId: string,
+  input: {
+    inputType: 'url' | 'screenshot'
+    inputUrl: string | null
+    fileBuffer: Uint8Array | null
+    inputFilename: string | null
+    designSystemConfig: DesignSystemConfig | null
+  }
+): Promise<void> {
+  const t0 = Date.now()
+  const lap = (label: string) => console.log(`[${scanId}] ⏱ ${label}: ${((Date.now() - t0) / 1000).toFixed(1)}s`)
+
   try {
     await supabase.from('scans').update({ status: 'processing' }).eq('id', scanId)
 
@@ -156,6 +191,7 @@ async function processScan(
         uploadFile(domPath, domJson, 'application/json'),
       ])
 
+      lap('Phase 1 capture (URL)')
       console.log(`[${scanId}] Capture: dom1440=${dom1440.length} elements, axe=${axeViolations.length} violations, dom375=${dom375.length} elements`)
 
       await supabase.from('scans').update({
@@ -169,6 +205,7 @@ async function processScan(
       const ext = input.inputFilename?.split('.').pop() ?? 'png'
       await uploadFile(`${basePath}/original.${ext}`, input.fileBuffer, `image/${ext}`)
       await uploadFile(`${basePath}/normalized.png`, normalizedBytes, 'image/png')
+      lap('Phase 1 capture (screenshot)')
 
       await supabase.from('scans').update({
         original_path: `${basePath}/original.${ext}`,
@@ -189,6 +226,7 @@ async function processScan(
         input.designSystemConfig ?? undefined
       )
       await supabase.from('scans').update({ det_status: 'completed' }).eq('id', scanId)
+      lap('Phase 2 deterministic')
     } else {
       await supabase.from('scans').update({ det_status: 'skipped' }).eq('id', scanId)
     }
@@ -200,6 +238,7 @@ async function processScan(
       const normalizedUrl = await getSignedUrl(`${basePath}/normalized.png`, 3600)
       aiFindings = await callGeminiVision(normalizedUrl, deterministicFindings)
       await supabase.from('scans').update({ ai_status: 'completed' }).eq('id', scanId)
+      lap('Phase 3 Gemini Vision')
     } catch (aiErr) {
       console.error(`[${scanId}] Gemini Vision failed:`, aiErr)
       await supabase.from('scans').update({
@@ -225,6 +264,7 @@ async function processScan(
           const improved = await callGeminiRepairGuidance(detOnly, ragContext)
           const improvedMap = new Map(improved.map(f => [f.title, f]))
           finalFindings = merged.map(f => f.source === 'deterministic' ? (improvedMap.get(f.title) ?? f) : f)
+          lap('Phase 4 RAG + repair guidance')
         }
       } catch {
         // Non-blocking — keep original guidance
@@ -271,12 +311,10 @@ async function processScan(
       completed_at: new Date().toISOString(),
     }).eq('id', scanId)
 
+    lap('✅ completed')
   } catch (err) {
-    console.error(`[${scanId}] processScan failed:`, err)
-    await supabase.from('scans').update({
-      status: 'failed',
-      error_message: 'Scan processing failed',
-    }).eq('id', scanId)
+    lap('❌ failed')
+    throw err
   }
 }
 
