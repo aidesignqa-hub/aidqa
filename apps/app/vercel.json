@@ -1,4 +1,5 @@
 {
+  "installCommand": "npm install --legacy-peer-deps --no-package-lock",
   "redirects": [
     { "source": "/:path*", "has": [{ "type": "host", "value": "www.app.aidesignqa.com" }], "destination": "https://app.aidesignqa.com/:path*", "permanent": true }
   ],
