@@ -9,7 +9,7 @@ export async function normalizeImage(input: Uint8Array, targetWidth = 1440): Pro
     img.resize(targetWidth, Math.round(img.height * scale))
   }
 
-  const maxHeight = Math.round(6000 * (targetWidth / 1440))
+  const maxHeight = Math.round(8000 * (targetWidth / 1440))
   if (img.height > maxHeight) {
     img.crop(0, 0, targetWidth, maxHeight)
   }
