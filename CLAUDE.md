@@ -353,6 +353,7 @@ VITE_API_BASE_URL           # https://your-project.supabase.co/functions/v1/aidq
 8. **Signed URLs only.** Generate on demand. Store only storage paths in the database.
 9. **RLS on every table.** `user_id = auth.uid()`. Never trust a `user_id` in the request body.
 10. **Migrations are append-only.** Never edit an existing `.sql` file. Always create a new timestamped migration.
+11. **Always deploy edge functions with `--no-verify-jwt`.** Run `npm run supabase:deploy` (never `supabase functions deploy aidqa-api` bare). Supabase's gateway-level JWT verification silently re-enables after every deploy and rejects ES256 tokens before the request reaches the function. The function handles its own JWT validation via `getUserFromRequest`. Without this flag, all authenticated routes return 401.
 
 ---
 
