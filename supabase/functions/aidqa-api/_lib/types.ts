@@ -100,7 +100,6 @@ export interface EnhancedCapture {
   dom1440: DomElement[]
   axeViolations: AxeViolation[]
   dom375: DomElement[]
-  screenshotBase64?: string  // base64-encoded PNG from the 1440px viewport
 }
 
 export interface DesignSystemConfig {

@@ -163,6 +163,7 @@ export default function ScanResult() {
     }
   }, [scanId, navigate])
 
+  const [imageNaturalHeight, setImageNaturalHeight] = useState(0)
   const [showPreview, setShowPreview] = useState(false)
 
   const handleRescan = async () => {
@@ -220,8 +221,27 @@ export default function ScanResult() {
   const unchangedCount = findings.filter(f => parentTitles.has(f.title)).length
   const hasDelta = scan?.parent_scan_id && parentFindings.length > 0
 
+  const SEVERITY_BOX_COLOR: Record<string, string> = {
+    critical: '#dc2626', high: '#ea580c', medium: '#ca8a04', low: '#2563eb',
+  }
+
+  const overlayBoxes = showOverlay && imageNaturalHeight > 0
+    ? findings.flatMap(f => {
+        const color = SEVERITY_BOX_COLOR[f.severity] ?? '#666666'
+        const isSelected = selectedFinding === f.id
+        if (f.evidence_type === 'bbox') {
+          const ev = f.evidence as { x: number; y: number; width: number; height: number }
+          return [{ ...ev, color, isSelected }]
+        }
+        if (f.evidence_type === 'multi_bbox') {
+          const ev = f.evidence as { boxes: Array<{ x: number; y: number; width: number; height: number }> }
+          return ev.boxes.map(box => ({ ...box, color, isSelected }))
+        }
+        return []
+      })
+    : []
+
   const isLoading = !scan || scan.status === 'pending' || scan.status === 'processing'
-  const imageUrl = showOverlay ? artifacts.overlay_path : artifacts.normalized_path
 
   return (
     <div className="min-h-screen bg-background">
@@ -324,14 +344,30 @@ export default function ScanResult() {
                 >Original</button>
               </div>
               <div className="relative border rounded-lg overflow-hidden bg-muted">
-                {imageUrl ? (
-                  <>
+                {artifacts.normalized_path ? (
+                  <div className="relative">
                     <img
-                      src={imageUrl}
+                      src={artifacts.normalized_path}
                       alt="UI screenshot"
                       className="w-full h-auto block"
+                      onLoad={e => setImageNaturalHeight((e.target as HTMLImageElement).naturalHeight)}
                     />
-                  </>
+                    {overlayBoxes.map((box, i) => (
+                      <div
+                        key={i}
+                        className="absolute pointer-events-none"
+                        style={{
+                          left: `${(box.x / 1440) * 100}%`,
+                          top: `${(box.y / imageNaturalHeight) * 100}%`,
+                          width: `${(box.width / 1440) * 100}%`,
+                          height: `${(box.height / imageNaturalHeight) * 100}%`,
+                          border: `2px solid ${box.color}`,
+                          backgroundColor: box.isSelected ? `${box.color}33` : `${box.color}1a`,
+                          boxShadow: box.isSelected ? `0 0 0 2px ${box.color}` : 'none',
+                        }}
+                      />
+                    ))}
+                  </div>
                 ) : (
                   <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
                     No image available

@@ -3,7 +3,7 @@ import { makeCors } from '../_lib/cors.ts'
 import { isUrlSafe } from '../_lib/ssrfGuard.ts'
 import { uploadFile, getSignedUrl } from '../_lib/storage.ts'
 import { callGeminiVision, callGeminiRepairGuidance, callGeminiDesignPreview } from '../_lib/gemini.ts'
-import { captureEnhanced } from './capture.ts'
+import { captureEnhanced, captureFullPageScreenshot } from './capture.ts'
 import { normalizeImage, generateOverlay } from './normalize.ts'
 import { runAllChecks } from './deterministic.ts'
 import { calculateScore, mergeAndPrioritize } from './score.ts'
@@ -163,24 +163,20 @@ async function _runProcessScan(
 
     // ── Phase 1: Capture ──────────────────────────────────────────────────────
     if (input.inputType === 'url' && input.inputUrl) {
-      // Single Browserless session: screenshot + DOM@1440 + axe + DOM@375
-      // This avoids two sequential Browserless calls which would exceed the 150s waitUntil limit.
-      const enhanced = await captureEnhanced(input.inputUrl)
+      // Two parallel Browserless sessions: DOM+axe capture and full-page screenshot.
+      // Parallel avoids adding to total wall-clock time while keeping each response
+      // lightweight — screenshot returns raw binary (no base64 overhead, ~10x less memory).
+      const [enhanced, originalBytes] = await Promise.all([
+        captureEnhanced(input.inputUrl),
+        captureFullPageScreenshot(input.inputUrl),
+      ])
       dom1440 = enhanced.dom1440
       axeViolations = enhanced.axeViolations
       dom375 = enhanced.dom375
 
-      // Decode screenshot from base64 returned by the /function endpoint
-      let originalBytes: Uint8Array
-      if (enhanced.screenshotBase64) {
-        const { decodeBase64 } = await import('jsr:@std/encoding/base64')
-        originalBytes = decodeBase64(enhanced.screenshotBase64)
-      } else {
-        // Fallback: shouldn't happen but guard against empty screenshot
-        throw new Error('Browserless returned no screenshot data')
-      }
-
-      normalizedBytes = await normalizeImage(originalBytes)
+      // Screenshot is already 1440px wide and height-capped — normalizeImage would be a no-op.
+      // Skip the decode→re-encode cycle to avoid allocating a 55MB+ imagescript pixel buffer.
+      normalizedBytes = originalBytes
 
       const domJson = new TextEncoder().encode(JSON.stringify({ dom1440, axeViolations, dom375 }))
       domPath = `${basePath}/dom-snapshot.json`
@@ -273,8 +269,9 @@ async function _runProcessScan(
 
     const { overall, categoryScores } = calculateScore(finalFindings)
 
-    const overlayBytes = await generateOverlay(normalizedBytes, finalFindings)
-    await uploadFile(`${basePath}/overlay.png`, overlayBytes, 'image/png')
+    // Overlay generation disabled: imagescript TypedArrays accumulate across warm starts
+    // and push external memory over Supabase's 256MB limit. Overlay is generated client-side instead.
+    // TODO: replace with a lightweight SVG overlay or lazy generation via a dedicated endpoint.
 
     // Insert findings rows
     if (finalFindings.length > 0) {
@@ -307,7 +304,6 @@ async function _runProcessScan(
       score: overall,
       category_scores: categoryScores,
       finding_count: finalFindings.length,
-      overlay_path: `${basePath}/overlay.png`,
       completed_at: new Date().toISOString(),
     }).eq('id', scanId)
 

@@ -89,10 +89,10 @@ export async function captureEnhanced(url: string): Promise<EnhancedCapture> {
           computedStyles: styles,
           textContent: (el.textContent || '').trim().slice(0, 100),
           isInteractive: isInteractive(el),
-          tagDepth: el.closest('body') ? el.closest('body').querySelectorAll(':scope *').length : 0,
         };
       })
-      .filter(el => el.boundingBox.width > 0 && el.boundingBox.height > 0);
+      .filter(el => el.boundingBox.width > 0 && el.boundingBox.height > 0)
+      .slice(0, 1500);
   `
 
   // Max 2 attempts — each attempt has a 40s abort. Total worst case: ~83s, safely under 150s limit.
@@ -116,17 +116,7 @@ export async function captureEnhanced(url: string): Promise<EnhancedCapture> {
               // 1. Capture DOM at 1440px desktop
               const dom1440 = await page.evaluate(() => { ${DOM_EXTRACTOR} });
 
-              // 2. Take full-page screenshot at 1440px (base64), capped at 8000px to avoid infinite-scroll pages
-              const pageHeight = await page.evaluate(() =>
-                Math.min(document.documentElement.scrollHeight, 8000)
-              );
-              const screenshotBase64 = await page.screenshot({
-                type: 'png',
-                encoding: 'base64',
-                clip: { x: 0, y: 0, width: 1440, height: pageHeight },
-              });
-
-              // 3. Inject axe-core and run full accessibility audit
+              // 2. Inject axe-core and run full accessibility audit
               let axeViolations = [];
               try {
                 await page.addScriptTag({ url: 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js' });
@@ -176,7 +166,7 @@ export async function captureEnhanced(url: string): Promise<EnhancedCapture> {
               // 5. Capture DOM at 375px mobile
               const dom375 = await page.evaluate(() => { ${DOM_EXTRACTOR} });
 
-              return { dom1440, screenshotBase64, axeViolations, dom375 };
+              return { dom1440, axeViolations, dom375 };
             };
           `,
         }),
@@ -195,7 +185,6 @@ export async function captureEnhanced(url: string): Promise<EnhancedCapture> {
 
       return {
         dom1440: Array.isArray(result?.dom1440) ? result.dom1440 : [],
-        screenshotBase64: typeof result?.screenshotBase64 === 'string' ? result.screenshotBase64 : undefined,
         axeViolations: Array.isArray(result?.axeViolations) ? result.axeViolations : [],
         dom375: Array.isArray(result?.dom375) ? result.dom375 : [],
       }
@@ -207,4 +196,54 @@ export async function captureEnhanced(url: string): Promise<EnhancedCapture> {
   }
 
   throw new Error('Enhanced capture failed after 2 attempts')
+}
+
+// Separate full-page screenshot capture — returns raw PNG bytes (no base64 overhead).
+// Runs in parallel with captureEnhanced to avoid adding to total wall-clock time.
+export async function captureFullPageScreenshot(url: string): Promise<Uint8Array> {
+  const endpoint = `${BROWSERLESS_URL}/function?token=${BROWSERLESS_API_KEY}`
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 40000)
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        context: { url },
+        code: `
+          export default async ({ page, context }) => {
+            await page.setBypassCSP(true);
+            await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
+            await page.goto(context.url, { waitUntil: 'networkidle2', timeout: 25000 });
+            await page.addStyleTag({ content: '::-webkit-scrollbar { display: none; } * { scrollbar-width: none; }' });
+            const dims = await page.evaluate(() => ({
+              width: document.documentElement.clientWidth,
+              height: Math.min(document.documentElement.scrollHeight, 10000),
+            }));
+            return page.screenshot({
+              type: 'png',
+              clip: { x: 0, y: 0, width: dims.width, height: dims.height },
+            });
+          };
+        `,
+      }),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeout)
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '')
+      throw new Error(`Browserless screenshot capture failed: ${response.status} — ${body}`)
+    }
+
+    const buffer = new Uint8Array(await response.arrayBuffer())
+    if (buffer.length < 1000) throw new Error('Screenshot appears blank')
+    return buffer
+  } catch (err) {
+    clearTimeout(timeout)
+    throw err
+  }
 }
