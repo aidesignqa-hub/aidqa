@@ -7,21 +7,11 @@ const MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.0-flash'
 const GEMINI_URL = (model: string, key: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`
 
-function buildPrompt(deterministicFindings: Finding[]): string {
-  const alreadyFound = deterministicFindings.map(f => ({ category: f.category, title: f.title }))
-
+function buildPrompt(): string {
   return `You are a senior product designer performing a design QA review on a static UI screenshot.
 
 ## Screenshot
 The attached image is a UI screenshot at 1440px desktop width.
-
-## Already detected (deterministic checks)
-The following issues were already found by automated measurement. Do NOT repeat these.
-Return an empty array if you have no new findings to add.
-
-<deterministic_findings>
-${JSON.stringify(alreadyFound, null, 2)}
-</deterministic_findings>
 
 ## Known design system — do NOT flag these as issues
 This UI uses an intentional design system. The following are correct by design:
@@ -84,7 +74,7 @@ Allowed values:
 }
 
 Rules:
-- Maximum 5 new findings. Return fewer if the UI is mostly sound. Return an empty array if everything looks good.
+- Maximum 7 findings. Return fewer if the UI is mostly sound. Return an empty array if everything looks good.
 - Only report a finding if you are highly confident it is a real, visible problem in this screenshot.
 - Severity "critical" only for contrast failures that are definitively failing WCAG AA, or completely broken layouts.
 - Be specific and scoped. "Heading font size is identical to body text, creating no hierarchy" is good. "Add animations" is not.
@@ -104,8 +94,7 @@ async function fetchWithBackoff(url: string, init: RequestInit, maxRetries = 4):
 }
 
 export async function callGeminiVision(
-  imageSignedUrl: string,
-  deterministicFindings: Finding[]
+  imageSignedUrl: string
 ): Promise<Finding[]> {
   if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set')
 
@@ -123,7 +112,7 @@ export async function callGeminiVision(
       contents: [{
         parts: [
           { inlineData: { mimeType: 'image/png', data: base64Image } },
-          { text: buildPrompt(deterministicFindings) },
+          { text: buildPrompt() },
         ],
       }],
       generationConfig: {
@@ -219,18 +208,9 @@ ${JSON.stringify({ findings }, null, 2)}`
   }
 }
 
-type PreviewChoices = { step1: string; step2: string; step3: string }
-
-const CHOICE_LABELS: Record<string, Record<string, string>> = {
-  step1: { minimal: 'Minimal & Clean — reduce noise, increase whitespace', bold: 'Bold & Impactful — stronger contrast, prominent CTA' },
-  step2: { contrast: 'Fix contrast only — keep palette, enforce WCAG AA', refresh: 'Refresh the palette — suggest a modern accessible color scheme' },
-  step3: { accessibility: 'Accessibility first — contrast ratios, legibility, touch targets', layout: 'Layout & hierarchy — spacing rhythm, visual flow, heading scale' },
-}
-
 export async function callGeminiDesignPreview(
   imageSignedUrl: string,
-  findings: Finding[],
-  choices: PreviewChoices
+  finding: Finding
 ): Promise<{ description: string; fix_prompt: string; preview_image_bytes: null }> {
   if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set')
 
@@ -239,22 +219,19 @@ export async function callGeminiDesignPreview(
   const imageBytes = new Uint8Array(await imageResponse.arrayBuffer())
   const base64Image = encodeBase64(imageBytes)
 
-  const findingSummary = findings.map((f: Finding) => `- [${f.severity}] ${f.title}: ${f.repair_guidance}`).join('\n')
-
   const prompt = `You are a senior product designer reviewing a UI screenshot.
 
-The following design issues were found:
-${findingSummary}
+The following design issue was found:
+- [${finding.severity}] ${finding.title}
+- Why it matters: ${finding.why_it_matters}
+- Current repair guidance: ${finding.repair_guidance}
 
-The user wants fixes applied with these style preferences:
-- Style direction: ${CHOICE_LABELS.step1[choices.step1]}
-- Color approach: ${CHOICE_LABELS.step2[choices.step2]}
-- Priority focus: ${CHOICE_LABELS.step3[choices.step3]}
+Generate a focused, actionable fix for this specific issue.
 
 Return ONLY a valid JSON object with this structure:
 {
-  "description": "2-3 sentences explaining what was changed and why it improves the design",
-  "fix_prompt": "A complete, detailed prompt a developer can paste into v0, Cursor, or Lovable to implement all these fixes. Include specific CSS property names, example color values, and spacing amounts where applicable."
+  "description": "2-3 sentences explaining what needs to change and why it will improve the design",
+  "fix_prompt": "A complete, ready-to-paste prompt a developer can give to v0, Cursor, or Lovable to implement this fix. Be specific: include exact CSS property names, values, selectors, or Tailwind classes where applicable."
 }`
 
   const response = await fetchWithBackoff(GEMINI_URL(MODEL, GEMINI_API_KEY), {
@@ -295,6 +272,6 @@ Return ONLY a valid JSON object with this structure:
     description = text.slice(0, 300)
   }
 
-  console.log('[PREVIEW] Generated description:', description.slice(0, 100))
+  console.log('[PREVIEW] Generated description for finding:', finding.title, '|', description.slice(0, 100))
   return { description, fix_prompt, preview_image_bytes: null }
 }

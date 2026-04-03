@@ -16,8 +16,6 @@ type Scan = {
   input_type: 'url' | 'screenshot'
   input_url?: string
   input_filename?: string
-  score?: number
-  category_scores?: Record<string, number>
   finding_count?: number
   det_status: string
   ai_status: string
@@ -77,7 +75,6 @@ export default function ScanResult() {
   const [artifacts, setArtifacts] = useState<Artifacts>({})
   const [selectedFinding, setSelectedFinding] = useState<string | null>(null)
   const [expandedFix, setExpandedFix] = useState<string | null>(null)
-  const [showOverlay, setShowOverlay] = useState(true)
   const [rescanLoading, setRescanLoading] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -207,8 +204,8 @@ export default function ScanResult() {
   }
 
   const handleShareX = () => {
-    const score = scan?.score ?? 0
-    const text = encodeURIComponent(`Just ran a design QA scan — scored ${score}/100 with ${findings.length} issue${findings.length !== 1 ? 's' : ''} found.`)
+    const highest = findings[0]?.severity ?? 'none'
+    const text = encodeURIComponent(`Just ran a design QA scan — ${findings.length} issue${findings.length !== 1 ? 's' : ''} found${findings.length > 0 ? `, highest severity: ${highest}` : ''}.`)
     const url = encodeURIComponent(window.location.href)
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
   }
@@ -225,20 +222,21 @@ export default function ScanResult() {
     critical: '#dc2626', high: '#ea580c', medium: '#ca8a04', low: '#2563eb',
   }
 
-  const overlayBoxes = showOverlay && imageNaturalHeight > 0
-    ? findings.flatMap(f => {
-        const color = SEVERITY_BOX_COLOR[f.severity] ?? '#666666'
-        const isSelected = selectedFinding === f.id
-        if (f.evidence_type === 'bbox') {
-          const ev = f.evidence as { x: number; y: number; width: number; height: number }
-          return [{ ...ev, color, isSelected }]
-        }
-        if (f.evidence_type === 'multi_bbox') {
-          const ev = f.evidence as { boxes: Array<{ x: number; y: number; width: number; height: number }> }
-          return ev.boxes.map(box => ({ ...box, color, isSelected }))
-        }
-        return []
-      })
+  const overlayBoxes = selectedFinding && imageNaturalHeight > 0
+    ? findings
+        .filter(f => f.id === selectedFinding)
+        .flatMap(f => {
+          const color = SEVERITY_BOX_COLOR[f.severity] ?? '#666666'
+          if (f.evidence_type === 'bbox') {
+            const ev = f.evidence as { x: number; y: number; width: number; height: number }
+            return [{ ...ev, color }]
+          }
+          if (f.evidence_type === 'multi_bbox') {
+            const ev = f.evidence as { boxes: Array<{ x: number; y: number; width: number; height: number }> }
+            return ev.boxes.map(box => ({ ...box, color }))
+          }
+          return []
+        })
     : []
 
   const isLoading = !scan || scan.status === 'pending' || scan.status === 'processing'
@@ -333,16 +331,6 @@ export default function ScanResult() {
 
             {/* Left: image viewer */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <button
-                  className={`text-xs px-2 py-1 rounded ${showOverlay ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                  onClick={() => setShowOverlay(true)}
-                >Overlay</button>
-                <button
-                  className={`text-xs px-2 py-1 rounded ${!showOverlay ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                  onClick={() => setShowOverlay(false)}
-                >Original</button>
-              </div>
               <div className="relative border rounded-lg overflow-hidden bg-muted">
                 {artifacts.normalized_path ? (
                   <div className="relative">
@@ -362,8 +350,8 @@ export default function ScanResult() {
                           width: `${(box.width / 1440) * 100}%`,
                           height: `${(box.height / imageNaturalHeight) * 100}%`,
                           border: `2px solid ${box.color}`,
-                          backgroundColor: box.isSelected ? `${box.color}33` : `${box.color}1a`,
-                          boxShadow: box.isSelected ? `0 0 0 2px ${box.color}` : 'none',
+                          backgroundColor: `${box.color}33`,
+                          boxShadow: `0 0 0 2px ${box.color}`,
                         }}
                       />
                     ))}
@@ -376,46 +364,38 @@ export default function ScanResult() {
               </div>
             </div>
 
-            {/* Right: score + findings */}
+            {/* Right: severity summary + findings */}
             <div className="space-y-4">
-              {/* Score bar */}
-              {scan.score != null && (
-                <Card>
-                  <CardContent className="pt-4 pb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Overall score</span>
-                      <span className={`text-xl font-bold ${scan.score >= 80 ? 'text-green-600' : scan.score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {scan.score}
-                      </span>
-                    </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${scan.score >= 80 ? 'bg-green-500' : scan.score >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                        style={{ width: `${scan.score}%` }}
-                      />
-                    </div>
-                    {scan.category_scores && (
-                      <div className="mt-3 grid grid-cols-3 gap-1">
-                        {Object.entries(scan.category_scores).map(([cat, s]) => (
-                          <div key={cat} className="text-center">
-                            <div className="text-xs text-muted-foreground capitalize">{cat.replace('_', ' ')}</div>
-                            <div className="text-xs font-medium">{s}</div>
+              {/* Severity summary */}
+              {findings.length > 0 && (() => {
+                const counts: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 }
+                findings.forEach(f => { if (counts[f.severity] !== undefined) counts[f.severity]++ })
+                const dotColors: Record<string, string> = { critical: 'bg-red-500', high: 'bg-orange-500', medium: 'bg-yellow-500', low: 'bg-blue-500' }
+                return (
+                  <Card>
+                    <CardContent className="pt-4 pb-3">
+                      <div className="flex items-center gap-4">
+                        {Object.entries(counts).filter(([, n]) => n > 0).map(([sev, n]) => (
+                          <div key={sev} className="flex items-center gap-1.5">
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${dotColors[sev]}`} />
+                            <span className="text-sm font-medium">{n}</span>
+                            <span className="text-xs text-muted-foreground capitalize">{sev}</span>
                           </div>
                         ))}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                    </CardContent>
+                  </Card>
+                )
+              })()}
 
-              {/* Preview fixed design — above findings */}
-              {findings.length > 0 && (
+              {/* Preview fix — shown when a finding is selected */}
+              {selectedFinding && (
                 <Button
                   className="w-full no-print"
                   onClick={() => setShowPreview(true)}
                 >
                   <Wand2 className="w-4 h-4 mr-2" />
-                  Preview fixed design
+                  Preview fix
                 </Button>
               )}
 
@@ -554,8 +534,7 @@ export default function ScanResult() {
           open={showPreview}
           onClose={() => setShowPreview(false)}
           scanId={scanId}
-          findings={findings}
-          beforeImageUrl={artifacts.normalized_path}
+          finding={findings.find(f => f.id === selectedFinding) ?? null}
         />
       )}
     </div>

@@ -11,13 +11,9 @@ type Scan = {
   input_type: string
   input_url?: string
   input_filename?: string
-  score?: number
   finding_count?: number
   created_at: string
 }
-
-const scoreColor = (s: number) =>
-  s >= 80 ? 'text-green-600' : s >= 60 ? 'text-yellow-600' : 'text-red-600'
 
 export default function ScanHistory() {
   const navigate = useNavigate()
@@ -73,7 +69,6 @@ export default function ScanHistory() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">URL / File</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Score</th>
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Findings</th>
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Date</th>
@@ -95,13 +90,6 @@ export default function ScanHistory() {
                             {scan.input_url ?? scan.input_filename ?? scan.id}
                           </span>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {scan.score != null ? (
-                          <span className={`font-semibold ${scoreColor(scan.score)}`}>{scan.score}</span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {scan.finding_count ?? '—'}

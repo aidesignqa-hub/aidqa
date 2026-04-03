@@ -2,13 +2,11 @@ import { supabase, getUserFromRequest, getUserInfoFromRequest, AuthError, ADMIN_
 import { makeCors } from '../_lib/cors.ts'
 import { isUrlSafe } from '../_lib/ssrfGuard.ts'
 import { uploadFile, getSignedUrl } from '../_lib/storage.ts'
-import { callGeminiVision, callGeminiRepairGuidance, callGeminiDesignPreview } from '../_lib/gemini.ts'
+import { callGeminiVision, callGeminiDesignPreview } from '../_lib/gemini.ts'
 import { captureEnhanced, captureFullPageScreenshot } from './capture.ts'
 import { normalizeImage, generateOverlay } from './normalize.ts'
-import { runAllChecks } from './deterministic.ts'
 import { calculateScore, mergeAndPrioritize } from './score.ts'
 import { embedText } from '../_lib/embedding.ts'
-import { retrieveRAGContext } from '../_lib/rag.ts'
 import type { Finding, DesignSystemConfig } from '../_lib/types.ts'
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
@@ -211,30 +209,14 @@ async function _runProcessScan(
       throw new Error('No valid input')
     }
 
-    // ── Phase 2: Deterministic checks (including axe + mobile) ───────────────
-    let deterministicFindings: Finding[] = []
-
-    if (dom1440 && dom1440.length > 0) {
-      deterministicFindings = runAllChecks(
-        dom1440,
-        axeViolations ?? undefined,
-        dom375 ?? undefined,
-        input.designSystemConfig ?? undefined
-      )
-      await supabase.from('scans').update({ det_status: 'completed' }).eq('id', scanId)
-      lap('Phase 2 deterministic')
-    } else {
-      await supabase.from('scans').update({ det_status: 'skipped' }).eq('id', scanId)
-    }
-
-    // ── Phase 3: Gemini Vision ─────────────────────────────────────────────────
+    // ── Phase 2: Gemini Vision ────────────────────────────────────────────────
     let aiFindings: Finding[] = []
 
     try {
       const normalizedUrl = await getSignedUrl(`${basePath}/normalized.png`, 3600)
-      aiFindings = await callGeminiVision(normalizedUrl, deterministicFindings)
+      aiFindings = await callGeminiVision(normalizedUrl)
       await supabase.from('scans').update({ ai_status: 'completed' }).eq('id', scanId)
-      lap('Phase 3 Gemini Vision')
+      lap('Phase 2 Gemini Vision')
     } catch (aiErr) {
       console.error(`[${scanId}] Gemini Vision failed:`, aiErr)
       await supabase.from('scans').update({
@@ -243,29 +225,8 @@ async function _runProcessScan(
       }).eq('id', scanId)
     }
 
-    // ── Phase 4: Merge, RAG-enriched repair guidance, score, overlay ──────────
-    const merged = mergeAndPrioritize(deterministicFindings, aiFindings)
-
-    // RAG-enriched repair guidance: retrieve WCAG/design-pattern context for each det finding
-    let finalFindings = merged
-    if (deterministicFindings.length > 0) {
-      try {
-        const detOnly = merged.filter(f => f.source === 'deterministic')
-        if (detOnly.length > 0) {
-          // Build RAG context by retrieving relevant knowledge base entries for all findings
-          const ragContextParts = await Promise.all(
-            detOnly.slice(0, 5).map(f => retrieveRAGContext(f).catch(() => ''))
-          )
-          const ragContext = ragContextParts.filter(Boolean).join('\n\n---\n\n')
-          const improved = await callGeminiRepairGuidance(detOnly, ragContext)
-          const improvedMap = new Map(improved.map(f => [f.title, f]))
-          finalFindings = merged.map(f => f.source === 'deterministic' ? (improvedMap.get(f.title) ?? f) : f)
-          lap('Phase 4 RAG + repair guidance')
-        }
-      } catch {
-        // Non-blocking — keep original guidance
-      }
-    }
+    // ── Phase 3: Merge, score ─────────────────────────────────────────────────
+    const finalFindings = mergeAndPrioritize([], aiFindings)
 
     const { overall, categoryScores } = calculateScore(finalFindings)
 
@@ -447,17 +408,9 @@ export async function handlePreviewScan(req: Request, scanId: string): Promise<R
   try { userId = await getUserFromRequest(req) } catch (e) { return corsError(String(e), 401) }
 
   const body = await req.json()
-  const choices = body.choices
-  if (!choices?.step1 || !choices?.step2 || !choices?.step3) {
-    return corsError('choices.step1, step2, step3 are required', 400)
-  }
-
-  // Whitelist choices to prevent prompt injection
-  const VALID_CHOICES = { step1: ['minimal', 'bold'], step2: ['contrast', 'refresh'], step3: ['accessibility', 'layout'] }
-  for (const [k, v] of Object.entries(choices)) {
-    if (!VALID_CHOICES[k as keyof typeof VALID_CHOICES]?.includes(v as string)) {
-      return corsError(`Invalid value for ${k}`, 400)
-    }
+  const findingId = body.finding_id
+  if (!findingId || typeof findingId !== 'string') {
+    return corsError('finding_id is required', 400)
   }
 
   const { data: scan, error: scanErr } = await supabase
@@ -469,30 +422,22 @@ export async function handlePreviewScan(req: Request, scanId: string): Promise<R
 
   if (scanErr || !scan?.normalized_path) return corsError('Scan not found', 404)
 
-  const { data: findingsData } = await supabase
+  const { data: finding, error: findingErr } = await supabase
     .from('findings')
-    .select('severity, title, repair_guidance')
+    .select('id, severity, title, why_it_matters, repair_guidance, ai_fix_instruction')
+    .eq('id', findingId)
     .eq('scan_id', scanId)
     .eq('user_id', userId)
-    .eq('dismissed', false)
-    .order('score_impact', { ascending: true })
-    .limit(7)
+    .single()
 
-  const findings = findingsData ?? []
+  if (findingErr || !finding) return corsError('Finding not found', 404)
 
   try {
     const imageUrl = await getSignedUrl(scan.normalized_path, 3600)
-    const { description, fix_prompt, preview_image_bytes } = await callGeminiDesignPreview(imageUrl, findings, choices)
+    const { description, fix_prompt } = await callGeminiDesignPreview(imageUrl, finding)
 
-    let preview_image_url: string | null = null
-    if (preview_image_bytes) {
-      const previewPath = `${userId}/scans/${scanId}/preview.png`
-      await uploadFile(previewPath, preview_image_bytes, 'image/png')
-      preview_image_url = await getSignedUrl(previewPath, 3600)
-    }
-
-    console.log(`[PREVIEW] ${scanId} completed — image: ${!!preview_image_bytes}`)
-    return corsResponse({ description, fix_prompt, preview_image_url })
+    console.log(`[PREVIEW] ${scanId} / finding ${findingId} completed`)
+    return corsResponse({ description, fix_prompt })
   } catch (err) {
     console.error(`[PREVIEW] ${scanId} failed:`, err)
     return corsError('Preview generation failed', 500)

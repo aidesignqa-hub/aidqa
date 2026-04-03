@@ -11,11 +11,8 @@ export function calculateScore(findings: Finding[]): { overall: number; category
     const ruleKey = `${finding.category}:${finding.title}`
     if (penalizedRules.has(ruleKey)) continue
 
-    // Deterministic findings: full weight. AI findings: only high/critical apply at 40% weight.
     const baseWeight = WEIGHTS[finding.severity] ?? 0
-    const deduction = finding.source === 'deterministic'
-      ? baseWeight
-      : (finding.severity === 'critical' || finding.severity === 'high') ? Math.round(baseWeight * 0.4) : 0
+    const deduction = baseWeight
     total -= deduction
     categoryDeductions[finding.category] = (categoryDeductions[finding.category] ?? 0) + deduction
     penalizedRules.add(ruleKey)
@@ -53,6 +50,5 @@ export function mergeAndPrioritize(
   const weight: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 }
   deduped.sort((a, b) => (weight[b.severity] ?? 0) - (weight[a.severity] ?? 0))
 
-  // Top 3–7
-  return deduped.slice(0, 7)
+  return deduped
 }
