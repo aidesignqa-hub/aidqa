@@ -1,350 +1,37 @@
-# AIDQA — Project Brain
+# AIDQA — Agent Instructions
 
-> This file is the authoritative reference for AI assistants working on this codebase.
-> Update it whenever a milestone is completed or architecture changes.
-> Last audited: 2026-04-01 (monorepo restructure — apps/ layout, paths updated)
-
----
-
-## What this product is
-
-AIDQA is a design QA tool for AI-generated UI. A user submits a URL or screenshot. The system inspects the interface for measurable design quality issues — layout incoherence, weak hierarchy, inconsistency, accessibility failures, design-system drift — and returns 3–7 prioritized findings. Each finding includes an evidence region, a plain-English explanation, repair guidance, and an AI-ready fix instruction.
-
-**The product is not:**
-- A visual regression tool (no baselines, no pixel diff, no monitoring)
-- A taste judge (no subjective style opinions)
-- A replacement for designers
-
-**The core user:** indie hackers and startup teams shipping UI fast with AI builders (v0, Lovable, Cursor) who can tell the output feels off but cannot diagnose why.
+> Authoritative instructions for AI agents working on this codebase.
+> Update when architecture changes or new rules are established.
+> Last audited: 2026-04-02
 
 ---
 
-## Deployment architecture
+## What This Product Is
 
-The project has **two Vercel deployments** serving three domains:
+AIDQA is a design QA tool for AI-generated UI. A user submits a URL or screenshot. The system inspects the interface for measurable design quality issues — layout incoherence, weak hierarchy, inconsistency, accessibility failures, design-system drift — and returns 3–7 prioritized findings with evidence regions, plain-English explanations, repair guidance, and AI-ready fix instructions.
 
-| Domain | Deployment | Purpose |
+**Core user:** indie hackers and startup teams shipping UI fast with AI builders (v0, Lovable, Cursor) who can tell the output feels off but cannot diagnose why.
+
+---
+
+## Deployment Map
+
+| Domain | Project | Purpose |
 |---|---|---|
-| `app.aidesignqa.com` | `apps/app/` (React/Vite SPA) | The product — auth-gated, scan/results UI |
-| `aidesignqa.com` | `apps/landing/` (Next.js) | Homepage — stable, broad audience, SEO-optimised |
-| `lp.aidesignqa.com` | `apps/landing/` (Next.js) | Marketing funnel LP — evolving, sent to prospects |
+| `app.aidesignqa.com` | `apps/app/` (React/Vite SPA) | The product — auth-gated scan/results UI |
+| `aidesignqa.com` | `apps/landing/` (Next.js) | Homepage — stable, SEO-optimised |
+| `lp.aidesignqa.com` | `apps/landing/` (Next.js) | Marketing LP — actively iterated |
 
-The `apps/landing/` Next.js app serves both `aidesignqa.com` and `lp.aidesignqa.com` from a single deployment. Routing is handled by `apps/landing/src/middleware.ts`: requests from `lp.*` are internally rewritten to `/lp`, so the URL stays clean.
+`apps/landing/` serves both domains from one Vercel project. `lp.*` requests are rewritten to `/lp` by `apps/landing/src/middleware.ts`. Duplication between `components/marketing/` and `components/lp/` is **intentional** — these trees are expected to diverge.
 
-### Homepage vs LP — intentional distinction
-
-- **Homepage** (`/`) uses `components/marketing/` — stable brand page, not frequently changed.
-- **LP** (`/lp`) uses `components/lp/` — actively experimented on (different pricing, hero copy, CTAs). Sent in cold outreach and campaigns.
-- The two component trees start similar but are expected to diverge as the LP is iterated on. Duplication between `marketing/` and `lp/` is intentional.
+Full architecture details: `docs/ARCHITECTURE.md`
 
 ---
 
-## Tech stack
-
-| Layer | Choice |
-|---|---|
-| Frontend | React 18 + Vite + TypeScript + shadcn/ui + Tailwind CSS |
-| Backend | Supabase Edge Functions (Deno runtime) |
-| Database | Supabase Postgres |
-| Storage | Supabase Storage (bucket: `aidqa`) |
-| Auth | Supabase Auth — email/password + Google OAuth |
-| Headless render | Browserless REST API |
-| AI analysis | Google Gemini Vision (Google AI Studio) |
-| Queue | `EdgeRuntime.waitUntil` for MVP; pgmq upgrade path documented below |
-| Hosting | Vercel (frontend) |
-
----
-
-## Repository structure
-
-```
-/
-├── apps/
-│   ├── app/                      # React/Vite SPA (app.aidesignqa.com)
-│   │   ├── src/
-│   │   │   ├── pages/
-│   │   │   │   ├── ScanInput.tsx         # Upload or URL entry
-│   │   │   │   ├── ScanResult.tsx        # Score + findings + overlay viewer
-│   │   │   │   ├── ScanHistory.tsx       # Past scans list
-│   │   │   │   ├── Login.tsx
-│   │   │   │   └── Signup.tsx
-│   │   │   ├── components/
-│   │   │   │   ├── NavBar.tsx
-│   │   │   │   ├── DesignPreview.tsx
-│   │   │   │   └── ProtectedRoute.tsx
-│   │   │   ├── lib/
-│   │   │   │   ├── supabaseClient.ts
-│   │   │   │   ├── auth.ts               # getAuthHeaders()
-│   │   │   │   └── apiBase.ts
-│   │   │   └── main.tsx
-│   │   ├── vercel.json
-│   │   └── vite.config.ts
-│   └── landing/                  # Next.js marketing site (aidesignqa.com + lp.aidesignqa.com)
-│       ├── src/
-│       │   ├── app/              # Next.js App Router pages
-│       │   ├── components/
-│       │   │   ├── marketing/    # Homepage components (stable)
-│       │   │   └── lp/           # LP components (actively iterated)
-│       │   └── middleware.ts     # Routes lp.* → /lp internally
-│       └── vercel.json
-├── supabase/
-│   ├── functions/
-│   │   └── aidqa-api/            # Single Edge Function, all routes
-│   │       ├── index.ts          # Router
-│   │       ├── _lib/
-│   │       │   ├── cors.ts
-│   │       │   ├── ssrfGuard.ts
-│   │       │   ├── supabaseServer.ts
-│   │       │   ├── types.ts
-│   │       │   ├── storage.ts
-│   │       │   ├── gemini.ts     # Gemini API call (vision + repair guidance)
-│   │       │   ├── embedding.ts  # Vector embedding helpers
-│   │       │   └── rag.ts        # RAG retrieval for repair guidance
-│   │       └── scan/
-│   │           ├── handlers.ts   # HTTP handlers
-│   │           ├── capture.ts    # Browserless screenshot + DOM
-│   │           ├── normalize.ts  # Image resize pipeline
-│   │           ├── deterministic.ts  # Rule engine
-│   │           └── score.ts      # Scoring logic
-│   └── migrations/               # Append-only, timestamped
-│       ├── 20260314000100_create_scans.sql
-│       ├── 20260314000200_create_findings.sql
-│       ├── 20260314000300_rls_policies.sql
-│       ├── 20260314000400_storage_policies.sql
-│       └── ...                   # Additional migrations in supabase/migrations/
-└── package.json                  # Root (workspace tooling only)
-```
-
----
-
-## Database schema
-
-### Table: `scans`
-
-```sql
-CREATE TABLE scans (
-  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id           TEXT NOT NULL,                    -- auth.uid()
-  input_type        TEXT NOT NULL CHECK (input_type IN ('url', 'screenshot')),
-  input_url         TEXT,                             -- populated for url scans
-  input_filename    TEXT,                             -- populated for screenshot scans
-  original_path     TEXT,                             -- storage path
-  normalized_path   TEXT,                             -- storage path, 1440px PNG
-  overlay_path      TEXT,                             -- storage path, annotated image
-  dom_path          TEXT,                             -- storage path, dom-snapshot.json
-  status            TEXT NOT NULL DEFAULT 'pending'
-                    CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
-  score             INTEGER,                          -- 0–100, null until completed
-  category_scores   JSONB,                            -- {layout, hierarchy, consistency, accessibility, design_system, ux_readiness}
-  finding_count     INTEGER,
-  error_message     TEXT,
-  det_status        TEXT NOT NULL DEFAULT 'pending'
-                    CHECK (det_status IN ('pending', 'completed', 'failed', 'skipped')),
-  ai_status         TEXT NOT NULL DEFAULT 'pending'
-                    CHECK (ai_status IN ('pending', 'completed', 'failed', 'skipped')),
-  ai_error          TEXT,
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  completed_at      TIMESTAMPTZ
-);
-```
-
-### Table: `findings`
-
-```sql
-CREATE TABLE findings (
-  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  scan_id           UUID NOT NULL REFERENCES scans(id) ON DELETE CASCADE,
-  user_id           TEXT NOT NULL,
-  category          TEXT NOT NULL
-                    CHECK (category IN ('layout', 'hierarchy', 'consistency', 'accessibility', 'design_system', 'ux_readiness')),
-  severity          TEXT NOT NULL
-                    CHECK (severity IN ('critical', 'high', 'medium', 'low')),
-  title             TEXT NOT NULL,
-  evidence_type     TEXT NOT NULL
-                    CHECK (evidence_type IN ('bbox', 'multi_bbox', 'region', 'metric', 'explanation')),
-  evidence          JSONB NOT NULL,
-  why_it_matters    TEXT NOT NULL,
-  repair_guidance   TEXT NOT NULL,
-  ai_fix_instruction TEXT NOT NULL,
-  metric_value      TEXT,
-  score_impact      INTEGER,
-  source            TEXT NOT NULL
-                    CHECK (source IN ('deterministic', 'ai')),
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-```
-
-### RLS policies
-
-```sql
-ALTER TABLE scans ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "users_own_scans" ON scans USING (user_id = auth.uid()::text);
-
-ALTER TABLE findings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "users_own_findings" ON findings USING (user_id = auth.uid()::text);
-```
-
-### Storage policies
-
-Bucket name: `aidqa`
-
-```sql
-CREATE POLICY "user_storage_access" ON storage.objects
-  FOR ALL TO authenticated
-  USING (bucket_id = 'aidqa' AND (storage.foldername(name))[1] = auth.uid()::text)
-  WITH CHECK (bucket_id = 'aidqa' AND (storage.foldername(name))[1] = auth.uid()::text);
-```
-
-Storage path convention: `{userId}/scans/{scanId}/{filename}`
-
----
-
-## API contract
-
-All user routes require `Authorization: Bearer <jwt>` header.
-
-| Method | Route | Purpose |
-|---|---|---|
-| GET | `/health` | Liveness check, no auth |
-| POST | `/v1/scans` | Create scan. Body: `{ url }` OR multipart file upload |
-| GET | `/v1/scans` | List user's scans, paginated (`?page=1&limit=20`) |
-| GET | `/v1/scans/:id` | Scan status + score. Poll until `status = completed` |
-| GET | `/v1/scans/:id/findings` | Prioritized finding list |
-| GET | `/v1/scans/:id/artifacts` | Signed URLs for normalized, overlay, dom-snapshot |
-| DELETE | `/v1/scans/:id` | Delete scan and all findings |
-
-### Frontend polling
-
-After `POST /v1/scans` returns `{ scan_id }`, the frontend polls `GET /v1/scans/:id` every 1500ms.
-
-Stop condition: `scan.status === 'completed' || scan.status === 'failed'`
-
-Hard timeout: 60 seconds → show error state.
-
----
-
-## Processing pipeline
-
-```
-POST /v1/scans
-  → SSRF check → insert scan row → return { scan_id } (202)
-  → EdgeRuntime.waitUntil(processScan())
-      PHASE 1: Capture — captureScreenshot + captureDomSnapshot + normalizeImage + upload
-      PHASE 2: Deterministic — runAllChecks(domSnapshot) → Finding[]
-      PHASE 3: Gemini Vision — callGeminiVision(imageSignedUrl, deterministicFindings) → Finding[]
-      PHASE 4: Repair guidance — callGeminiRepairGuidance(deterministicFindings) [text-only, non-blocking]
-      PHASE 5: Merge + score + overlay → INSERT findings → UPDATE scans status=completed
-```
-
-Screenshot upload skips Phase 1 DOM capture. Only Gemini Vision runs. `det_status=skipped`. Findings are fewer and less precise — disclosed in the UI.
-
----
-
-## AI analysis (Gemini Vision)
-
-`_lib/gemini.ts` exports:
-
-### `callGeminiVision(imageSignedUrl, deterministicFindings): Promise<Finding[]>`
-- Fetches image from signed URL → base64 encode with `encodeBase64` from `jsr:@std/encoding/base64`
-- Posts to Gemini with image as `inlineData` + prompt text
-- Uses `generationConfig.responseMimeType: "application/json"`
-- Passes deterministic finding titles to avoid duplicates
-- Throws on failure
-
-### `callGeminiRepairGuidance(findings): Promise<Finding[]>`
-- Text-only call — rewrites `repair_guidance` and `ai_fix_instruction` on deterministic findings
-- Returns original findings on any failure (non-blocking)
-
-### Gemini API details
-```
-Endpoint: https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={GEMINI_API_KEY}
-Response: candidates[0].content.parts[0].text  (JSON string — parse it)
-Default model: gemini-2.0-flash (configurable via GEMINI_MODEL env var)
-```
-
----
-
-## Deterministic rule engine
-
-Runs only when DOM snapshot is available (URL scan path).
-
-| Rule | Category | Severity | Evidence |
-|---|---|---|---|
-| Text contrast failure (WCAG ratio) | accessibility | critical | metric |
-| Touch target < 44×44px | accessibility | high | bbox |
-| Spacing rhythm break | layout | medium | multi_bbox |
-| Edge misalignment | layout | medium | multi_bbox |
-| Whitespace imbalance | layout | low | region |
-| Button style drift | consistency | medium | multi_bbox |
-| Card/component variance | consistency | medium | multi_bbox |
-| Heading scale weakness | hierarchy | medium | metric |
-| Spacing token violation | design_system | medium | metric |
-| Typography scale chaos | design_system | low | metric |
-
----
-
-## Scoring
-
-```typescript
-const WEIGHTS = { critical: 20, high: 12, medium: 7, low: 3 }
-// Start at 100, deduct per finding by severity, floor at 0
-// Category scores derived from per-category deduction subtotals
-```
-
-Score is secondary to findings. Never lead with the number in the UI.
-
----
-
-## Auth
-
-```typescript
-// Frontend — apps/app/src/lib/auth.ts
-export async function getAuthHeaders(): Promise<HeadersInit> {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) throw new Error('Not authenticated')
-  return {
-    'Authorization': `Bearer ${session.access_token}`,
-    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-  }
-}
-
-// Edge Function — _lib/supabaseServer.ts
-export async function getUserFromRequest(req: Request): Promise<string> {
-  const token = req.headers.get('Authorization')?.replace('Bearer ', '')
-  if (!token) throw new AuthError('No token')
-  const { data: { user }, error } = await supabase.auth.getUser(token)
-  if (error || !user) throw new AuthError('Invalid token')
-  return user.id
-}
-```
-
----
-
-## Environment variables
-
-### Edge Function secrets (Supabase dashboard → Settings → Edge Functions → Secrets)
-```
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-GEMINI_API_KEY              # Google AI Studio key — required
-GEMINI_MODEL                # optional, default: gemini-2.0-flash
-BROWSERLESS_API_KEY
-BROWSERLESS_URL             # e.g. https://chrome.browserless.io
-```
-
-### Vercel env (frontend)
-```
-VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
-VITE_API_BASE_URL           # https://your-project.supabase.co/functions/v1/aidqa-api
-```
-
----
-
-## Guiding principles
+## Guiding Principles
 
 1. **URL scan is the core path.** Screenshot upload is a deliberate fallback with lower quality output.
-2. **Findings lead, score follows.** Findings are the hero element. Score is a compact secondary signal.
+2. **Findings lead, score follows.** Findings are the hero element. Score is a compact secondary signal. Never lead with the number in the UI.
 3. **Deterministic first, AI second.** Gemini receives deterministic finding titles and must not repeat them.
 4. **Evidence must match the finding.** Spacing → `multi_bbox`. Contrast → `metric`. Hierarchy → `region` or `explanation`.
 5. **`EdgeRuntime.waitUntil` for all async work.** Never fire a floating promise. Always update the scan row on failure.
@@ -353,14 +40,112 @@ VITE_API_BASE_URL           # https://your-project.supabase.co/functions/v1/aidq
 8. **Signed URLs only.** Generate on demand. Store only storage paths in the database.
 9. **RLS on every table.** `user_id = auth.uid()`. Never trust a `user_id` in the request body.
 10. **Migrations are append-only.** Never edit an existing `.sql` file. Always create a new timestamped migration.
-11. **Always deploy edge functions with `--no-verify-jwt`.** Run `npm run supabase:deploy` (never `supabase functions deploy aidqa-api` bare). Supabase's gateway-level JWT verification silently re-enables after every deploy and rejects ES256 tokens before the request reaches the function. The function handles its own JWT validation via `getUserFromRequest`. Without this flag, all authenticated routes return 401.
+11. **Always deploy edge functions with `--no-verify-jwt`.** Run `npm run supabase:deploy` (never `supabase functions deploy aidqa-api` bare). Supabase's gateway-level JWT verification silently re-enables after every deploy and rejects ES256 tokens before the request reaches the function. Without this flag, all authenticated routes return 401.
 
 ---
 
-## What NOT to build
+## What NOT to Build
 
 - Baseline comparison / pixel diff — wrong product
 - Monitor scheduling / cron — wrong product
 - Figma import — post-MVP
 - Team workspaces / collaboration — post-MVP
 - Webhooks / alerting — post-MVP
+
+---
+
+## Agent Behavior Rules
+
+### Planning Phase (Required Before Multi-File Changes)
+
+Before making changes spanning 2+ files, provide:
+1. **Goal** — what problem are we solving?
+2. **Acceptance Criteria** — how do we know it works?
+3. **Files to Modify** — full paths + reason for each
+4. **Risks** — breaking changes, dependency impacts, migration needs
+
+**Wait for explicit "GO" from the user before proceeding.**
+
+### Execution Phase
+
+- **Smallest safe diff** — change only what's necessary to meet acceptance criteria
+- **No refactors** — unless explicitly requested
+- **No optimizations** — unless explicitly requested or fixing a bug
+- **No cosmetic changes** — no formatting, renaming, or reordering unless part of the task
+
+### Verification Phase
+
+- **Never claim** "tests passed", "file created", "server started"
+- **Always provide** commands to verify (`npm test`, `ls -la .github/`)
+- **Show diffs** when unclear if a change worked: provide `git diff` command
+
+### Communication
+
+- Be concise: state what you're doing, show the code, move on
+- No preambles: skip "Let me...", "I'll now...", "First, we should..."
+- Actionable feedback: "Run `npm test` to verify" not "this should work"
+
+### Error Handling
+
+- Show tool errors verbatim
+- Propose fix OR ask for clarification — never guess silently
+- When stuck after 2 attempts, stop and ask the user for input
+
+---
+
+## Pre-Production Checklist
+
+Run after every code change, before every commit.
+
+### 1. TypeScript — Vite app
+```bash
+cd apps/app && npx tsc --noEmit
+```
+Must produce **no output**.
+
+### 2. TypeScript — Landing (Next.js)
+```bash
+cd apps/landing && npx tsc --noEmit
+```
+Must produce **no output**.
+
+### 3. Build — Vite app
+```bash
+cd apps/app && npm run build
+```
+Must complete without errors. The `>500 kB` bundle size warning is pre-existing — acceptable until code-splitting is addressed.
+
+### 4. ESLint
+```bash
+cd apps/app && npx eslint "src/" --ignore-pattern "src/components/ui/**" --max-warnings=0
+```
+Must produce **0 errors, 0 warnings**. `src/components/ui/` is excluded — auto-generated shadcn code, do not modify.
+
+### 5. Tests
+```bash
+cd apps/app && npm run test -- --run
+```
+All 40 tests must pass. No new failures.
+
+### 6. Deploy via Vercel only
+Never manually copy files or trigger deployments outside of Vercel. Commit → push to `main` → Vercel auto-deploys both projects.
+
+### 7. Edge Function deploy (when `supabase/functions/` changed)
+```bash
+npm run supabase:deploy
+```
+This runs `npx supabase functions deploy aidqa-api --no-verify-jwt`. Must complete without errors. Requires active `supabase login` session linked to the `eboaqtbktyaxzrbcntzy` project.
+
+---
+
+## Reference Docs
+
+| Topic | File |
+|---|---|
+| Tech stack, repo structure, deployment details | `docs/ARCHITECTURE.md` |
+| Database schema, RLS, storage policies | `docs/DATABASE_SCHEMA.md` |
+| API contract, endpoints, polling | `docs/API.md` |
+| Processing pipeline, Gemini Vision, auth patterns | `docs/PIPELINE.md` |
+| Environment variables | `docs/ENV_VARS.md` |
+| Deterministic rule engine, scoring algorithm | `docs/DETERMINISTIC_SCORING.md` |
+| Open code review issues | `docs/CODE_REVIEW.md` |
