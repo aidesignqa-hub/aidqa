@@ -1,0 +1,828 @@
+{
+  "meta": {
+    "version": "1.0",
+    "date_generated": "2026-04-05",
+    "source_count": 6,
+    "total_rules": 42,
+    "categories": {
+      "visual-hierarchy": 4,
+      "typography": 11,
+      "contrast-color": 1,
+      "spacing-layout": 3,
+      "accessibility": 8,
+      "ux-usability": 11,
+      "content-copy": 0,
+      "responsive-mobile": 0,
+      "navigation-ia": 0,
+      "gestalt": 5
+    },
+    "sources": [
+      {
+        "title": "Visual Hierarchy in UX: Definition",
+        "url": "https://www.nngroup.com/articles/visual-hierarchy-ux-definition/",
+        "author": "Kelley Gordon",
+        "objects": ["kb-vh-001", "kb-vh-002", "kb-vh-003", "kb-vh-004", "kb-vh-005", "kb-vh-006", "kb-vh-007", "kb-vh-008", "kb-vh-009", "kb-vh-010"]
+      },
+      {
+        "title": "Gestalt Principles for Visual UI Design",
+        "url": "https://www.uxtigers.com/post/gestalt-principles",
+        "author": "Jakob Nielsen",
+        "objects": ["kb-g-001", "kb-g-002", "kb-g-003", "kb-g-004", "kb-g-005"]
+      },
+      {
+        "title": "F-Shaped Pattern For Reading Web Content",
+        "url": "https://www.nngroup.com/articles/f-shaped-pattern-reading-web-content-discovered/",
+        "author": "Jakob Nielsen",
+        "objects": ["kb-f-001", "kb-f-002", "kb-f-003"]
+      },
+      {
+        "title": "WCAG 2.2 — Visual Criteria Reference",
+        "url": "https://www.w3.org/TR/WCAG22/",
+        "author": "W3C / Kris Rivenburgh",
+        "objects": ["kb-w-001", "kb-w-002", "kb-w-003", "kb-w-004", "kb-w-005", "kb-w-006", "kb-w-007"]
+      },
+      {
+        "title": "Typography for Web Design",
+        "url": "https://design.dev/guides/typography-web-design/",
+        "author": null,
+        "objects": ["kb-ty-001", "kb-ty-002", "kb-ty-003", "kb-ty-004", "kb-ty-005", "kb-ty-006", "kb-ty-007", "kb-ty-008", "kb-ty-009"]
+      },
+      {
+        "title": "10 Usability Heuristics for User Interface Design",
+        "url": "https://www.nngroup.com/articles/ten-usability-heuristics/",
+        "author": "Jakob Nielsen",
+        "objects": ["kb-ux-001", "kb-ux-002", "kb-ux-003", "kb-ux-004", "kb-ux-005", "kb-ux-006", "kb-ux-007", "kb-ux-008"]
+      }
+    ]
+  },
+  "knowledge": [
+    {
+      "id": "kb-vh-001",
+      "type": "principle",
+      "category": "visual-hierarchy",
+      "subcategory": "focal-point",
+      "severity_if_violated": "high",
+      "scope": "viewport",
+      "rule": "A page must have a clear dominant element that the eye lands on first. A layout where all elements are similar in size, color, and spacing has no hierarchy and forces users to parse the entire view to find their entry point.",
+      "detail": "Visual hierarchy controls the order in which users process information on a page. Without a dominant focal point, users experience cognitive overload and often abandon the page or miss the primary message entirely. The dominant element does not need to be large — it can be elevated through contrast, isolation, or color — but it must be unambiguous.",
+      "detection_signals": [
+        "Scan the viewport: is there one element that clearly stands out above all others on first glance?",
+        "If 3 or more elements compete at the same visual weight (size, color, contrast), hierarchy is absent",
+        "Pages where most text is set in all-caps at similar sizes lose hierarchy because capitalisation equalises visual weight",
+        "Look for the Williams-Sonoma pattern: many same-size blocks with similar colors and no breathing room — no clear winner"
+      ],
+      "image_path": "kb/images/williamssonoma.png",
+      "vector_embedding_text": "Visual hierarchy principle: every page needs a single dominant element that anchors the user's eye on first contact. This falls under the visual-hierarchy category, focal-point subcategory. When all elements on a page are similar in size, color, saturation, and spacing, no hierarchy exists and users cannot identify where to begin. The result is cognitive overload and high abandonment. The dominant element can be elevated through contrast, isolation, color, or scale — but it must be unambiguous. To detect a violation: scan the viewport and ask whether one element clearly stands out. If three or more elements compete at the same visual weight, or if the page uses uniform capitalisation and similar-sized blocks with no breathing room, hierarchy has collapsed. This is a viewport-scoped principle — it applies to what the user sees on load, not the full scrollable page."
+    },
+    {
+      "id": "kb-vh-002",
+      "type": "rule",
+      "category": "visual-hierarchy",
+      "subcategory": "contrast-variations",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Use no more than 3 contrast variation levels in a design — for example, high-contrast primary, medium secondary, low tertiary. When everything is contrasted equally, nothing stands out and hierarchy collapses.",
+      "detail": "Contrast creates hierarchy by making some elements advance visually and others recede. Effective designs typically apply distinct contrast levels to headings, subheadings, and body text. When too many elements share the same contrast level — or when every element is high-contrast — the eye has no signal about what to read first. This applies to both text contrast against its background and to the overall value contrast between UI elements.",
+      "detection_signals": [
+        "Check heading, subheading, and body text: if all three have similar visual weight against their backgrounds, contrast discipline is broken",
+        "If buttons, banners, headings, and body text all appear at maximum contrast simultaneously, the hierarchy is overloaded",
+        "Count distinct contrast levels used for text: more than 3 is a signal of hierarchy breakdown"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Visual hierarchy rule: a design should use no more than 3 contrast variation levels — such as high-contrast primary, medium secondary, and low tertiary. This falls under the visual-hierarchy category, contrast-variations subcategory. Contrast creates hierarchy by making elements advance or recede visually. When every element is rendered at the same contrast level — or when there are more than 3 distinct levels with no clear priority — the eye has no signal for where to begin reading. Effective designs reserve maximum contrast for the most important elements and use progressively lower contrast for supporting content. To detect a violation: inspect the heading, subheading, and body text — if all three have similar visual weight against their backgrounds, contrast discipline is broken. Also flag pages where buttons, banners, headings, and body copy all compete at maximum contrast simultaneously. Applies to both the viewport and the full page, with higher severity when the violation is above the fold."
+    },
+    {
+      "id": "kb-vh-003",
+      "type": "rule",
+      "category": "visual-hierarchy",
+      "subcategory": "color-count",
+      "severity_if_violated": "low",
+      "scope": "full-page",
+      "rule": "In standard UI designs, limit color use to 2 primary and 2 secondary colors. Using more colors of similar saturation reduces users' ability to perceive hierarchy between elements.",
+      "detail": "Color creates hierarchy when used selectively — a single accent color draws the eye precisely because everything else is neutral. When 5 or more distinct colors appear at similar saturation levels, no single color can signal importance over another. Complex multi-color schemes can work in certain brand contexts but require strict value and saturation control to maintain hierarchy.",
+      "detection_signals": [
+        "Count distinct colors used for text, backgrounds, borders, and interactive elements across the full page",
+        "Flag if more than 4–5 distinct colors are used without a clear primary/secondary/neutral structure",
+        "Check if warm bright colors (red, orange) are used for non-error, non-warning elements — these should be reserved for system feedback"
+      ],
+      "image_path": "kb/images/moma.png",
+      "vector_embedding_text": "Visual hierarchy rule: standard UI designs should limit color use to 2 primary and 2 secondary colors. This falls under the visual-hierarchy category, color-count subcategory. Color creates hierarchy through selectivity — a single accent color draws attention precisely because the surrounding palette is restrained. When 5 or more distinct colors appear at similar saturation levels, no color can signal importance over any other and the hierarchy collapses. Warm bright colors such as red and orange should be reserved for warnings and errors; using them for decorative or promotional elements competes with system feedback. To detect a violation: count distinct colors used across the full page for text, backgrounds, borders, and interactive elements. Flag if more than 4–5 are present without a clear primary-secondary-neutral structure. This is a full-page rule evaluated across the entire screenshot."
+    },
+    {
+      "id": "kb-vh-004",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "color-only-hierarchy",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Visual hierarchy must never rely on color alone to communicate importance or meaning. Users with color blindness may not perceive differences between certain color combinations, so shape, size, position, or typography must reinforce hierarchy independently of color.",
+      "detail": "Approximately 8% of men and 0.5% of women have some form of color vision deficiency. A hierarchy signal that disappears when color is removed — such as a CTA that is distinguished only by its green color with no size or weight difference — is invisible to a significant portion of users. WCAG 1.4.1 requires that color is not the only visual means of conveying information.",
+      "detection_signals": [
+        "Identify elements whose hierarchy role is communicated only through color — e.g. a CTA button that has the same size and weight as surrounding text but a different color",
+        "Check if link text is distinguishable from body text by something other than color alone (underline, weight, or position)",
+        "Check if status indicators (success, error, warning) use only color with no icon, label, or shape difference"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: visual hierarchy must never rely on color alone to communicate importance or meaning. This falls under the accessibility category, color-only-hierarchy subcategory. Approximately 8% of men and 0.5% of women have color vision deficiency and may not perceive differences between certain color combinations. WCAG 1.4.1 explicitly prohibits using color as the sole visual means of conveying information. Any hierarchy signal that disappears when color is removed — a CTA distinguished only by its green color, a link identifiable only by its blue hue, or a status indicator using only red versus green — fails this requirement. Shape, size, position, typography weight, or iconography must independently communicate the same hierarchy. To detect: mentally remove color from the design and check whether CTAs, links, and status indicators remain distinguishable. Applies across both viewport and full page, higher severity above the fold."
+    },
+    {
+      "id": "kb-vh-005",
+      "type": "principle",
+      "category": "typography",
+      "subcategory": "type-weight-hierarchy",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Font weight signals importance within body content — bold advances visually, regular recedes. Both extremes fail: overusing bold dilutes its signal, while very thin or light weights (100–300) on body text create illegibility. Applying weight inconsistently or stacking multiple treatments (bold, italic, underline) with no clear priority collapses type hierarchy.",
+      "detail": "Type contrast within body text is how readers identify what matters on a page without reading every word. When bold is used sparingly, it reliably draws the eye to critical information. When applied to 30%+ of body text, or when multiple treatments compete (bold, italic, underline, caps) with no clear priority, the entire type hierarchy becomes noise. The opposite extreme is equally problematic: very thin or light weights (100–300) used on body copy or small UI labels reduce legibility, particularly on low-DPI screens and at small sizes. Both overweight and underweight usage collapse the hierarchy signal that type weight is supposed to carry.",
+      "detection_signals": [
+        "Check body text: if more than roughly 20–25% of body copy is bolded, the weight hierarchy is diluted",
+        "Look for competing treatments on the same text block — bold AND italic AND underline applied together without clear purpose",
+        "Check if bold is used for decorative rather than hierarchical reasons (e.g. random phrases bolded across marketing copy)",
+        "Check if there is any typographic differentiation between primary and secondary body content at all",
+        "Check if body text or small UI labels use very thin font weights (100–300) — thin weights are appropriate only for large display text (roughly 40px+) where letter strokes remain sufficiently visible at that scale"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Typography principle: font weight signals importance within body content, and its value depends entirely on restraint and consistency — in both directions. This falls under the typography category, type-weight-hierarchy subcategory. Bold advances visually against regular text; italic and underline also attract attention when used selectively. When bold is overused — applied to more than roughly 20–25% of body copy — it loses its signalling value and hierarchy collapses into noise. The opposite problem is equally common: very thin or light weights (100–300) used for body text or small UI labels reduce legibility, especially on low-DPI screens and at small sizes. Both extremes — overweight and underweight — collapse the hierarchy signal weight is supposed to carry. To detect: scan body text for bolding density, check for competing multi-treatment text, and check whether any body copy or labels use weights below 300. Applies to both viewport and full page."
+    },
+    {
+      "id": "kb-vh-006",
+      "type": "rule",
+      "category": "typography",
+      "subcategory": "type-scale",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "A type scale must use systematically related size steps where each level is perceptibly larger than the one below it. The scale fails when sizes appear arbitrary — no consistent ratio, no clear hierarchy between levels, or adjacent levels indistinguishable from each other.",
+      "detail": "A disciplined type scale creates an immediate visual grammar — users understand the hierarchy of headings, subheadings, and body copy at a glance because size differences are consistent and meaningful. When font sizes appear arbitrary with no systematic relationship, the hierarchy becomes unreliable and the page reads as inconsistent. A 1–2px difference between adjacent heading levels is not a perceptible hierarchy step. The exact sizes depend on context — a dense dashboard and a marketing landing page will use different ranges — so ranges below are orientation, not hard thresholds.",
+      "detection_signals": [
+        "Check that adjacent heading levels are perceptibly different in size — a 1–2px difference between h2 and h3 is not a meaningful scale step",
+        "Count distinct font sizes across the page using DOM computed styles — if more than 4–5 are present with no clear heading/subheading/body roles assigned, the scale is likely arbitrary",
+        "Body text below 14px is a clear failure regardless of context — flag this",
+        "Optimal reference ranges (use as orientation, not pass/fail): body 14–18px, subheadings 20–28px, H1 32–48px on desktop — if sizes fall well outside these, assess whether the design intent justifies it",
+        "Flag H1 that appears undersized relative to the page context — a very small H1 on a marketing page fails to establish dominance"
+      ],
+      "image_path": "kb/images/hipcamp.png",
+      "vector_embedding_text": "Typography rule: a type scale must use systematically related size steps where each heading level is perceptibly larger than the one below it. This falls under the typography category, type-scale subcategory. A disciplined scale creates an immediate visual grammar — size reliably signals importance. The scale fails when sizes are arbitrary, when adjacent levels are indistinguishable (1–2px apart), or when no consistent ratio governs the progression. Body text below 14px is a clear failure regardless of context. Optimal reference ranges are body 14–18px, subheadings 20–28px, and H1 32–48px on desktop — these reflect what authoritative sources converge on, but context and design intent affect the appropriate values, so they should inform judgment rather than trigger automatic flags. If more than 4–5 distinct font sizes are present with no clear hierarchy roles assigned, the scale is likely arbitrary. This is a full-page rule."
+    },
+    {
+      "id": "kb-vh-007",
+      "type": "rule",
+      "category": "visual-hierarchy",
+      "subcategory": "dominant-element-count",
+      "severity_if_violated": "medium",
+      "scope": "viewport",
+      "rule": "Limit visually large or heavily emphasized elements to a maximum of 2 per viewport. More than 2 dominant elements compete for attention and neutralize each other's emphasis.",
+      "detail": "Emphasis is relative — an element is dominant only in contrast to what surrounds it. When 3 or more elements are simultaneously oversized, high-contrast, or heavily weighted, they cancel each other out and no single element reads as primary. This is most critical in the viewport where the first impression is formed. Below the fold, individual sections may each have their own local dominant element, but that local dominance should not spill into the primary viewport.",
+      "detection_signals": [
+        "In the viewport area (~900px), identify elements that are significantly larger or higher contrast than the rest",
+        "Flag if 3 or more elements compete at the same dominant visual level within the viewport",
+        "Check hero sections: is there one primary headline and one primary CTA, or do multiple headlines and multiple CTAs compete?",
+        "Look for pages where every section header is the same large bold size — they all shout simultaneously"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Visual hierarchy rule: limit visually dominant elements to a maximum of 2 within the viewport. This falls under the visual-hierarchy category, dominant-element-count subcategory. Emphasis is a relative quality — an element reads as dominant only in contrast to its surroundings. When three or more elements are simultaneously oversized, high-contrast, or heavily weighted in the same viewport, they cancel each other out and no single element registers as primary. This is most critical above the fold, where the first impression is formed. The typical pattern is one dominant headline and one dominant CTA — anything beyond this dilutes both. To detect: focus on the viewport area (above the fold line at approximately 900px). Count elements that are significantly larger or higher contrast than their neighbors. Flag if 3 or more compete at the same dominant level. Also check for hero sections where multiple headlines and multiple CTAs are all equally large and bold. This is a viewport-scoped rule."
+    },
+    {
+      "id": "kb-vh-008",
+      "type": "principle",
+      "category": "spacing-layout",
+      "subcategory": "proximity-grouping",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Elements with less space between them are perceived as belonging together; elements separated by more space are perceived as distinct groups. Tight spacing between a heading and its content signals ownership; generous spacing between sections signals separation.",
+      "detail": "Proximity is one of the core Gestalt principles and is the primary tool for communicating content structure without explicit visual separators. Consistent proximity relationships teach users the page's grammar: they learn that a heading close to a block of text owns that text. When spacing is uniform across the page — no variation between related and unrelated elements — the page has no structural hierarchy and users cannot identify which content belongs together.",
+      "detection_signals": [
+        "Check if heading-to-content spacing is tighter than section-to-section spacing — if they are equal, grouping is absent",
+        "Look for form fields: label-to-input gap should be tighter than field-group-to-field-group gap",
+        "Flag pages where all vertical spacing is uniform — no difference between in-group and between-group gaps",
+        "Check card grids: gap between card elements should differ from gap between the card and the grid boundary",
+        "Check for false grouping: unrelated elements placed in close proximity that users will misread as a category — e.g. a promotional badge sitting directly adjacent to a navigation item, implying they belong to the same group"
+      ],
+      "image_path": "kb/images/spotify.png",
+      "vector_embedding_text": "Spacing and layout principle: elements closer together are perceived as belonging to the same group; elements further apart are perceived as separate. This is the Gestalt principle of proximity and falls under the spacing-layout category, proximity-grouping subcategory. Tight spacing between a heading and its associated content signals ownership — they belong together. Generous spacing between sections signals that a new group begins. This principle works in both directions: unrelated items placed too close together are misread as a category, even if they differ in color or shape. A promotional badge adjacent to a navigation item, or a social icon cluster touching an unrelated UI element, creates false grouping. When spacing is uniform throughout a page — no variation between related and unrelated elements — users cannot perceive any content grouping and the structural hierarchy disappears. To detect: check heading-to-content spacing vs section-to-section spacing. In forms, label-to-input gaps should be tighter than field-group gaps. Also check for unrelated elements in close proximity that may be misread as a group. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-vh-009",
+      "type": "principle",
+      "category": "spacing-layout",
+      "subcategory": "whitespace-emphasis",
+      "severity_if_violated": "low",
+      "scope": "viewport",
+      "rule": "An element surrounded by more whitespace than its neighbors is perceived as a standalone focal point and receives disproportionate attention. Use generous whitespace around the primary CTA or hero message to elevate it without adding visual weight.",
+      "detail": "Whitespace is an active design element, not an absence of design. Giving a CTA or headline more surrounding space than adjacent elements creates emphasis through isolation. This technique is particularly powerful in above-the-fold areas where the primary message needs to land immediately. The same element placed in a dense layout will read as less important even if it is larger or bolder.",
+      "detection_signals": [
+        "Check if the primary CTA has noticeably more whitespace around it than secondary actions",
+        "In the viewport, check if the hero headline has isolation (surrounding space) or is packed tightly with subheadings, badges, and CTAs",
+        "Flag viewport layouts where the primary message is visually crowded — surrounded by competing elements with equal or similar spacing"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Spacing and layout principle: an element surrounded by more whitespace than its neighbors is perceived as a standalone focal point and receives disproportionate attention. This falls under the spacing-layout category, whitespace-emphasis subcategory. Whitespace is not an absence of design — it is an active tool for elevation. Isolating a CTA or hero message with generous surrounding space creates emphasis without additional visual weight, color, or size. This is particularly effective in the viewport where the primary message must land on first contact. A CTA packed tightly among competing headlines, badges, and secondary links reads as less important even if it is large and bold. To detect: check whether the primary CTA has noticeably more surrounding space than secondary actions. In the viewport, assess whether the hero headline is isolated or crowded by adjacent elements with similar spacing. Flag layouts where the primary message lacks breathing room. This is a viewport-scoped principle."
+    },
+    {
+      "id": "kb-vh-010",
+      "type": "principle",
+      "category": "spacing-layout",
+      "subcategory": "explicit-grouping",
+      "severity_if_violated": "low",
+      "scope": "full-page",
+      "rule": "Use containers (borders, background fills, card shadows) to create explicit groupings only when whitespace alone is insufficient. Stacking multiple visual separators on the same element — such as a border AND a shadow AND a background fill — creates noise that competes with the content itself.",
+      "detail": "Explicit containers are a heavier visual tool than proximity-based grouping. They are appropriate when content relationships need absolute visual clarity: interactive cards, dropdown menus, modal windows, distinct dashboard panels, and form sections where boundaries help users understand scope. Outside these cases, whitespace alone is usually sufficient and cleaner. Every added container element (border, shadow, background) consumes visual attention. A page dense with layered separators trains users to ignore them, the same way excessive borders in print design flatten rather than organize. The container should serve the content, not decorate it.",
+      "detection_signals": [
+        "Look for elements that combine more than one container treatment simultaneously: border + shadow + background fill on the same card",
+        "Flag pages where decorative dividers or separators appear more frequently than the content blocks they separate",
+        "Check if container styling is consistent across similar components — inconsistent card treatments signal design drift",
+        "Look for nested containers: a card inside a section background inside a page container, all with visible borders or fills"
+      ],
+      "image_path": "kb/images/shopify.png",
+      "vector_embedding_text": "Spacing and layout principle: use explicit containers such as borders, background fills, and card shadows only when whitespace alone cannot establish the grouping. This falls under the spacing-layout category, explicit-grouping subcategory. Containers are appropriate for interactive cards, dropdown menus, modal windows, distinct dashboard panels, and form sections. Outside these cases, whitespace is cleaner. Stacking multiple separator treatments on the same element — a card with a border AND a drop shadow AND a background fill — creates layered noise that competes with the content and trains users to visually ignore the containers. Density of separators is also a signal: when dividers and borders appear more frequently than the content they separate, the page feels fragmented and cluttered. To detect: look for elements combining more than one container treatment simultaneously. Flag pages dense with dividers, and check for nested containers with multiple visible boundaries. Evaluate across the full page."
+    },
+    {
+      "id": "kb-g-001",
+      "type": "rule",
+      "category": "gestalt",
+      "subcategory": "similarity-affordance",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "All elements sharing the same interactive function must share the same visual treatment — same color, shape, and border-radius. Users learn to associate specific visual characteristics with interactivity; inconsistent treatments break that learned association and create hesitation.",
+      "detail": "The Gestalt principle of similarity means users perceive elements sharing visual characteristics as related. Applied to UI, this means every button of the same type should look identical — not just similar. When primary buttons vary in border-radius, color shade, or padding across a page, users cannot build a reliable mental model of what is interactive. The reverse also applies: non-interactive elements that share a button's visual characteristics will be mistaken for clickable.",
+      "detection_signals": [
+        "Check if all primary CTA buttons share the same color, border-radius, and padding across the full page",
+        "Check if secondary buttons have a consistent treatment distinct from primary buttons",
+        "Look for non-interactive elements (e.g. tags, badges, section headers) that visually resemble buttons — same rounded corners, similar background colors",
+        "Flag if button styles vary arbitrarily across sections without a clear primary/secondary/tertiary hierarchy reason"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Gestalt rule: all elements sharing the same interactive function must share the same visual treatment — same color, shape, and border-radius. This falls under the gestalt category, similarity-affordance subcategory. The principle of similarity means users perceive visually alike elements as belonging to the same group or having the same function. In UI, users learn to associate a specific visual pattern with interactivity: the blue rounded rectangle is a button. When elements of the same type vary arbitrarily in color shade, border-radius, or padding across a page, that learned association breaks and users hesitate. The reverse problem is equally important: non-interactive elements that look like buttons will be tapped or clicked. To detect: check that all primary CTAs share an identical treatment across the full page; check that secondary actions are consistently differentiated; and look for non-interactive elements (tags, badges, labels) that could be mistaken for buttons due to similar visual styling. Full-page scope."
+    },
+    {
+      "id": "kb-g-002",
+      "type": "rule",
+      "category": "gestalt",
+      "subcategory": "functional-distinction",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Elements with different UI functions must not appear visually similar. Primary CTAs must be visually distinct from secondary actions; navigational links must be distinguishable from non-interactive body text; destructive actions must not resemble safe ones.",
+      "detail": "Where similarity groups elements of the same function, the reverse — visual distinction — separates elements of different functions. When a primary CTA and a secondary link share the same visual weight, users cannot prioritize their actions. When in-text links are only distinguishable from body text by color, color-blind users cannot identify them. The cost of functional confusion is directly measured in missed conversions, wrong actions taken, and support load.",
+      "detection_signals": [
+        "Check if primary and secondary CTAs are visually distinct — different color, weight, or size, not just a slight shade difference",
+        "Check if in-text links are distinguishable from surrounding body text by more than color alone (underline, weight, or positional context)",
+        "Flag if destructive actions (delete, remove, cancel) use the same visual treatment as safe actions (save, confirm)",
+        "Check if ghost/outline buttons are distinguishable from non-interactive bordered containers"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Gestalt rule: elements with different UI functions must not appear visually similar. This falls under the gestalt category, functional-distinction subcategory. Visual similarity signals sameness of function — so when a primary CTA and a secondary text link share the same visual weight, users cannot prioritize between them. When links are only distinguishable from body text by color, they become invisible to color-blind users. When destructive actions look identical to constructive ones, users make costly mistakes. Clear functional distinction requires meaningful visual differences — not just a slight color shade variation, but differences in weight, size, shape, or position. To detect: check that primary and secondary CTAs are meaningfully differentiated; check that in-text links have a non-color distinction signal; check that destructive actions are visually differentiated from safe actions. Applies across both viewport and full page, higher severity above the fold."
+    },
+    {
+      "id": "kb-g-003",
+      "type": "principle",
+      "category": "gestalt",
+      "subcategory": "figure-ground",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "The visual system requires a clear separation between foreground content (figure) and background (ground). Ambiguous figure-ground relationships — where content and background compete — confuse users about what to focus on and interact with.",
+      "detail": "Figure-ground separation is foundational to usability: users need to instantly identify what is content and what is background. Elements read as figure when they have higher contrast, warmer color, larger size, sharper detail, or are enclosed within a boundary. Ambiguity arises when background images, patterns, or colors are too similar in contrast to the content layered on top, or when decorative elements compete visually with functional content. Modals and overlays depend entirely on strong figure-ground contrast to communicate that they are the current focus.",
+      "detection_signals": [
+        "Check if text content has sufficient contrast against its background to clearly read as foreground — not just WCAG minimum, but perceptually unambiguous",
+        "Look for hero sections with full-bleed background images where text is layered without an overlay or contrast treatment — the image and text compete as co-figures",
+        "Check if modals or popovers are clearly differentiated from the page behind them through dimming, shadow, or border",
+        "Flag decorative background patterns or gradients where the texture complexity is high enough to visually compete with content"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Gestalt principle: the visual system requires clear separation between foreground content (figure) and background (ground). This falls under the gestalt category, figure-ground subcategory. Figure-ground is foundational to usability — users must instantly identify what is content and what is surface. An element reads as figure through higher contrast, warmer color, larger size, sharper detail, or enclosure within a boundary. Ambiguity arises when background images or patterns share similar contrast with the content on top, when decorative elements compete with functional content, or when modals lack sufficient separation from the page beneath them. The result is that users cannot identify what to read or interact with first. To detect: check text-on-image sections for perceptible contrast beyond the WCAG minimum; check if modals are clearly visually separated from the background; look for decorative backgrounds with texture or pattern complexity that competes with layered content. Applies across both viewport and full page, higher severity above the fold."
+    },
+    {
+      "id": "kb-g-004",
+      "type": "principle",
+      "category": "gestalt",
+      "subcategory": "simplicity",
+      "severity_if_violated": "low",
+      "scope": "full-page",
+      "rule": "Prefer the simplest visual form that still communicates the concept. Unnecessary visual complexity — excessive detail in icons, multi-layer effects on single elements, decorative elements competing with functional content — slows recognition and increases cognitive load.",
+      "detail": "The Gestalt principle of Prägnanz (Law of Simplicity) describes how the brain defaults to interpreting ambiguous visuals as the simplest possible form. In UI, this means simpler, cleaner treatments are processed faster and remembered more reliably than complex ones. Adding gradients, shadows, borders, and textures to a single element creates processing overhead without adding information. Similarly, overly detailed icons lose their meaning at small display sizes because the fine detail becomes noise rather than signal.",
+      "detection_signals": [
+        "Look for UI elements combining 3 or more visual effects simultaneously: gradient fill + drop shadow + border + inner glow on the same component",
+        "Check icon sets at their rendered display size — icons that are overly detailed relative to their size lose recognisability and read as visual noise",
+        "Flag decorative backgrounds or illustrations where visual complexity competes with the readability of content layered on top",
+        "Look for components where removing one visual treatment (e.g. the border on an already-shadowed card) would lose nothing in clarity"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Gestalt principle: prefer the simplest visual form that communicates the concept. This falls under the gestalt category, simplicity subcategory — based on the Gestalt principle of Prägnanz. The brain defaults to interpreting visuals as the simplest possible form, meaning cleaner treatments are processed faster and retained more reliably. In UI, stacking multiple visual effects on a single element — gradient fill, drop shadow, border, and inner glow simultaneously — creates processing overhead without adding information or hierarchy. Overly detailed icons also violate this principle: at small display sizes, fine detail becomes noise rather than signal, reducing recognisability. To detect: look for components combining 3 or more decorative effects simultaneously. Check icon sets at their actual rendered size — flag icons too complex for their display dimensions. Flag decorative backgrounds where texture competes with content. Look for components where removing one treatment would lose nothing in clarity. Full-page scope."
+    },
+    {
+      "id": "kb-g-005",
+      "type": "principle",
+      "category": "gestalt",
+      "subcategory": "continuity",
+      "severity_if_violated": "low",
+      "scope": "both",
+      "rule": "The eye naturally follows lines, alignment edges, and sequential visual cues. Design should guide the scan path using consistent alignment and directionality — abrupt misalignments or elements breaking the visual flow create unnecessary friction.",
+      "detail": "The Gestalt principle of continuity means perception continues along established paths rather than making abrupt directional changes. In UI, this means consistent alignment axes (left-edge, center, grid column) give users a predictable scan path through the page. A single element that breaks alignment with its neighbors — a button slightly off the grid, a heading that starts 8px further left than the content below it — interrupts the flow and registers as a visual error even when users cannot articulate why.",
+      "detection_signals": [
+        "Check if elements in a sequence (form fields, list items, step indicators) are consistently aligned to a shared axis",
+        "Look for single elements that break alignment with their immediate neighbors without clear intentional reason",
+        "In multi-step flows or onboarding sequences, check if there is a clear directional progression — left-to-right or top-to-bottom — that the eye can follow",
+        "Check if text blocks, images, and CTAs align to the same left edge or grid column within a section"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Gestalt principle: the eye naturally follows lines, alignment edges, and sequential visual cues. This falls under the gestalt category, continuity subcategory. The Gestalt principle of continuity means perception follows established paths rather than making abrupt directional changes. In UI, consistent alignment axes — left-edge, center, grid column — give users a predictable scan path. A single element breaking alignment with its neighbors registers as a visual error even when users cannot articulate why, because it forces the eye to recalibrate. Multi-step flows and forms depend on this principle heavily: a clear directional progression lets users move through without confusion. To detect: check that elements in sequences are aligned to a shared axis. Look for single misaligned elements that break the flow of their section. In step-by-step flows, check for a clear directional progression. Verify that text, images, and CTAs within a section share a common alignment edge. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-f-001",
+      "type": "principle",
+      "category": "ux-usability",
+      "subcategory": "f-pattern-scanning",
+      "severity_if_violated": "medium",
+      "scope": "viewport",
+      "rule": "Users default to an F-shaped scan when a page provides no strong visual signals directing them elsewhere — a full horizontal sweep, a shorter second sweep, then a vertical scan down the left edge. Content outside this path that lacks compensating hierarchy signals risks being missed entirely.",
+      "detail": "The F-pattern is a default behavior, not a fixed law — high contrast, large scale, and visual isolation all override it and redirect the eye. The violation is not 'content is not top-left' but rather: critical content is outside the natural scan path AND has no compensating visual signal (size, contrast, or isolation) to draw the eye to it. A centered hero with a large high-contrast headline is fine; a centered hero where everything is uniform size and weight with the value proposition buried mid-page is not.",
+      "detection_signals": [
+        "Identify the page's most critical content — value proposition, primary CTA, key message",
+        "Check whether it sits in the natural scan path (top region, left edge) OR has a compensating signal: significantly larger, higher contrast, or visually isolated",
+        "Flag only when critical content is outside the scan path AND lacks any visual signal to redirect the eye there",
+        "Look for pages where the top horizontal band is purely decorative (logo + nav only) with no informational content until well below the first scan line"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability principle: users default to an F-shaped scan when a page provides no strong visual signals directing them elsewhere. The pattern consists of a full horizontal sweep across the top, a shorter second sweep lower, then a vertical scan down the left edge. This falls under the ux-usability category, f-pattern-scanning subcategory. The F-pattern is a default, not a rule — high contrast, large scale, and visual isolation override it. The real violation is when critical content (value proposition, primary CTA, key message) sits outside the natural scan path without any compensating hierarchy signal to redirect the eye. A large high-contrast centered headline draws the eye regardless of position. A page where everything is uniform and the core message is buried mid-page does not. To detect: find the most critical content on the page. Check if it is in the natural scan path or elevated by size, contrast, or isolation. Flag only when neither condition is met. Viewport-scoped."
+    },
+    {
+      "id": "kb-f-002",
+      "type": "principle",
+      "category": "ux-usability",
+      "subcategory": "content-front-loading",
+      "severity_if_violated": "high",
+      "scope": "viewport",
+      "rule": "The first visible text block must state the most important information immediately. Users read progressively less of each subsequent section — vague, decorative, or slow-starting hero text causes users to leave before encountering the core message.",
+      "detail": "Based on eyetracking research across 232 users and thousands of web pages, users read the first paragraph most thoroughly and progressively less of everything after. A hero headline that is a brand tagline with no functional content forces users to keep reading to find out what the product does — many won't. The opening content must answer the user's first question: what is this, and why should I care?",
+      "detection_signals": [
+        "Read the first visible text in the viewport: does it communicate what the product/page does or what the user should do?",
+        "Flag hero headlines that are pure taglines with no functional content — e.g. 'Empowering tomorrow's leaders', 'Built for the future', 'Think different'",
+        "Check if the actual value statement (what the product does, for whom) requires scrolling past the fold to find",
+        "Look for hero sections where the primary text is an abstract aspiration and the clarifying subheadline is small, low-contrast, or below a large image"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability principle: the first visible text block must state the most important information immediately. This falls under the ux-usability category, content-front-loading subcategory. Based on eyetracking research with 232 users across thousands of web pages, users read the first content block most thoroughly and progressively less of everything that follows. A hero section that opens with a vague brand tagline — 'Empowering tomorrow's leaders' — forces users to keep reading to understand the product. Many will not. The opening text must answer the user's first question: what is this, and why should I care? To detect: read the first visible text in the viewport and assess whether it communicates product purpose or user benefit. Flag hero headlines that are pure aspirational taglines with no functional content. Check if the actual value statement requires scrolling. Viewport-scoped, high severity."
+    },
+    {
+      "id": "kb-f-003",
+      "type": "rule",
+      "category": "ux-usability",
+      "subcategory": "information-carrying-words",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "Headings, bullet points, and paragraph openers must begin with information-carrying words. Users scanning the left edge read the first 1–2 words of each line far more often than anything that follows — filler openers make content invisible to scanners.",
+      "detail": "Eyetracking data shows users scanning a page vertically fixate on the first 1–2 words of each line. If those words are filler — 'We offer...', 'Our approach is...', 'This section covers...' — users cannot evaluate whether the line is relevant and skip it. The meaningful noun or verb must come first. This applies especially to navigation labels, feature lists, and section headings.",
+      "detection_signals": [
+        "Check headings and bullet points for filler openers: 'We', 'Our', 'This', 'Here', 'You can', 'There are'",
+        "Flag navigation labels that are vague category names rather than action or content words — 'Solutions' vs 'Pricing', 'Platform' vs 'How it works'",
+        "Check feature lists: does each bullet start with the feature name or with 'Easily...', 'Quickly...', 'Seamlessly...'",
+        "Look for section headings that describe the section format rather than the content — 'Overview', 'Details', 'Information'"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability rule: headings, bullet points, and paragraph openers must begin with information-carrying words, not filler. This falls under the ux-usability category, information-carrying-words subcategory. Eyetracking data shows users scanning a page vertically fixate on the first 1–2 words of each line far more often than anything that follows. Filler openers — 'We offer', 'Our approach is', 'This section covers' — prevent users from evaluating the line's relevance and cause them to skip it. The meaningful noun or verb must come first. This applies to headings, navigation labels, feature bullets, and section titles. To detect: check headings and bullet points for filler openers ('We', 'Our', 'This', 'Here', 'You can'). Flag feature lists where each bullet starts with an adverb ('Easily', 'Quickly', 'Seamlessly') rather than the feature name. Check navigation labels for vague category words vs specific content words. Full-page scope."
+    },
+    {
+      "id": "kb-w-001",
+      "type": "rule",
+      "category": "contrast-color",
+      "subcategory": "text-contrast",
+      "severity_if_violated": "critical",
+      "scope": "both",
+      "rule": "Normal text must have a contrast ratio of at least 4.5:1 against its background. Large-scale text (18pt regular or 14pt bold and larger) requires a minimum of 3:1. WCAG 1.4.3 AA.",
+      "detail": "Low text contrast is one of the most common and most impactful accessibility failures. It affects users with low vision, color vision deficiency, and anyone reading in suboptimal lighting conditions. The thresholds are: 4.5:1 for normal text, 3:1 for large text. Inactive UI components, purely decorative text, and logotype text are exempt. Contrast ratios can be calculated from the foreground and background hex values available in DOM computed styles.",
+      "detection_signals": [
+        "Compute contrast ratio from DOM computed styles: text color vs background color for each text element",
+        "Common failure: light gray body text such as #999999 on white #ffffff produces approximately 2.85:1 — well below the 4.5:1 threshold",
+        "Check placeholder text inside form inputs — placeholder color on input background frequently fails",
+        "Check colored text on similarly-colored backgrounds — blue text on a dark navy header, white text on a light gray section",
+        "Large text threshold applies to text at or above 18pt (24px) regular weight or 14pt (approximately 18.67px) bold"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: normal text must have a contrast ratio of at least 4.5:1 against its background; large text (18pt regular or 14pt bold and above) requires at least 3:1. This falls under the contrast-color category, text-contrast subcategory. WCAG 1.4.3 AA. Low contrast is one of the most common and impactful accessibility failures, affecting users with low vision, color vision deficiency, and anyone in suboptimal lighting. Contrast ratios can be computed from foreground and background hex values in DOM computed styles. Common failures include light gray body copy (#999) on white (#fff) at approximately 2.85:1, placeholder text that nearly disappears inside inputs, and colored text on a similarly-colored background. Inactive UI components and decorative text are exempt. Applies across both viewport and full page, critical severity."
+    },
+    {
+      "id": "kb-w-002",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "ui-component-contrast",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "The visible boundaries of UI components — input field borders, checkbox outlines, button edges — and informational graphics must have a contrast ratio of at least 3:1 against adjacent colors. WCAG 1.4.11 AA.",
+      "detail": "This criterion extends contrast requirements beyond text to the visual boundaries that identify interactive components and communicate information graphically. A form input whose border cannot be distinguished from the page background is effectively invisible to low-vision users. The 3:1 threshold applies to the visual information required to identify the component — not the component's entire surface, just the identifying boundary or element.",
+      "detection_signals": [
+        "Check form input border color against the page background using DOM computed styles — a common failure is #cccccc border on #ffffff background at approximately 1.6:1",
+        "Check checkbox and radio button outlines for sufficient contrast against their surrounding background",
+        "Look for ghost buttons or outline-style buttons where the border is very light against the page background",
+        "Check icon-only interactive elements where the icon must be distinguishable from its surrounding background at 3:1"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: the visible boundaries of UI components — input borders, checkbox outlines, button edges — and informational graphics must have a contrast ratio of at least 3:1 against adjacent colors. This falls under the accessibility category, ui-component-contrast subcategory. WCAG 1.4.11 AA. This extends contrast requirements beyond text to the visual boundaries that identify interactive elements. A form input whose border cannot be distinguished from the page background is invisible to low-vision users. The 3:1 threshold applies to the identifying boundary of the component. Common failures: input borders styled as #ccc on #fff background produce approximately 1.6:1; barely-visible checkbox outlines; ghost buttons with very light borders. Contrast ratios can be computed from DOM computed styles. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-w-003",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "target-size",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Interactive elements must have a clickable or touchable target area of at least 24×24 CSS pixels, either through the element's own size or through adequate spacing from neighboring targets. WCAG 2.5.8 AA.",
+      "detail": "Small targets are a significant barrier for users with motor impairments, tremors, or large fingers. The 24×24px minimum applies to the target area — which can include padding around a small icon — not just the visible icon itself. If a target is smaller than 24×24px, it must have sufficient spacing from neighboring targets so that the combined area meets the threshold. Exceptions: inline text links, targets whose size is controlled by the user agent.",
+      "detection_signals": [
+        "Check bounding box dimensions of all interactive elements from DOM data — flag any below 24px in either width or height",
+        "Common failures: small icon buttons such as close, edit, or delete actions rendered at 16×16px with no surrounding padding",
+        "Tightly clustered icon links — for example social media icons in a footer — where each icon is under 24×24px and has minimal spacing between items",
+        "Checkbox and radio button hit areas that are limited to the small visual indicator without extending to include the label text"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: interactive elements must have a clickable or touchable target area of at least 24×24 CSS pixels, through element size or adequate spacing from neighboring targets. This falls under the accessibility category, target-size subcategory. WCAG 2.5.8 AA. Small targets are a significant barrier for users with motor impairments or tremors. The threshold applies to the target area including padding, not just the visible icon. If a target is smaller than 24×24px it must have sufficient surrounding spacing from neighboring targets. Common failures: small icon buttons (close, edit, delete actions) at 16×16px with no padding; tightly clustered social media icon links in footers with minimal spacing between items; checkboxes whose hit area is limited to the small visual indicator. Bounding box dimensions are available from DOM data. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-w-004",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "form-labels",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Every form input must have a persistent visible label. Placeholder text inside the input field does not qualify as a label — it disappears when the user starts typing, leaving them with no reference for what the field requires. WCAG 3.3.2 A.",
+      "detail": "Placeholder-only forms are a pervasive design failure. Placeholder text vanishes the moment the user begins typing, requiring them to remember what each field was for. This is particularly problematic for users with cognitive impairments, users filling out long forms, and users who return to correct a previous field. A visible label must remain visible at all times, positioned above or beside the input.",
+      "detection_signals": [
+        "Look for input fields where no visible text label is positioned above or beside the field — only text inside the input itself",
+        "Check if inputs have a label element in DOM or visible text adjacent to the field that persists when the input is focused",
+        "Look for groups of radio buttons or checkboxes with no overarching group label explaining what the user is selecting between",
+        "Check date, phone, and postal code fields for format instructions — 'MM/DD/YYYY', '+1 (XXX) XXX-XXXX' — either as a label or helper text"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: every form input must have a persistent visible label. Placeholder text inside the input does not qualify — it disappears when the user starts typing. This falls under the accessibility category, form-labels subcategory. WCAG 3.3.2 A. Placeholder-only forms are a common design failure that is especially problematic for users with cognitive impairments and users filling out long forms. When the placeholder disappears on focus, users must remember what each field was for without any on-screen reference. A persistent label must remain visible above or beside the input at all times. To detect: look for inputs with no visible text label positioned outside the field boundary. Check radio and checkbox groups for an overarching group label. Check fields requiring specific formats for visible format instructions. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-w-005",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "error-identification",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "When a form field contains an error, the error must be identified and described in text — a colored border, a warning icon, or a generic 'please fix errors' message without field-level description does not satisfy this requirement. WCAG 3.3.1 A.",
+      "detail": "Color-only or icon-only error states are inaccessible to users who cannot perceive color differences and are unclear for all users — they communicate that something is wrong but not what is wrong or how to fix it. Each field with an error needs a text message adjacent to it that identifies the field and explains the specific failure. A summary banner at the top of the form does not replace field-level descriptions.",
+      "detection_signals": [
+        "Look for form validation states where the only visible error signal is a colored border (typically red) with no accompanying text message",
+        "Check for generic form-level error banners ('Please fix the errors above' or 'Some fields are invalid') with no field-level text descriptions",
+        "Look for error states that use only an icon such as a warning symbol next to the field without any text label",
+        "Check if error messages, when present, describe what is wrong specifically — 'Email address is required' rather than just 'Invalid'"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: form field errors must be identified and described in text. A colored border, warning icon, or generic summary message without field-level text description does not satisfy this requirement. This falls under the accessibility category, error-identification subcategory. WCAG 3.3.1 A. Color-only error states are inaccessible to users who cannot perceive color differences and are unclear for all users — they communicate that something is wrong without explaining what or how to fix it. Each field with an error needs an adjacent text message that names the field and describes the failure specifically. To detect: look for form states where the only error indicator is a colored border. Check for generic form-level banners with no field-level messages. Check that error messages, when present, are specific — 'Email address is required' rather than 'Invalid entry'. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-w-006",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "link-purpose",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "The purpose of every link must be determinable from its text alone or from its text together with its immediate surrounding context. Links labeled only 'Read more,' 'Click here,' 'Learn more,' or 'Here' with no surrounding context are failures. WCAG 2.4.4 A.",
+      "detail": "Generic link labels make it impossible for users navigating by links alone — screen reader users, keyboard users, and users scanning a dense page — to determine where each link leads without reading surrounding context. When the same generic label appears multiple times on a page, even surrounding context may not disambiguate them. Link text must be specific enough to stand alone: 'Read the pricing guide' not 'Read more.'",
+      "detection_signals": [
+        "Scan all visible link text for generic labels: 'Read more', 'Click here', 'Learn more', 'Here', 'Details', 'More', 'View', 'See all'",
+        "Flag multiple instances of the same generic link text on a single page pointing to different destinations",
+        "Check blog listing pages, feature grids, and card components where each card ends with an identical 'Read more' or 'Learn more' link",
+        "Check download links labeled only 'PDF' or 'Download' with no indication of which document"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: the purpose of every link must be determinable from its text alone or from its immediate surrounding context. Generic link labels — 'Read more', 'Click here', 'Learn more', 'Here' — are failures when they appear without descriptive context. This falls under the accessibility category, link-purpose subcategory. WCAG 2.4.4 A. Generic labels make it impossible for users navigating by link list to determine where each link leads. When the same label appears multiple times on a page pointing to different destinations, even surrounding context cannot disambiguate them. Link text must be specific: 'Read the pricing guide' rather than 'Read more'. To detect: scan all visible link text for generic labels. Flag multiple identical generic link labels on a single page. Check card components, blog listings, and feature grids for repeated identical link labels. Full-page scope."
+    },
+    {
+      "id": "kb-w-007",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "non-text-content",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Icon-only interactive elements must have a visible text label or an immediately adjacent text alternative that communicates their purpose. An icon alone — hamburger menu, close button, share button, search button — is not sufficient for all users. WCAG 1.1.1 A.",
+      "detail": "Icons are not universally understood. While a magnifying glass is widely recognised as search, many icons are ambiguous — a share icon varies across platforms, a settings gear may not be obvious to less tech-savvy users, and a custom icon may be entirely novel. A visible text label alongside the icon removes all ambiguity. For icon-only toolbar buttons and navigation items, the label need not be large but must be present and legible.",
+      "detection_signals": [
+        "Look for buttons or interactive elements containing only an icon or symbol with no visible text label",
+        "Check navigation bars for icon-only items where the function must be inferred from the icon shape alone",
+        "Check toolbar buttons, floating action buttons, and utility bars for icon-only actions with no text",
+        "Look for card or list item actions (edit, delete, share, bookmark) that are represented solely as small icons with no label"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: icon-only interactive elements must have a visible text label communicating their purpose. An icon alone — hamburger menu, close button, share button, search button — is not sufficient for all users. This falls under the accessibility category, non-text-content subcategory. WCAG 1.1.1 A. Icons are not universally understood: while some are widely recognised, many are ambiguous across platforms or unfamiliar to less tech-savvy users. A visible text label alongside or below the icon removes ambiguity entirely. For toolbar buttons and navigation items, the label need not be large but must be present and legible. To detect: look for buttons and interactive elements containing only an icon with no accompanying text. Check navigation bars, toolbars, floating action buttons, and card action buttons for icon-only treatments. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-ty-001",
+      "type": "rule",
+      "category": "typography",
+      "subcategory": "line-height",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Body text must have sufficient line-height to prevent lines from crowding together. Below 1.4 on body copy is a clear readability failure. Headings require tighter leading than body text; display/hero text requires the tightest.",
+      "detail": "Line-height (leading) directly controls reading comfort. When lines are too close together, readers lose their place and accidentally re-read the same line. The appropriate value varies by text size and role: body text needs more leading than headings because readers must track long horizontal runs. Overly loose heading leading (above 1.4) creates vertical gaps that break the visual unit of the headline. Optimal reference values: body 1.5–1.6, small text 1.6–1.8, headings 1.1–1.3, display/hero text 1.0–1.1.",
+      "detection_signals": [
+        "DOM: check computed line-height on paragraph and body text elements — below 1.4 is a clear failure",
+        "Visually: body text lines that appear to touch or overlap are a definitive signal",
+        "Check heading line-height: if a multi-line headline has looser leading than the body text below it, the hierarchy relationship is inverted",
+        "Optimal reference ranges (orientation, not hard thresholds): body 1.5–1.6, small/caption text 1.6–1.8, headings 1.1–1.3, display text 1.0–1.1",
+        "WCAG 1.4.12 requires line-height of at least 1.5 for body text — flag below 1.5 as both a readability and accessibility concern"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Typography rule: body text must have sufficient line-height to prevent lines from crowding. This falls under the typography category, line-height subcategory. Line-height directly controls reading comfort — when lines sit too close together, readers lose their place and re-read the same line. The appropriate value varies by text role: body text needs more leading than headings because readers must track longer horizontal runs. Below 1.4 on body copy is a clear failure. Optimal reference ranges are 1.5–1.6 for body text, 1.6–1.8 for small or caption text, 1.1–1.3 for headings, and 1.0–1.1 for display or hero text. WCAG 1.4.12 requires a minimum of 1.5 for body paragraphs. To detect: check computed line-height on body elements; visually assess whether lines appear crowded or overlapping; check that heading leading is tighter than body leading. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-ty-002",
+      "type": "rule",
+      "category": "typography",
+      "subcategory": "line-length",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Body text containers must be constrained so lines are not excessively wide or excessively narrow. Very wide lines cause readers to lose their place returning to the next line; very narrow lines create choppy, disrupted reading rhythm.",
+      "detail": "The optimal line length for comfortable reading is approximately 45–75 characters, with 66 characters considered the ideal. Lines wider than 90 characters significantly increase eye-tracking errors at the end of each line. Lines narrower than 35 characters force too many line breaks and disrupt reading flow. On wide-screen layouts, an unconstrained text block that stretches to full viewport width is one of the most common causes of poor body text readability. A `max-width` of around 65ch on text containers is the standard solution.",
+      "detection_signals": [
+        "DOM: check if body text containers have a max-width constraint — an unconstrained block on a wide desktop layout is a likely failure",
+        "Visually: count approximate characters in the longest body text line — well above 80–90 characters is a readability concern",
+        "Flag full-width body text on desktop viewports (1200px+) with no max-width set",
+        "Optimal reference: 45–75 characters per line; below 35 or above 90 are clear concerns; 65ch max-width is the standard CSS solution",
+        "Note: headline and display text is exempt — line-length constraints apply to body and paragraph text only"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Typography rule: body text containers must be constrained so lines are neither excessively wide nor excessively narrow. This falls under the typography category, line-length subcategory. Optimal line length for comfortable reading is approximately 45–75 characters (66 ideal). Lines wider than 90 characters cause readers to lose their place when tracking back to the start of the next line; lines narrower than 35 characters disrupt flow with too many breaks. Unconstrained body text on wide-screen layouts — stretching to 100% of a 1440px container — is one of the most common readability failures. A max-width of approximately 65ch is the standard solution. To detect: check whether body text containers have a max-width; on wide desktop layouts, flag full-width body text blocks. Visually, count approximate characters per line in the longest body text block. Applies across both viewport and full page; headline text is exempt."
+    },
+    {
+      "id": "kb-ty-003",
+      "type": "rule",
+      "category": "typography",
+      "subcategory": "font-family-count",
+      "severity_if_violated": "low",
+      "scope": "full-page",
+      "rule": "A design should use a maximum of 2–3 distinct font families. Using 4 or more creates visual inconsistency and signals the absence of a type system.",
+      "detail": "Each additional font family introduces visual noise and requires the user's eye to adapt to a new set of character proportions, stroke weights, and personality. Two families — one for headings, one for body — is the standard. Three families can work when a monospace or code font is required. Beyond three, the design reads as assembled from parts rather than designed as a system. Note: using the same family at multiple weights (e.g. Inter 300, 400, 700) counts as one family, not three — this is a best practice.",
+      "detection_signals": [
+        "DOM: extract font-family computed values from heading, body, label, and code elements — count distinct families",
+        "Flag if more than 3 distinct font families are present across the page",
+        "Check if a decorative or display font (Lobster, Pacifico, Bebas Neue) is being used for body copy — these are appropriate only for headings or short accent text",
+        "Note: one family used at varied weights is a best practice, not a violation — do not count weight variants as separate families"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Typography rule: a design should use a maximum of 2–3 distinct font families. This falls under the typography category, font-family-count subcategory. Each additional font family introduces visual noise and forces users to adapt to new character proportions and personality. Two families — heading and body — is standard. Three is acceptable when a code or monospace font is also needed. Beyond three, the design reads as assembled from parts rather than built as a system. A single family used at multiple weights counts as one family, not several — this is a best practice. Decorative fonts are appropriate only for short headline or accent use, never body copy. To detect: count distinct font families from DOM computed styles across heading, body, label, and code elements. Flag if more than 3 are present. Full-page scope."
+    },
+    {
+      "id": "kb-ty-004",
+      "type": "rule",
+      "category": "typography",
+      "subcategory": "text-alignment",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Body text must never be fully justified. Full justification creates irregular word-spacing gaps — known as 'rivers of white' — that disrupt reading flow. Left-aligned ragged-right is correct for body copy in left-to-right languages.",
+      "detail": "Full justification stretches word spacing on short lines to fill the column, creating visually uneven gaps that the eye picks up as a distracting texture within the text block. These 'rivers of white' are particularly disruptive for readers with dyslexia. Browsers do not apply CSS hyphenation by default, which makes web-based full justification worse than print (where hyphenation compensates). Left-aligned text with a natural ragged right edge is consistently easier to read on screen.",
+      "detection_signals": [
+        "DOM: flag any text-align: justify on body text, paragraph, or article elements",
+        "Visually: look for body paragraphs where word spacing is visibly uneven across lines — some lines with large gaps between words",
+        "Check long-form content areas (blog posts, articles, documentation) especially — justification is most harmful at paragraph length",
+        "Center-aligned body text (not headings) is also a concern for multi-line paragraphs — acceptable for short captions or pull quotes, not extended reading"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Typography rule: body text must never be fully justified. This falls under the typography category, text-alignment subcategory. Full justification stretches word spacing on short lines to fill the column width, creating irregular gaps — called rivers of white — that the eye perceives as distracting texture. This is especially harmful for dyslexic readers. Browsers do not apply hyphenation by default, making web-based justification worse than print. Left-aligned ragged-right text is consistently easier to read on screen. Center-aligned body text is also problematic for multi-line paragraphs — acceptable for short captions or pull quotes, not extended reading. To detect: flag text-align: justify from DOM computed styles on body text elements. Visually, look for paragraphs with uneven word spacing across lines. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-ty-005",
+      "type": "rule",
+      "category": "typography",
+      "subcategory": "all-caps-usage",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "All-caps text is acceptable only for very short labels — navigation items, category overlines, button labels, form field labels (typically 1–5 words). It must never be applied to body copy, long headings, or multi-line text blocks.",
+      "detail": "Users read words by recognising their overall shape — the silhouette of ascending and descending letterforms. All-caps text eliminates this shape variation: every word becomes a uniform rectangle of equal cap-height, forcing character-by-character decoding rather than word recognition. This significantly slows reading speed. All-caps is only appropriate at scales where the shape-recognition benefit of mixed case is outweighed by the visual authority or category-signalling value of capitalisation — short labels, overlines, and UI affordances.",
+      "detection_signals": [
+        "DOM: flag text-transform: uppercase on any element containing more than approximately 5 words of text content",
+        "Check headings: multi-line or long headings in all-caps are a clear violation",
+        "Look for body copy sections or feature description blocks rendered in all-caps",
+        "All-caps is acceptable for: navigation labels, button text, overlines (short category labels above headlines), form field labels — assess whether the all-caps element falls into one of these short-label use cases",
+        "Note: letter-spacing should always be increased when all-caps is used — tight all-caps is harder to read than spaced all-caps"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Typography rule: all-caps text is acceptable only for very short labels — navigation items, category overlines, button labels — typically 1–5 words. It must never be applied to body copy, long headings, or multi-line text blocks. This falls under the typography category, all-caps-usage subcategory. Users read words by recognising their overall shape — the silhouette of ascending and descending letterforms. All-caps eliminates this shape variation, making every word a uniform rectangle and forcing character-by-character decoding. This significantly slows reading speed. The appropriate contexts are short-label uses where visual authority or category-signalling outweighs the readability cost. When all-caps is used, letter-spacing should be increased to compensate for optical tightening of capitals. To detect: flag text-transform: uppercase on elements containing more than approximately 5 words. Applies across both viewport and full page, higher severity above the fold."
+    },
+    {
+      "id": "kb-ty-006",
+      "type": "rule",
+      "category": "typography",
+      "subcategory": "letter-spacing",
+      "severity_if_violated": "low",
+      "scope": "both",
+      "rule": "Letter spacing should be calibrated to text size and case: large display headings benefit from slight negative tracking; body text uses zero or near-zero tracking; all-caps text requires positive tracking to compensate for optical tightening.",
+      "detail": "At large sizes, the natural spacing between letterforms can look loose, making negative tracking (–0.02em to –0.04em) on display headings feel more cohesive and intentional. Body text is designed for zero tracking — increasing it on body copy slows reading. All-caps text optically appears tighter because uppercase letters sit flush against each other without the visual air created by ascenders and descenders; positive tracking (0.05em–0.15em) compensates. AI-generated UIs frequently apply uniform zero tracking to all text including all-caps labels, producing noticeably cramped label text.",
+      "detection_signals": [
+        "Check all-caps text elements for letter-spacing — zero tracking on all-caps labels or overlines is a common refinement failure",
+        "DOM: check letter-spacing on large headings (above ~32px) — default zero tracking on display text can appear slightly loose",
+        "Optimal reference values (orientation): display headings –0.02em to –0.04em; body text 0; all-caps labels 0.05em–0.15em; caption/small text 0.01em–0.02em",
+        "This is a refinement signal — flag only when the visual result is clearly noticeable (cramped all-caps labels, or loose display type), not as a systematic failure"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Typography rule: letter spacing should be calibrated to text size and case. This falls under the typography category, letter-spacing subcategory. Large display headings benefit from slight negative tracking (–0.02em to –0.04em) because default spacing looks loose at large sizes. Body text uses zero or near-zero tracking — it is designed for that spacing. All-caps text requires positive tracking (0.05em–0.15em) because uppercase letters sit flush against each other without the visual air created by ascenders and descenders, making zero tracking appear cramped. AI-generated UIs frequently apply uniform zero tracking to all text including all-caps labels. Reference values: display headings –0.02em to –0.04em, body 0, all-caps 0.05em–0.15em, captions 0.01em–0.02em. To detect: check all-caps elements for letter-spacing; check large heading tracking from DOM. This is a refinement signal — flag only when the visual result is clearly noticeable. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-ty-007",
+      "type": "principle",
+      "category": "typography",
+      "subcategory": "font-pairing",
+      "severity_if_violated": "low",
+      "scope": "full-page",
+      "rule": "Font pairings must achieve both contrast (fonts with distinct characteristics) and harmony (fonts sharing compatible proportions or mood). Two fonts from the same classification and mood compete rather than complement. The safest approach is one typeface family used across all roles at varied weights.",
+      "detail": "Effective font pairing creates visual interest through difference while maintaining cohesion through shared qualities. A serif heading with a sans-serif body is the classic pairing because the structural difference (stroke contrast, serifs) creates clear typographic hierarchy while the shared proportional system maintains harmony. Two geometric sans-serifs, or two editorial serifs of similar character, create no meaningful contrast and read as a mismatch rather than a deliberate system. Superfamilies — typefaces designed explicitly to work together (e.g. Merriweather + Merriweather Sans) — are the most reliable choice when two families are needed.",
+      "detection_signals": [
+        "Check if heading and body fonts are from the same broad classification with similar visual personality — two geometric sans-serifs or two humanist serifs provide no meaningful contrast",
+        "Look for decorative or display fonts used at body copy scale — display fonts are designed for large sizes and become illegible in paragraphs",
+        "Assess whether the font combination feels deliberate — a clearly intentional mismatch (serif + mono for a developer product) reads differently than an accidental one",
+        "Note: a single family at varied weights is a best practice — do not flag this as a violation"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Typography principle: font pairings must achieve both contrast and harmony. This falls under the typography category, font-pairing subcategory. Contrast means pairing fonts with distinct characteristics — a serif heading with a sans-serif body is classic because the structural difference creates clear typographic hierarchy. Harmony means shared proportional compatibility or mood so the two fonts feel like parts of the same system. Two geometric sans-serifs or two editorial serifs of similar character provide no meaningful contrast and read as a mismatch. Decorative or display fonts are inappropriate for body copy — they are designed for large sizes and become illegible at paragraph scale. Superfamilies (typefaces designed to work together, like Merriweather and Merriweather Sans) are the most reliable choice. A single family at varied weights is a best practice, not a limitation. To detect: check if heading and body use the same broad classification with similar personality. Full-page scope."
+    },
+    {
+      "id": "kb-ty-008",
+      "type": "rule",
+      "category": "typography",
+      "subcategory": "heading-scale",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "Each heading level must be perceptibly larger and/or heavier than the level below it. Adjacent heading levels that are visually indistinguishable fail to communicate document structure. Heading weight should also decrease as level decreases.",
+      "detail": "A well-defined heading hierarchy allows users to understand page structure at a glance without reading — they scan heading sizes to find relevant sections. When H2 and H3 look nearly identical in size and weight, users cannot use headings as navigation anchors. Both size and weight contribute to perceived importance: H1 is typically set at maximum weight (700–900); successive levels step down in either size, weight, or both. The exact sizes depend heavily on context — a dense dashboard uses smaller, tighter headings than a marketing page — so ranges below are orientation.",
+      "detection_signals": [
+        "DOM: extract font-size and font-weight from all heading elements — check each level is visually distinct from the adjacent levels",
+        "Flag adjacent heading levels within 2px of each other in font-size — perceptually indistinguishable",
+        "Check heading weight progression: H1 should be heavier than H3; if all heading levels share the same font-weight (e.g. all 700), size alone must carry the full hierarchy",
+        "Optimal reference ranges (orientation): H1 32–48px weight 700–900; H2 24–32px weight 600–800; H3 20–24px weight 600–700; H4 18–20px; H5/H6 16–18px — use these to assess whether a heading level appears appropriately sized for its role",
+        "Flag H1 that appears undersized for its context — a very small H1 on a content-heavy or marketing page fails to establish page dominance"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Typography rule: each heading level must be perceptibly larger or heavier than the level below it. This falls under the typography category, heading-scale subcategory. A well-defined heading hierarchy lets users scan page structure without reading — heading sizes are navigation anchors. Adjacent levels that are visually indistinguishable fail this purpose. Both size and weight contribute to perceived importance: H1 is typically maximum weight, with successive levels stepping down. Exact sizes depend on context — dashboards use tighter heading scales than marketing pages — so reference ranges should inform judgment, not trigger automatic flags. Optimal reference: H1 32–48px weight 700–900; H2 24–32px weight 600–800; H3 20–24px weight 600–700; H4 18–20px; H5/H6 16–18px. To detect: extract font-size and font-weight for all heading levels; flag adjacent levels within 2px of each other; check that weight decreases across levels. Full-page scope. Complements kb-vh-006 which covers the overall type scale count."
+    },
+    {
+      "id": "kb-ty-009",
+      "type": "principle",
+      "category": "typography",
+      "subcategory": "vertical-rhythm",
+      "severity_if_violated": "low",
+      "scope": "both",
+      "rule": "Headings must have more space above them than below. This binds each heading visually to the content it introduces, not the content that precedes it. Equal or inverted spacing makes headings float ambiguously between sections.",
+      "detail": "This is the typographic application of the Gestalt proximity principle (see kb-vh-008) applied specifically to heading-content relationships. A heading closer to the content below it than to the content above it communicates ownership — this heading belongs to this section. When the space above and below a heading is equal or when there is more space below than above, the heading appears to conclude the previous section rather than introduce the next one. Typical reference: headings need 1.5–2em above, 0.5–1em below; paragraphs need 0–1em above, 1–1.5em below.",
+      "detection_signals": [
+        "Visually: check whether each heading is noticeably closer to the content below it than to the content above it — equal spacing is a concern, inverted spacing is a clear failure",
+        "Look for section headings that appear to float equidistant between two content blocks with no clear ownership of what follows",
+        "This is the same proximity principle as kb-vh-008 applied to typographic rhythm — if heading spacing matches section spacing, grouping is absent",
+        "Reference margins (orientation): headings typically need roughly 2× more space above than below to create clear ownership of the following content"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Typography principle: headings must have more space above them than below, binding each heading visually to the content it introduces. This falls under the typography category, vertical-rhythm subcategory. This is the typographic application of the Gestalt proximity principle — elements closer together are perceived as belonging to the same group. A heading that is closer to the content below it communicates ownership: this heading introduces this section. Equal spacing above and below makes the heading appear to float ambiguously between sections. Inverted spacing — more space below than above — makes the heading appear to conclude the preceding section rather than introduce the following one. Reference: headings typically need approximately 1.5–2em above and 0.5–1em below. To detect: visually check whether each heading is noticeably closer to what follows than to what precedes it. Also see kb-vh-008 (proximity grouping) for the broader principle. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-ux-001",
+      "type": "principle",
+      "category": "ux-usability",
+      "subcategory": "system-status",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Multi-step flows, forms, and processes must show users where they are and what comes next. A user who cannot tell if an action was registered or how many steps remain loses confidence and trust in the product.",
+      "detail": "When users know the current system status, they can predict outcomes and determine next steps. Without feedback, users don't know whether their action was received, whether the system is working, or how much effort remains. This is particularly critical in checkout flows, onboarding sequences, file uploads, and form submissions — any process where the user has committed effort and needs to know their progress.",
+      "detection_signals": [
+        "Check multi-step forms or checkout flows: is there a visible progress indicator — step stepper, breadcrumb trail, or 'Step 2 of 4' label?",
+        "Check interactive elements for visible state feedback — a button with no loading state, active state, or post-click confirmation gives no status signal",
+        "Flag long forms with no indication of progress or how many fields remain",
+        "Check for post-submission feedback: after a form is submitted, does the page show a clear success or failure state, or does it appear unchanged?",
+        "Look for file upload or async operations with no progress indicator — a spinner or progress bar is the minimum"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability principle: multi-step flows, forms, and processes must show users where they are and what comes next. This falls under the ux-usability category, system-status subcategory — Nielsen Heuristic 1. When users understand current system status, they can predict outcomes and determine next steps. Without feedback, users don't know if their action was received or how much effort remains. Critical in checkout flows, onboarding, file uploads, and form submissions. To detect: check for visible progress indicators in multi-step flows; check that interactive elements provide post-interaction state feedback; flag forms with no progress signal; check for post-submission success or failure states. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-ux-002",
+      "type": "principle",
+      "category": "ux-usability",
+      "subcategory": "real-world-language",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Labels, buttons, and icons must use vocabulary and visual conventions familiar to users, not internal or technical terminology. An interface that requires users to decode unfamiliar language or non-standard icons increases cognitive load and erodes trust.",
+      "detail": "Users arrive at an interface with vocabulary and mental models formed by their real-world experience and other products they use. When UI language reflects internal system architecture, developer terminology, or corporate jargon rather than the user's own vocabulary, comprehension requires extra effort. The same applies to icons — a widely-recognised icon (shopping cart, magnifying glass for search) maps to a user's real-world model; a novel or ambiguous icon forces guessing.",
+      "detection_signals": [
+        "Check CTA and button labels for jargon or internal terminology — 'Initiate onboarding' instead of 'Get started', 'Submit query' instead of 'Search'",
+        "Check navigation labels: do they reflect user goals or system architecture? 'Module 3' vs 'Pricing', 'CMS' vs 'Manage content'",
+        "Check icon usage: non-standard or novel icons without text labels require users to guess meaning — flag unfamiliar icons used without accompanying text (see also kb-w-007)",
+        "Check error messages and system notifications for technical language — error codes, stack trace fragments, or developer-oriented messages exposed to end users",
+        "Check empty states: 'No entities found' or '404' is system language; 'No results — try a different search' is user language"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability principle: labels, buttons, and icons must use vocabulary and conventions familiar to users, not internal or technical terminology. This falls under the ux-usability category, real-world-language subcategory — Nielsen Heuristic 2. Users arrive with vocabulary and mental models from real-world experience. When UI language reflects system architecture or developer jargon rather than the user's vocabulary, comprehension requires extra effort. Novel icons without labels force guessing. To detect: check CTA and nav labels for internal terminology; check icons for recognisability without labels; check error messages and empty states for developer-oriented language. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-ux-003",
+      "type": "rule",
+      "category": "ux-usability",
+      "subcategory": "user-control",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Every modal, dialog, multi-step flow, and destructive confirmation must provide a clearly visible way to cancel or exit without completing the action. A flow or overlay with no exit traps users and forces them to complete it or abandon the page.",
+      "detail": "Users frequently trigger actions by mistake — tapping the wrong button, opening the wrong modal, starting a process they didn't intend to. When an easy exit is present, users feel in control and explore with confidence. When it is absent, they feel trapped. The exit must be clearly visible and labeled, not hidden in a corner, styled as a low-contrast ghost button, or absent entirely. Cancel and primary action buttons must also be visually distinct so users can confidently identify the escape path.",
+      "detection_signals": [
+        "Check modals and dialogs: is there a clearly visible close button (X) and/or a Cancel button? An overlay with only a primary action and no exit is a failure",
+        "Check multi-step flows: is there a Back button or Cancel link at each step? A wizard with only a Next button traps users mid-flow",
+        "Flag forms or checkout flows where the only visible action is 'Submit' or 'Continue' with no escape path",
+        "Check that Cancel and Confirm/Submit buttons are visually distinct — if both look identical, users cannot confidently identify the safe exit",
+        "Check if the Cancel action is styled as a destructive or danger button — the exit path should never look more alarming than the action itself"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability rule: every modal, dialog, multi-step flow, and destructive confirmation must provide a clearly visible exit. This falls under the ux-usability category, user-control subcategory — Nielsen Heuristic 3. Users frequently trigger actions by mistake. When an easy exit is present, they feel in control; when absent, they feel trapped. The exit must be clearly visible and labeled — not hidden, low-contrast, or absent. Cancel and primary action buttons must be visually distinct. To detect: check modals for close buttons and cancel options; check multi-step flows for back/cancel at each step; flag flows where the only visible action is proceed with no escape; check visual distinction between Cancel and Submit. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-ux-004",
+      "type": "principle",
+      "category": "ux-usability",
+      "subcategory": "platform-conventions",
+      "severity_if_violated": "medium",
+      "scope": "viewport",
+      "rule": "Standard UI elements — logo, primary navigation, search, primary CTA — must appear in positions users expect based on their experience with other products. Unconventional placement forces users to relearn the interface and increases cognitive load.",
+      "detail": "Jakob's Law states that users spend most of their time on products other than yours, so their expectations are shaped by the cumulative experience of every other interface they've used. Standard placements have become conventions precisely because they work — users can find navigation, search, and identity elements without hunting. Violating these conventions is not inherently wrong, but the cost must be justified by a clear benefit. Most AI-generated UIs violate conventions accidentally, not intentionally.",
+      "detection_signals": [
+        "Check logo placement: conventionally top-left (desktop) or top-center — a logo in a non-standard position is a discovery concern",
+        "Check primary navigation: conventionally a top horizontal bar (desktop) or hamburger/bottom bar (mobile) — navigation buried mid-page or only in the footer is non-standard",
+        "Check search affordance: conventionally top-right or within the navigation bar — search placed in unexpected locations requires users to hunt",
+        "Check primary CTA placement in the hero: conventionally visible above the fold, left-aligned or centered — a primary CTA below the fold with no above-fold hook is a conversion risk",
+        "This is a principle — flag only when placement is clearly unconventional and not justified by visible design intent"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability principle: standard UI elements — logo, navigation, search, primary CTA — must appear in positions users expect based on experience with other products. This falls under the ux-usability category, platform-conventions subcategory — Nielsen Heuristic 4, Jakob's Law. Users spend most of their time on other products, so their expectations are shaped by accumulated interface experience. Violating conventions forces relearning and increases cognitive load. Standard placements: logo top-left or top-center; navigation top bar (desktop) or hamburger/bottom bar (mobile); search top-right; primary CTA above the fold. To detect: check placement of logo, navigation, search, and primary CTA against standard positions. Flag only clearly unconventional placements, not deliberate creative choices. Viewport-scoped."
+    },
+    {
+      "id": "kb-ux-005",
+      "type": "rule",
+      "category": "ux-usability",
+      "subcategory": "error-prevention",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Irreversible or high-consequence actions must require explicit confirmation before execution. Unavailable options should be visibly disabled — not hidden — so users understand what is possible without having to discover it through failure.",
+      "detail": "The best error message is one that never needs to appear. Good error prevention removes the possibility of the error rather than recovering from it. Two distinct approaches: eliminating error-prone conditions (greying out unavailable options, constraining date pickers to valid ranges), and confirming before irreversible actions (delete confirmation dialogs, subscription cancellation warnings). Hiding unavailable options rather than disabling them creates 'mystery missing features' — users assume the product doesn't support something it actually does.",
+      "detection_signals": [
+        "Check destructive actions (Delete, Remove, Cancel subscription, Clear data): do they trigger a confirmation step before execution? Single-click permanent actions with no confirmation are failures",
+        "Check date pickers and booking UIs: unavailable dates should be visibly greyed out, not absent from the calendar",
+        "Look for form inputs that accept invalid values with no inline constraint — a phone number field that accepts letters, or a date field that accepts impossible dates, increases error likelihood",
+        "Flag forms that allow submission with no visible client-side validation — sending users to a server error state when the issue could have been caught at input",
+        "Check if unavailable features or locked tiers are hidden entirely — greyed-out with explanation is preferable to invisible"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability rule: irreversible actions require explicit confirmation; unavailable options should be visibly disabled, not hidden. This falls under the ux-usability category, error-prevention subcategory — Nielsen Heuristic 5. The best error message never needs to appear. Error prevention takes two forms: eliminating error-prone conditions (constraining inputs, greying out unavailable options) and confirming before irreversible actions (delete confirmation dialogs). Hiding unavailable options instead of disabling them creates mystery missing features. To detect: check destructive actions for confirmation steps; check pickers for visible disabled states; look for unconstrained inputs that accept invalid values; flag forms with no client-side validation. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-ux-006",
+      "type": "principle",
+      "category": "ux-usability",
+      "subcategory": "recognition-over-recall",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Users must be able to identify where they are in the product at any point without having to remember how they got there. Active navigation states, breadcrumbs, page titles, and contextual help reduce the memory burden placed on users.",
+      "detail": "Human short-term memory is limited. Interfaces that require users to remember information from one screen or step to use it in another place cognitive burden on every interaction. Recognition — seeing information presented in the interface — is significantly easier than recall — retrieving it from memory. Navigation context (breadcrumbs, active states, section headers) and contextual help (inline instructions, tooltip explanations) are the primary tools for maintaining orientation without burdening memory.",
+      "detection_signals": [
+        "Check multi-level navigation: does the active page have a visible selected or active state? Identical appearance for all nav items gives no location signal",
+        "Look for breadcrumbs in nested flows or multi-level content — a user three levels deep with no breadcrumb trail must recall their path to navigate back",
+        "Check if the current page or section is identified by a visible title or heading that anchors the user's location",
+        "Check complex or unfamiliar form fields and settings for contextual help — a field labeled 'API Key' or 'Webhook URL' with no helper text or tooltip forces users to leave the interface to understand what is required",
+        "In long single-page applications, check if scroll position or current section is indicated through sticky navigation, active section highlighting, or a progress indicator"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability principle: users must be able to identify where they are in the product without remembering how they got there. This falls under the ux-usability category, recognition-over-recall subcategory — Nielsen Heuristic 6. Human short-term memory is limited; recognition from visible interface elements is significantly easier than recall from memory. Navigation context — breadcrumbs, active states, section headers — and contextual help — inline instructions, tooltip explanations — are the primary tools. To detect: check active nav states; look for breadcrumbs in nested flows; verify the current page is identified by a visible title; check complex fields for contextual help text; look for section location indicators in long pages. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-ux-007",
+      "type": "principle",
+      "category": "ux-usability",
+      "subcategory": "aesthetic-minimalism",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Every visible element on a page must serve the user's primary goal on that page. Decorative content, off-topic sections, and low-priority information that occupies prominent visual space competes with essential content and reduces its relative visibility.",
+      "detail": "This heuristic is not about visual simplicity of individual components (see kb-g-004) — it is about content selection and information architecture at the page and section level. Every additional piece of content a user encounters competes for attention with the content that actually matters. A landing page with a lengthy 'our story' section above the product value proposition, or a dashboard where decorative illustrations occupy the same visual weight as key metrics, fails this principle. The question is always: does this element help the user accomplish their goal on this page?",
+      "detection_signals": [
+        "Identify the page's primary goal, then check whether any prominently placed element is unrelated to that goal",
+        "Look for decorative illustrations, background patterns, or ambient animations that are as visually prominent as functional content",
+        "Check if the page has too many sections of similar visual weight — a homepage with 8+ equal-priority sections gives users no signal about where to focus",
+        "Flag hero sections where decorative imagery occupies more visual space than the value proposition or primary CTA",
+        "Distinguish from kb-g-004 (visual complexity of individual components) — this principle operates at the content and section level, asking whether content belongs on the page at all"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability principle: every visible element must serve the user's primary goal on that page. This falls under the ux-usability category, aesthetic-minimalism subcategory — Nielsen Heuristic 8. This is not about visual simplicity of individual components (see kb-g-004) — it is about content selection and information architecture at the page level. Every additional piece of content competes for attention with what actually matters. A landing page with a lengthy company story above the value proposition, or decorative illustrations as prominent as functional content, fails this principle. To detect: identify the page's primary goal and check whether prominently placed elements serve it; look for sections of equal visual weight with no hierarchy; flag decorative content competing with functional content. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-ux-008",
+      "type": "rule",
+      "category": "ux-usability",
+      "subcategory": "error-recovery",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Error messages must be written in plain language, name the specific problem, and offer a constructive next step or solution. Generic, technical, or vague messages leave users stuck with no path forward.",
+      "detail": "An error message that only states that something went wrong is nearly useless — users already know something went wrong because they are reading an error message. The value of an error message is in identifying what went wrong and what to do about it. 'Something went wrong' is a failure; 'Your session expired — please sign in again' is correct. Technical error codes and developer-facing messages exposed to end users compound the problem by adding language the user cannot interpret. Empty states and zero-result states follow the same rule: 'No results' is incomplete; 'No results for X — try a different search or browse popular topics' is correct.",
+      "detection_signals": [
+        "Check visible error messages for specificity: generic messages like 'Something went wrong', 'Error', or 'Request failed' are failures",
+        "Flag error messages containing technical language, error codes, or stack-trace fragments visible to end users",
+        "Check if error messages suggest a next action or solution — 'Invalid email' alone is incomplete; 'Enter a valid email address (e.g. name@domain.com)' is correct",
+        "Check empty or zero-result states: 'No results found' with no suggestions, filters, or alternative paths is a recovery failure",
+        "Complements kb-w-005 which covers whether errors are identified at all — this covers the quality and actionability of the message content"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability rule: error messages must be in plain language, name the specific problem, and offer a constructive next step. This falls under the ux-usability category, error-recovery subcategory — Nielsen Heuristic 9. A generic error message is nearly useless — users already know something went wrong. The value is in identifying what and suggesting what to do. 'Something went wrong' is a failure; 'Your session expired — sign in again' is correct. Technical error codes exposed to users compound the problem. Empty and zero-result states follow the same rule: 'No results' without suggestions is a recovery failure. Complements kb-w-005 (which covers whether errors are identified) by addressing message quality and actionability. Applies across both viewport and full page."
+    }
+  ]
+}
