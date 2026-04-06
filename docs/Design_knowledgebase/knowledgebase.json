@@ -2,18 +2,18 @@
   "meta": {
     "version": "1.0",
     "date_generated": "2026-04-05",
-    "source_count": 6,
-    "total_rules": 42,
+    "source_count": 12,
+    "total_rules": 61,
     "categories": {
       "visual-hierarchy": 4,
       "typography": 11,
       "contrast-color": 1,
       "spacing-layout": 3,
       "accessibility": 8,
-      "ux-usability": 11,
-      "content-copy": 0,
-      "responsive-mobile": 0,
-      "navigation-ia": 0,
+      "ux-usability": 17,
+      "content-copy": 7,
+      "responsive-mobile": 5,
+      "navigation-ia": 1,
       "gestalt": 5
     },
     "sources": [
@@ -52,6 +52,42 @@
         "url": "https://www.nngroup.com/articles/ten-usability-heuristics/",
         "author": "Jakob Nielsen",
         "objects": ["kb-ux-001", "kb-ux-002", "kb-ux-003", "kb-ux-004", "kb-ux-005", "kb-ux-006", "kb-ux-007", "kb-ux-008"]
+      },
+      {
+        "title": "10 UX Writing Best Practices for Clear & Concise UI Copy",
+        "url": "https://parallelhq.com/blog/ux-writing-best-practices",
+        "author": "Robin Dhanwani",
+        "objects": ["kb-cc-001", "kb-cc-002", "kb-cc-003", "kb-cc-004"]
+      },
+      {
+        "title": "Breakpoints for Responsive Web Design in 2025",
+        "url": "https://browserstack.wpengine.com/guide/responsive-design-breakpoints/",
+        "author": "Shreya Bose",
+        "objects": ["kb-rm-001", "kb-rm-002", "kb-rm-003", "kb-rm-004", "kb-rm-005"]
+      },
+      {
+        "title": "First Principles of Interaction Design (Revised & Expanded)",
+        "url": "https://asktog.com/atc/principles-of-interaction-design/",
+        "author": "Bruce Tognazzini",
+        "objects": ["kb-nav-001", "kb-ux-010", "kb-ux-011", "kb-ux-012"]
+      },
+      {
+        "title": "Visual Hierarchy in Web Design: How to, Examples & Techniques for 2026",
+        "url": "https://clay.global/blog/web-design-guide/visual-hierarchy-web-design",
+        "author": "Daria Nuykina",
+        "objects": []
+      },
+      {
+        "title": "Microcopy in a Nutshell: Past, Present and Future",
+        "url": "https://uxwritinghub.com/what-is-microcopy/",
+        "author": "Anja Wedberg",
+        "objects": ["kb-cc-005", "kb-cc-006", "kb-ux-009"]
+      },
+      {
+        "title": "Text Scanning Patterns: Eyetracking Evidence",
+        "url": "https://www.nngroup.com/articles/text-scanning-patterns-eyetracking/",
+        "author": "Kara Pernice",
+        "objects": ["kb-sc-001", "kb-sc-002", "kb-sc-003"]
       }
     ]
   },
@@ -64,12 +100,13 @@
       "severity_if_violated": "high",
       "scope": "viewport",
       "rule": "A page must have a clear dominant element that the eye lands on first. A layout where all elements are similar in size, color, and spacing has no hierarchy and forces users to parse the entire view to find their entry point.",
-      "detail": "Visual hierarchy controls the order in which users process information on a page. Without a dominant focal point, users experience cognitive overload and often abandon the page or miss the primary message entirely. The dominant element does not need to be large — it can be elevated through contrast, isolation, or color — but it must be unambiguous.",
+      "detail": "Visual hierarchy controls the order in which users process information on a page. Without a dominant focal point, users experience cognitive overload and often abandon the page or miss the primary message entirely. The dominant element does not need to be large — it can be elevated through contrast, isolation, or color — but it must be unambiguous. F-pattern is the least effective of the four scanning modes (F, spotted, layer-cake, commitment). It occurs as a fallback when design provides no subheadings, no styled keywords, and no hierarchy signals. A page that enables layer-cake scanning — meaningful subheadings at regular intervals — moves users to a mode where far more content is seen and retained.",
       "detection_signals": [
         "Scan the viewport: is there one element that clearly stands out above all others on first glance?",
         "If 3 or more elements compete at the same visual weight (size, color, contrast), hierarchy is absent",
         "Pages where most text is set in all-caps at similar sizes lose hierarchy because capitalisation equalises visual weight",
-        "Look for the Williams-Sonoma pattern: many same-size blocks with similar colors and no breathing room — no clear winner"
+        "Look for the Williams-Sonoma pattern: many same-size blocks with similar colors and no breathing room — no clear winner",
+        "Apply the squint test: mentally blur or defocus the viewport — the dominant element should remain clearly identifiable even when detail is removed. If nothing stands out when contrast and detail are reduced, the hierarchy has collapsed"
       ],
       "image_path": "kb/images/williamssonoma.png",
       "vector_embedding_text": "Visual hierarchy principle: every page needs a single dominant element that anchors the user's eye on first contact. This falls under the visual-hierarchy category, focal-point subcategory. When all elements on a page are similar in size, color, saturation, and spacing, no hierarchy exists and users cannot identify where to begin. The result is cognitive overload and high abandonment. The dominant element can be elevated through contrast, isolation, color, or scale — but it must be unambiguous. To detect a violation: scan the viewport and ask whether one element clearly stands out. If three or more elements compete at the same visual weight, or if the page uses uniform capitalisation and similar-sized blocks with no breathing room, hierarchy has collapsed. This is a viewport-scoped principle — it applies to what the user sees on load, not the full scrollable page."
@@ -132,7 +169,7 @@
       "subcategory": "type-weight-hierarchy",
       "severity_if_violated": "medium",
       "scope": "both",
-      "rule": "Font weight signals importance within body content — bold advances visually, regular recedes. Both extremes fail: overusing bold dilutes its signal, while very thin or light weights (100–300) on body text create illegibility. Applying weight inconsistently or stacking multiple treatments (bold, italic, underline) with no clear priority collapses type hierarchy.",
+      "rule": "Font weight signals importance within body content — bold advances visually, regular recedes. Both extremes fail: overusing bold dilutes its signal, while very thin or light weights (100–300) on body text create illegibility. Applying weight inconsistently or stacking multiple treatments (bold, italic, underline) with no clear priority collapses type hierarchy. Bold also functions as a spotted-pattern scanning anchor — users in scan mode fixate on bolded words. Overuse doesn't just dilute hierarchy; it eliminates the scanning anchor function entirely, since the eye cannot treat every word as a priority signal.",
       "detail": "Type contrast within body text is how readers identify what matters on a page without reading every word. When bold is used sparingly, it reliably draws the eye to critical information. When applied to 30%+ of body text, or when multiple treatments compete (bold, italic, underline, caps) with no clear priority, the entire type hierarchy becomes noise. The opposite extreme is equally problematic: very thin or light weights (100–300) used on body copy or small UI labels reduce legibility, particularly on low-DPI screens and at small sizes. Both overweight and underweight usage collapse the hierarchy signal that type weight is supposed to carry.",
       "detection_signals": [
         "Check body text: if more than roughly 20–25% of body copy is bolded, the weight hierarchy is diluted",
@@ -315,7 +352,7 @@
       "severity_if_violated": "low",
       "scope": "both",
       "rule": "The eye naturally follows lines, alignment edges, and sequential visual cues. Design should guide the scan path using consistent alignment and directionality — abrupt misalignments or elements breaking the visual flow create unnecessary friction.",
-      "detail": "The Gestalt principle of continuity means perception continues along established paths rather than making abrupt directional changes. In UI, this means consistent alignment axes (left-edge, center, grid column) give users a predictable scan path through the page. A single element that breaks alignment with its neighbors — a button slightly off the grid, a heading that starts 8px further left than the content below it — interrupts the flow and registers as a visual error even when users cannot articulate why.",
+      "detail": "The Gestalt principle of continuity means perception continues along established paths rather than making abrupt directional changes. In UI, this means consistent alignment axes (left-edge, center, grid column) give users a predictable scan path through the page. A single element that breaks alignment with its neighbors — a button slightly off the grid, a heading that starts 8px further left than the content below it — interrupts the flow and registers as a visual error even when users cannot articulate why. Misalignment also signals untrustworthiness — users cannot always name why a page feels unprofessional or low-quality, but inconsistent alignment is a primary driver of that perception. A page with good content but sloppy alignment communicates that detail was not valued, which erodes confidence in the product itself.",
       "detection_signals": [
         "Check if elements in a sequence (form fields, list items, step indicators) are consistently aligned to a shared axis",
         "Look for single elements that break alignment with their immediate neighbors without clear intentional reason",
@@ -338,7 +375,8 @@
         "Identify the page's most critical content — value proposition, primary CTA, key message",
         "Check whether it sits in the natural scan path (top region, left edge) OR has a compensating signal: significantly larger, higher contrast, or visually isolated",
         "Flag only when critical content is outside the scan path AND lacks any visual signal to redirect the eye there",
-        "Look for pages where the top horizontal band is purely decorative (logo + nav only) with no informational content until well below the first scan line"
+        "Look for pages where the top horizontal band is purely decorative (logo + nav only) with no informational content until well below the first scan line",
+        "Check whether the page has structural conditions for a better scanning mode: meaningful subheadings (enables layer-cake) or visually differentiated keywords (enables spotted) — if neither exists, F-pattern is the likely mode and left-edge content placement becomes critical"
       ],
       "image_path": null,
       "vector_embedding_text": "UX usability principle: users default to an F-shaped scan when a page provides no strong visual signals directing them elsewhere. The pattern consists of a full horizontal sweep across the top, a shorter second sweep lower, then a vertical scan down the left edge. This falls under the ux-usability category, f-pattern-scanning subcategory. The F-pattern is a default, not a rule — high contrast, large scale, and visual isolation override it. The real violation is when critical content (value proposition, primary CTA, key message) sits outside the natural scan path without any compensating hierarchy signal to redirect the eye. A large high-contrast centered headline draws the eye regardless of position. A page where everything is uniform and the core message is buried mid-page does not. To detect: find the most critical content on the page. Check if it is in the natural scan path or elevated by size, contrast, or isolation. Flag only when neither condition is met. Viewport-scoped."
@@ -369,7 +407,7 @@
       "severity_if_violated": "medium",
       "scope": "full-page",
       "rule": "Headings, bullet points, and paragraph openers must begin with information-carrying words. Users scanning the left edge read the first 1–2 words of each line far more often than anything that follows — filler openers make content invisible to scanners.",
-      "detail": "Eyetracking data shows users scanning a page vertically fixate on the first 1–2 words of each line. If those words are filler — 'We offer...', 'Our approach is...', 'This section covers...' — users cannot evaluate whether the line is relevant and skip it. The meaningful noun or verb must come first. This applies especially to navigation labels, feature lists, and section headings.",
+      "detail": "Eyetracking data shows users scanning a page vertically fixate on the first 1–2 words of each line. If those words are filler — 'We offer...', 'Our approach is...', 'This section covers...' — users cannot evaluate whether the line is relevant and skip it. The meaningful noun or verb must come first. This applies especially to navigation labels, feature lists, and section headings. This covers the left-edge scanning axis — the first words of each line. The complementary axis is inline differentiation: critical terms buried mid-sentence can be rescued by bolding or color (see kb-sc-002). Together, these two rules address the full scanning surface.",
       "detection_signals": [
         "Check headings and bullet points for filler openers: 'We', 'Our', 'This', 'Here', 'You can', 'There are'",
         "Flag navigation labels that are vague category names rather than action or content words — 'Solutions' vs 'Pricing', 'Platform' vs 'How it works'",
@@ -705,7 +743,8 @@
         "Check navigation labels: do they reflect user goals or system architecture? 'Module 3' vs 'Pricing', 'CMS' vs 'Manage content'",
         "Check icon usage: non-standard or novel icons without text labels require users to guess meaning — flag unfamiliar icons used without accompanying text (see also kb-w-007)",
         "Check error messages and system notifications for technical language — error codes, stack trace fragments, or developer-oriented messages exposed to end users",
-        "Check empty states: 'No entities found' or '404' is system language; 'No results — try a different search' is user language"
+        "Check empty states: 'No entities found' or '404' is system language; 'No results — try a different search' is user language",
+        "Check copy for passive voice and past tense constructions — 'Message has been sent' is slower and more distant than 'Message sent'; 'Your account has been created' vs 'Account created'. Active voice and present tense signal immediacy and read faster"
       ],
       "image_path": null,
       "vector_embedding_text": "UX usability principle: labels, buttons, and icons must use vocabulary and conventions familiar to users, not internal or technical terminology. This falls under the ux-usability category, real-world-language subcategory — Nielsen Heuristic 2. Users arrive with vocabulary and mental models from real-world experience. When UI language reflects system architecture or developer jargon rather than the user's vocabulary, comprehension requires extra effort. Novel icons without labels force guessing. To detect: check CTA and nav labels for internal terminology; check icons for recognisability without labels; check error messages and empty states for developer-oriented language. Applies across both viewport and full page."
@@ -813,16 +852,374 @@
       "severity_if_violated": "high",
       "scope": "both",
       "rule": "Error messages must be written in plain language, name the specific problem, and offer a constructive next step or solution. Generic, technical, or vague messages leave users stuck with no path forward.",
-      "detail": "An error message that only states that something went wrong is nearly useless — users already know something went wrong because they are reading an error message. The value of an error message is in identifying what went wrong and what to do about it. 'Something went wrong' is a failure; 'Your session expired — please sign in again' is correct. Technical error codes and developer-facing messages exposed to end users compound the problem by adding language the user cannot interpret. Empty states and zero-result states follow the same rule: 'No results' is incomplete; 'No results for X — try a different search or browse popular topics' is correct.",
+      "detail": "An error message that only states that something went wrong is nearly useless — users already know something went wrong because they are reading an error message. The value of an error message is in identifying what went wrong and what to do about it. 'Something went wrong' is a failure; 'Your session expired — please sign in again' is correct. Technical error codes and developer-facing messages exposed to end users compound the problem by adding language the user cannot interpret. Empty states and zero-result states follow the same rule: 'No results' is incomplete; 'No results for X — try a different search or browse popular topics' is correct. Error messages should also acknowledge the possibility of a deeper system malfunction — not every error is caused by bad user input. A message that definitively blames the user's data when the fault may lie in the system damages trust and leaves users doubting their own correct input. Phrases like 'We couldn't process this — please try again or contact support if the issue continues' maintain user confidence while covering both causes.",
       "detection_signals": [
         "Check visible error messages for specificity: generic messages like 'Something went wrong', 'Error', or 'Request failed' are failures",
         "Flag error messages containing technical language, error codes, or stack-trace fragments visible to end users",
         "Check if error messages suggest a next action or solution — 'Invalid email' alone is incomplete; 'Enter a valid email address (e.g. name@domain.com)' is correct",
         "Check empty or zero-result states: 'No results found' with no suggestions, filters, or alternative paths is a recovery failure",
-        "Complements kb-w-005 which covers whether errors are identified at all — this covers the quality and actionability of the message content"
+        "Check error messages for blame-assigning language — 'You entered an invalid password' places blame on the user; 'That password doesn't match our records' is neutral. Flag the blame pattern",
+        "Check error messages for inappropriately casual or playful tone — 'Oops!', 'Whoops!', 'Uh oh!' as the primary error label is dismissive at a moment of user frustration",
+        "Complements kb-w-005 which covers whether errors are identified at all — this covers the quality, tone, and actionability of the message content"
       ],
       "image_path": null,
-      "vector_embedding_text": "UX usability rule: error messages must be in plain language, name the specific problem, and offer a constructive next step. This falls under the ux-usability category, error-recovery subcategory — Nielsen Heuristic 9. A generic error message is nearly useless — users already know something went wrong. The value is in identifying what and suggesting what to do. 'Something went wrong' is a failure; 'Your session expired — sign in again' is correct. Technical error codes exposed to users compound the problem. Empty and zero-result states follow the same rule: 'No results' without suggestions is a recovery failure. Complements kb-w-005 (which covers whether errors are identified) by addressing message quality and actionability. Applies across both viewport and full page."
+      "vector_embedding_text": "UX usability rule: error messages must be in plain language, name the specific problem, and offer a constructive next step. This falls under the ux-usability category, error-recovery subcategory — Nielsen Heuristic 9. A generic error message is nearly useless — users already know something went wrong. The value is in identifying what and suggesting what to do. 'Something went wrong' is a failure; 'Your session expired — sign in again' is correct. Technical error codes exposed to users compound the problem. Error messages must also be blame-neutral — 'You entered an invalid password' assigns blame; 'That password doesn't match our records' is neutral. Playful or casual error language ('Oops!', 'Whoops!') is inappropriate at moments of user frustration. Empty and zero-result states follow the same rule. Complements kb-w-005 by addressing message quality, tone, and actionability. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-cc-001",
+      "type": "rule",
+      "category": "content-copy",
+      "subcategory": "cta-copy",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "The outcome of clicking a button must be clear from the label alone or from the label read together with its immediate surrounding context. A single-word label is acceptable when the surrounding UI makes the destination obvious. It is a failure when the button is the only signal about what happens next.",
+      "detail": "Users decide whether to click a CTA within seconds, and generic labels create hesitation because users cannot predict the outcome. The fix is not always a longer label — a button saying 'Download' on a clearly labeled download page needs no more context. The failure is when the label is the only signal: a checkout flow where every step says 'Next' tells users nothing about what they are committing to. Specific verb + object labels ('Send invoice', 'Create account', 'Book appointment') are always unambiguous regardless of context. In a B2B tool, changing a button from 'Submit' to 'Send invoice' increased click-through by 18%.",
+      "detection_signals": [
+        "Flag generic labels ('Next', 'Submit', 'Continue', 'Go', 'OK') only when the surrounding heading, form title, or section description does not clarify what the user is committing to",
+        "Check primary CTAs in hero sections: if the button says 'Get started' or 'Begin' with no surrounding copy explaining what that entails, it is underspecified",
+        "A button saying 'Download' on a dedicated download page is fine; the same label in an ambiguous modal with no context is a failure — assess label in context, not in isolation",
+        "Specific verb + object labels ('Send invoice', 'Create account', 'Book appointment') are always unambiguous — positive signal regardless of surrounding context",
+        "Secondary helper text below a CTA ('We'll email your client a copy') is a good compensating signal — it clarifies outcome without lengthening the button label itself",
+        "Aim for a maximum of 3 words per button label as a useful target — labels exceeding 5–6 words should be reviewed for compression without losing meaning"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy rule: the outcome of clicking a button must be clear from the label alone or from the label read with its immediate surrounding context. This falls under the content-copy category, cta-copy subcategory. Users decide whether to click within seconds — generic labels cause hesitation because the outcome is unpredictable. A single-word label is acceptable when the surrounding UI makes the destination obvious. The failure is when the label is the only signal: a checkout flow where every step says 'Next' tells users nothing about what they are committing to. Specific verb + object labels are always unambiguous. To detect: flag generic labels only when surrounding context doesn't clarify the action; check hero CTAs for specificity; treat secondary helper text below a button as a compensating signal. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-cc-002",
+      "type": "principle",
+      "category": "content-copy",
+      "subcategory": "copy-brevity",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "UI copy must be as short as possible without losing meaning or clarity. Remove words until the meaning changes. Prefer verb phrases over noun constructions. Verbose labels and instructions add cognitive load and slow task completion.",
+      "detail": "Users scan interfaces rather than read them. Every unnecessary word in a label, heading, or instruction is friction — it slows parsing and buries the signal. Nielsen Norman Group research showed that concise copy improved task success rates, and a verbose sign-up heading reduced conversions by 12% compared to a shorter equivalent. Brevity and specificity (kb-cc-001) are complementary: be as short as possible, but ensure the outcome remains clear — either through the label or from surrounding context.",
+      "detection_signals": [
+        "Look for multi-clause button labels or instructions inside interactive elements — 'Click here to proceed to the next step' should be 'Continue'",
+        "Check heading and label text for redundant qualifiers: 'Please enter your email address below' vs 'Email'",
+        "Flag instructional text that restates what the UI element already communicates visually — a text input next to a 'Search' button labeled 'Enter your search term here' is redundant",
+        "Check for noun phrase constructions that compress to verb phrases: 'Completion of registration' → 'Complete registration'; 'Submission of your form' → 'Submit'",
+        "Check for filler openers in helper text and instructions: 'In order to', 'Please note that', 'You should be aware that' — these delay the actual information",
+        "Note: brevity must not override clarity — a shorter label that creates ambiguity is worse than a longer one that is specific (see kb-cc-001)"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy principle: UI copy must be as short as possible without losing meaning. This falls under the content-copy category, copy-brevity subcategory. Users scan interfaces rather than read them — every unnecessary word is friction. Concise copy improved task success in Nielsen Norman Group research; a verbose sign-up heading reduced conversions by 12% vs a shorter equivalent. Remove words until the meaning changes. Prefer verb phrases over noun constructions. Brevity and outcome clarity are complementary — be as short as possible while ensuring the outcome remains clear from label or context. To detect: look for multi-clause labels, redundant qualifiers, noun phrases that compress to verb phrases, and filler openers in instructions. Brevity must not override clarity. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-cc-003",
+      "type": "rule",
+      "category": "content-copy",
+      "subcategory": "terminology-consistency",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "The same action or concept must use the same word everywhere in the interface. Mixing synonyms — 'Log in' on one screen and 'Sign in' on another — signals inconsistency and makes users wonder if the two actions are different.",
+      "detail": "Terminology inconsistency is a copy-level parallel to visual inconsistency (kb-g-001). When users encounter two different words for the same action, they apply the assumption that different words mean different things — a cognitive overhead that should never be required. This applies to action verbs (Log in vs Sign in, Delete vs Remove), noun references (Account vs Profile, Payment vs Billing), and capitalization patterns (Sign Up vs sign up). A consistent vocabulary list is the solution at the design system level; at the audit level, spotting inconsistency is straightforward.",
+      "detection_signals": [
+        "Check authentication labels across the visible page: is it 'Log in', 'Sign in', or 'Login'? Flag any mix of variants",
+        "Check if the same destination is labeled differently in navigation vs in-page references — 'Settings' in the nav but 'Account preferences' in a CTA",
+        "Look for mixed capitalization of the same term: 'Sign Up' in a button and 'sign up' in adjacent body copy",
+        "Check action verbs on similar-function components: 'Delete' in one place and 'Remove' in another for what appears to be the same operation",
+        "Check noun references for the same concept: 'Payment', 'Billing', and 'Invoice' used interchangeably for the same section without clear distinction"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy rule: the same action or concept must use the same word everywhere in the interface. This falls under the content-copy category, terminology-consistency subcategory. Terminology inconsistency is the copy-level parallel to visual inconsistency. When users encounter two different words for the same action, they assume the difference is meaningful — cognitive overhead that should never be required. This applies to action verbs (Log in vs Sign in), noun references (Account vs Profile), and capitalization patterns. To detect: check authentication labels for mixed variants; check if the same destination has different labels in navigation vs in-page references; look for mixed capitalization of the same term; check similar-function components for different action verbs. Full-page scope. Extends kb-g-001 (visual consistency) to the copy dimension."
+    },
+    {
+      "id": "kb-cc-004",
+      "type": "principle",
+      "category": "content-copy",
+      "subcategory": "tone-context",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Copy tone must match the emotional context of the moment. Error and failure states require empathy and neutrality. Success states can be celebratory. Complex or high-stakes flows require calm, direct language. Playful or casual tone in failure states increases frustration.",
+      "detail": "Tone communicates the product's attitude toward the user at a specific moment. When a user encounters an error, they are already frustrated — a casual or humorous error message ('Oopsie! Something broke') compounds that frustration and signals that the product is not taking the problem seriously. In one documented case, a quirky error message doubled support requests. Conversely, a success state that is overly terse ('Done') misses an opportunity to reinforce the user's achievement and build confidence. The baseline voice can be warm and approachable, but it must adapt: neutral and empathetic in errors, clear and direct in high-stakes flows, appropriately celebratory in successes.",
+      "detection_signals": [
+        "Check error and failure messages for casual or humorous primary labels — 'Oops!', 'Whoops!', 'Uh oh!', 'Yikes!' as the main error heading is inappropriate at a moment of user frustration",
+        "Check error messages for blame-assigning language — 'You entered an invalid email' places fault on the user; 'That email isn't in our system' is neutral (see also kb-ux-008)",
+        "Check success and confirmation states: an overly terse response ('Done', 'OK') after a significant action like payment or account creation misses appropriate reassurance",
+        "Look for onboarding or marketing copy tone bleeding into transactional flows — enthusiastic promotional language in a checkout or settings form is tonally mismatched",
+        "Check empty states for dismissive tone: 'Nothing here!' is casual; 'No items yet — add your first one to get started' is empathetic and actionable"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy principle: copy tone must match the emotional context of the moment. This falls under the content-copy category, tone-context subcategory. Tone communicates the product's attitude toward the user. In error states, users are already frustrated — casual or humorous language compounds that frustration. A quirky error message doubled support requests in a documented case. In success states, terse responses miss the opportunity to reinforce achievement. The baseline voice can be warm, but it must adapt: neutral and empathetic in errors, direct in high-stakes flows, celebratory in successes. To detect: check error headings for casual primary labels; check error messages for blame-assigning language; check success states for appropriate reassurance; look for promotional tone in transactional flows; check empty states for dismissive copy. Applies across both viewport and full page."
+    },
+    {
+      "id": "kb-rm-001",
+      "type": "rule",
+      "category": "responsive-mobile",
+      "subcategory": "nav-mobile",
+      "severity_if_violated": "high",
+      "scope": "full-page",
+      "rule": "A horizontal navigation bar that remains expanded on mobile viewports is a failure. At mobile widths, navigation must transform into a collapsed pattern — hamburger menu, bottom bar, or drawer — to preserve screen space for content.",
+      "detail": "Navigation is the primary wayfinding tool in any interface. A full horizontal nav bar with multiple items has no room to render on a 375px viewport — items overflow, wrap, or get cut off. The correct pattern is a collapsed navigation that reveals items on interaction. When a mobile screenshot is available, this is directly visible; otherwise it must be inferred from DOM structure.",
+      "detection_signals": [
+        "On the mobile screenshot: check if a full horizontal nav with multiple visible items is still present — this is a clear failure",
+        "Check if the hamburger or equivalent toggle is clearly visible and large enough to tap (minimum 44×44px)",
+        "Flag navigation that is partially visible at mobile width — items cut off by the viewport edge with no collapse mechanism",
+        "DOM: check if a hamburger toggle or mobile nav component exists in the HTML — if the desktop nav has no mobile counterpart, there is no transformation mechanism"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Responsive mobile rule: a horizontal navigation bar must transform into a collapsed pattern at mobile widths. This falls under the responsive-mobile category, nav-mobile subcategory. A full horizontal nav cannot render on a 375px viewport — items overflow or get cut off. The correct pattern is a hamburger menu, bottom bar, or drawer. To detect: on mobile screenshot, check if the horizontal nav remains expanded; check if a toggle is visible and large enough to tap; DOM: check if a mobile nav component exists alongside the desktop nav. Full-page scope."
+    },
+    {
+      "id": "kb-rm-002",
+      "type": "rule",
+      "category": "responsive-mobile",
+      "subcategory": "layout-reflow",
+      "severity_if_violated": "high",
+      "scope": "full-page",
+      "rule": "Multi-column grid layouts — feature grids, card rows, side-by-side form fields, content columns — must reflow to single-column or simplified layouts at mobile widths. Fixed column counts with no responsive override render cramped or overflow on small screens.",
+      "detail": "Multi-column layouts rely on horizontal space that does not exist on mobile. A 3-column feature grid at 375px either renders columns too narrow to be readable or forces horizontal scrolling. Forms are a particularly common failure: side-by-side input fields at mobile width are cramped and hard to interact with. DOM analysis can identify fixed column structures; a mobile screenshot confirms the result directly.",
+      "detection_signals": [
+        "On the mobile screenshot: check if 2- or 3-column content sections have stacked to a single column",
+        "Flag form layouts with multiple input fields side by side at mobile width — side-by-side inputs at 375px are consistently too cramped",
+        "Check card grids: if cards are still 3-across at mobile width they are either very small or causing horizontal scroll",
+        "DOM: check grid containers for fixed column counts (`grid-template-columns: repeat(3, 1fr)`) with no responsive media query override",
+        "Check pricing tables, comparison sections, and feature grids — these are the most common multi-column patterns that fail to reflow"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Responsive mobile rule: multi-column layouts must reflow to single-column or simplified layouts at mobile widths. This falls under the responsive-mobile category, layout-reflow subcategory. A 3-column grid at 375px renders columns too narrow or forces horizontal scrolling. Forms with side-by-side inputs are cramped and hard to interact with. To detect: on mobile screenshot check that multi-column sections have stacked; flag side-by-side form inputs; DOM: check grid containers for fixed column counts without responsive overrides. Full-page scope."
+    },
+    {
+      "id": "kb-rm-003",
+      "type": "rule",
+      "category": "responsive-mobile",
+      "subcategory": "horizontal-overflow",
+      "severity_if_violated": "critical",
+      "scope": "full-page",
+      "rule": "No element should extend beyond the viewport width at mobile, forcing horizontal scrolling. Horizontal overflow is a fundamental mobile failure — it signals the layout was never tested at mobile width.",
+      "detail": "Horizontal scrolling on mobile is almost never intentional. The most common causes are elements with fixed pixel widths exceeding the viewport, wide tables without overflow handling, navigation bars that don't collapse, and images without `max-width: 100%`. Fixed-width elements are detectable from DOM computed styles without a mobile screenshot.",
+      "detection_signals": [
+        "On the mobile screenshot: check for any content visibly cut off at the right edge of the viewport",
+        "Look for wide tables, image grids, or navigation bars that extend beyond the visible screen width",
+        "Check hero sections with large horizontally-arranged elements — oversized illustrations or side-by-side text+image layouts that don't reflow",
+        "DOM: flag elements with fixed pixel widths exceeding 480px that lack `max-width: 100%` — these will cause overflow at mobile widths regardless of breakpoints"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Responsive mobile rule: no element should extend beyond the viewport width at mobile, forcing horizontal scrolling. This falls under the responsive-mobile category, horizontal-overflow subcategory. Horizontal scrolling is almost never intentional and signals a layout never adapted for small screens. Common causes: fixed pixel widths exceeding the viewport, tables without overflow handling, images without max-width: 100%. To detect: on mobile screenshot check for content cut off at the right edge; DOM: flag elements with fixed widths above 480px without max-width constraints. Critical severity. Full-page scope."
+    },
+    {
+      "id": "kb-rm-004",
+      "type": "principle",
+      "category": "responsive-mobile",
+      "subcategory": "responsive-typography",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "Heading and display text sizes must scale down at mobile widths. A hero heading sized for 1440px desktop becomes disproportionate at 375px if not reduced — it dominates the viewport and pushes supporting content and the CTA below the fold.",
+      "detail": "Large display headings are designed for the horizontal space of desktop screens. At 375px, a 56px hero heading may require 4–5 lines and fill the entire above-fold area. The solution is responsive font sizing using `clamp()`, viewport units, or media query overrides. Fixed `px` heading sizes with no responsive scaling are detectable from DOM computed styles. Reference ranges for mobile: hero/H1 typically 28–36px; these are orientation values, not hard thresholds.",
+      "detection_signals": [
+        "On the mobile screenshot: check if the H1 or hero heading dominates the full viewport — if the headline alone fills the above-fold area with little room for subheadline or CTA, it is too large",
+        "A hero heading at mobile that requires more than 3 lines is a strong signal the font size was not reduced from desktop",
+        "DOM: check heading font-size values — fixed `px` with no `clamp()`, `vw`, or media query override means the size will not scale at mobile widths",
+        "DOM: `font-size: clamp(...)` or `vw` units on headings are a positive signal — they scale automatically"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Responsive mobile principle: heading and display text sizes must scale down at mobile widths. This falls under the responsive-mobile category, responsive-typography subcategory. A 56px hero heading at 375px may fill the entire above-fold area, pushing supporting content below the fold. DOM: check heading font-size values for fixed px with no clamp(), vw, or media query override. Reference ranges for mobile: hero/H1 typically 28–36px — orientation values, not hard thresholds. On mobile screenshot: check if the headline dominates the viewport leaving no room for subheadline or CTA. Full-page scope."
+    },
+    {
+      "id": "kb-rm-005",
+      "type": "principle",
+      "category": "responsive-mobile",
+      "subcategory": "content-priority",
+      "severity_if_violated": "medium",
+      "scope": "viewport",
+      "rule": "Primary content and the main CTA must remain near the top of the viewport when a desktop layout reflows to mobile. Secondary content and decorative elements that appear before the primary content in DOM source order will stack above the core message on mobile.",
+      "detail": "When a multi-column desktop layout stacks to single column on mobile, DOM source order determines what appears first. If a sidebar, secondary nav, or large decorative image precedes the main content in the HTML, it renders above the primary message on mobile — pushing the value proposition and CTA below the fold. DOM source order analysis can identify this risk without a mobile screenshot.",
+      "detection_signals": [
+        "On the mobile screenshot: check if the primary CTA is visible without scrolling, or has been pushed below the fold by stacked secondary content",
+        "Check if a large decorative element (illustration, image, animation) stacks above the value proposition on mobile — reversed visual priority",
+        "DOM: check source order — if a sidebar or supporting section appears before the main content block in the HTML, it will render above it when stacked",
+        "DOM: check if `order` or `flex-direction: column-reverse` is used to compensate for source-order stacking — a positive signal that mobile priority was considered"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Responsive mobile principle: primary content and the main CTA must remain near the top of the viewport when a layout reflows to mobile. This falls under the responsive-mobile category, content-priority subcategory. DOM source order determines what stacks first on mobile. Sidebars or decorative images preceding the main content in HTML will render above the primary message. To detect: on mobile screenshot check if the CTA is above the fold; DOM: check source order for secondary content appearing before the main block; check for CSS order properties compensating for source order. Viewport-scoped."
+    },
+    {
+      "id": "kb-sc-001",
+      "type": "principle",
+      "category": "ux-usability",
+      "subcategory": "layer-cake-scanning",
+      "severity_if_violated": "high",
+      "scope": "full-page",
+      "rule": "When a page provides meaningful subheadings, users adopt the layer-cake scanning pattern — fixating on headings in horizontal sweeps and reading body text only below the heading that matches their goal. Pages without subheadings force the far less effective F-pattern, where most content below the first paragraph goes unseen.",
+      "detail": "Eyetracking research identifies the layer-cake pattern as the second most effective scanning mode, just below full commitment reading. Users treat subheadings as a navigational index — they skip body text until a heading matches their need, then commit to reading that section. A page that omits subheadings or uses generic ones ('Overview', 'Details') removes this navigation mechanism entirely and forces users back to the F-pattern, where most content is ignored.",
+      "detection_signals": [
+        "Check whether long text sections (3+ paragraphs) have meaningful subheadings that describe the content — not format labels like 'Introduction' or 'Details'",
+        "Flag pages where the only visual breaks in text content are blank lines between paragraphs with no heading hierarchy below H1/H2",
+        "Check if subheadings are visually distinct from body text (size, weight, or both) — subheadings styled identically to body text lose their scanning anchor function",
+        "Look for long pricing, feature, or comparison sections with no subheadings — these rely entirely on the user reading linearly"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability principle: meaningful subheadings enable the layer-cake scanning pattern, where users sweep headings like horizontal stripes and dive into body text only below the heading that matches their goal. This falls under the ux-usability category, layer-cake-scanning subcategory. Without subheadings, users fall back to the F-pattern, where most content below the first paragraph goes unseen. Pages with generic subheadings ('Overview', 'Details') or subheadings styled identically to body text lose this navigation mechanism. To detect: check whether long text sections have meaningful, visually distinct subheadings; flag pages where text breaks are only blank lines with no heading hierarchy; flag long feature, pricing, or comparison sections with no subheadings. Full-page scope. High severity."
+    },
+    {
+      "id": "kb-sc-002",
+      "type": "rule",
+      "category": "ux-usability",
+      "subcategory": "keyword-visual-differentiation",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "Critical keywords within body copy must be visually differentiated from surrounding text using bold, color, or link styling. Keywords that are identical in style to surrounding text are skipped during scanning — users fixate on visually distinct words when in spotted-pattern mode.",
+      "detail": "The spotted scanning pattern shows users fixating on words that visually stand out (bold, colored, linked) or resemble what they are searching for (digits, proper nouns, capitalized terms). Products that need users to notice specific terms — a price, a feature name, a key caveat, a deadline — must signal those words visually. A paragraph of uniform-weight body text forces linear reading to locate key points. Overuse of bold dilutes the effect — only genuinely critical terms should be distinguished, 2–5 words at most per emphasis.",
+      "detection_signals": [
+        "Check body copy sections for any visual differentiation of key terms (bold, color, links) — walls of uniform-weight text offer no spotted-pattern anchors",
+        "Check if numeric or pricing information is visually emphasized (bold or larger) — numbers are natural fixation targets and should be reinforced",
+        "Flag pages where bold is applied to full sentences or multiple consecutive lines — this dilutes the scanning anchor effect",
+        "Check important caveats, terms, or conditions — if these appear in uniform body text with no visual distinction, scanning users will miss them"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability rule: critical keywords within body copy must be visually differentiated using bold, color, or link styling. This falls under the ux-usability category, keyword-visual-differentiation subcategory. The spotted scanning pattern shows users fixating on words that visually stand out — bold, colored, linked — or that resemble what they are looking for. Uniform-weight body text forces linear reading; styled keywords allow targeted fixation. Overuse of bold dilutes the effect — only 2–5 critical words should be emphasized per emphasis instance. To detect: check body copy for any visual differentiation of key terms; check numeric and pricing content for visual emphasis; flag full-sentence bolding; check that caveats or conditions have visual distinction. Full-page scope. Medium severity."
+    },
+    {
+      "id": "kb-sc-003",
+      "type": "rule",
+      "category": "content-copy",
+      "subcategory": "content-chunking",
+      "severity_if_violated": "high",
+      "scope": "full-page",
+      "rule": "Body content must be broken into short paragraphs, bullet lists, and labeled sections. Blocks of more than 4–5 continuous sentences with no visual break force linear reading and dramatically reduce comprehension — even for users who are motivated to read.",
+      "detail": "Eyetracking research confirms that even committed users — those motivated to read every word — benefit from chunked content with subheadings and bullets. A wall of text penalizes all scanning modes: F-pattern users ignore it after the first line, layer-cake scanners cannot navigate it, and spotted-pattern users find no anchors. The commitment pattern is the only mode where dense text is survivable, and it applies to only a small fraction of users in a high-motivation context. AI-generated UIs frequently produce dense feature descriptions and onboarding copy in uniform body text with no visual hierarchy.",
+      "detection_signals": [
+        "Flag any continuous text block of 5+ sentences with no subheading, no bullet, and no bold keyword — this is a wall of text",
+        "Count lines in a single visual text block: more than ~6–8 lines of solid body text with no visual break is a strong signal",
+        "Check feature and benefit sections: AI-generated UIs frequently produce 3–4 sentence feature descriptions in uniform body text with no internal hierarchy",
+        "Check FAQ sections for a common anti-pattern: questions with no visual distinction from answers make the section unscannable"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy rule: body content must be broken into short paragraphs, bullet lists, and labeled sections. This falls under the content-copy category, content-chunking subcategory. Walls of unbroken text penalize all scanning modes — F-pattern users ignore content after the first line, layer-cake scanners cannot navigate, and spotted-pattern scanners find no anchors. Even committed readers benefit from structure. AI-generated UIs commonly produce dense feature descriptions and instructional text with no visual hierarchy. To detect: flag continuous text blocks of 5+ sentences with no subheading, bullet, or keyword emphasis; count lines in a single text block — more than 6–8 lines solid is a strong signal; check feature sections and FAQs for uniform body text with no structure. Full-page scope. High severity."
+    },
+    {
+      "id": "kb-cc-005",
+      "type": "principle",
+      "category": "content-copy",
+      "subcategory": "reassurance-microcopy",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Proactive reassurance copy placed near forms, CTAs, and data-collection fields reduces hesitation and increases completion. Address concerns users haven't consciously voiced yet — about commitment, privacy, reversibility, and cost.",
+      "detail": "Users pause at friction points — form fields, sign-up buttons, payment flows — because of unanswered mental objections. Small reassurance lines placed in context ('You can review your order before paying', 'No credit card required', 'We never share your data', 'You can change this later') resolve those objections at the exact moment they arise. The most effective reassurance anticipates a concern the user didn't know they had. The statements must be true — false reassurance accelerates distrust when the experience doesn't match.",
+      "detection_signals": [
+        "Check sign-up forms and primary CTAs: is there any reassurance copy addressing commitment level, reversibility, or data privacy near the action?",
+        "Flag checkout flows with no 'review before payment' signal or no cost/commitment transparency near the primary CTA",
+        "Check email subscription fields for spam or frequency reassurance ('No spam — unsubscribe anytime' or similar)",
+        "Look for multi-step flows with no indication that progress can be saved or that the user can go back",
+        "Check data-collection fields (phone number, address, date of birth) for a brief explanation of why the data is needed — absent context increases form abandonment"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy principle: proactive reassurance microcopy near forms, CTAs, and data-collection fields reduces hesitation and increases completion. This falls under the content-copy category, reassurance-microcopy subcategory. Users pause at friction points because of unanswered mental objections about commitment, privacy, reversibility, and cost. Reassurance lines like 'No credit card required', 'You can change this later', 'We never share your data' resolve objections at the exact moment they arise. The most effective reassurance anticipates a concern the user didn't know they had. Statements must be true. To detect: check CTAs and sign-up forms for nearby reassurance copy; flag checkout flows with no commitment transparency; check email fields for frequency reassurance; check data-collection fields for context about why data is needed. Applies across both viewport and full-page."
+    },
+    {
+      "id": "kb-cc-006",
+      "type": "rule",
+      "category": "content-copy",
+      "subcategory": "confirmshaming",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Opt-out and decline labels must be neutral and honest. Labels that guilt, shame, or mock users for declining ('No thanks, I don't want to improve') are a dark pattern — they manipulate rather than inform and damage brand trust.",
+      "detail": "Confirmshaming uses self-deprecating opt-out labels to pressure users by making rejection feel personally costly. It is manipulative, widely recognized as a dark pattern, and likely to damage brand perception. A related failure is deceptive opt-out labeling — a button labeled 'Skip trial' when no trial was mentioned leaves users unable to make an informed choice. Neutral alternatives ('Maybe later', 'No thanks', 'Not now') are always correct. The test: can a user click the opt-out label and accurately predict what will happen next?",
+      "detection_signals": [
+        "Check dismiss and decline buttons in popups, modals, banners, and opt-in prompts for self-deprecating phrasing: 'No thanks, I don't want to [positive outcome]'",
+        "Flag any opt-out label where saying 'no' requires the user to agree to a negative self-description",
+        "Check opt-out labels for honesty: does the label accurately describe what happens when the user clicks it? Labels that reference things not established in the surrounding context are deceptive",
+        "Check cookie consent dialogs and newsletter pop-ups — the most common location for confirmshaming in AI-generated UIs",
+        "Flag two-option dialogs where the 'no' option is significantly smaller, lower-contrast, or harder to find than the 'yes' option — visual suppression of the opt-out is a related dark pattern"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy rule: opt-out and decline labels must be neutral and honest. This falls under the content-copy category, confirmshaming subcategory. Confirmshaming uses self-deprecating labels to pressure users by making rejection feel personally costly — 'No thanks, I don't want to save money.' It is a recognized dark pattern that damages brand trust. A related failure is deceptive opt-out labeling where the label references something not established in the surrounding context. Neutral alternatives like 'Maybe later' or 'No thanks' are always correct. To detect: check dismiss buttons in popups and modals for self-deprecating phrasing; check opt-out labels for honesty and predictability; check cookie and newsletter prompts; flag visual suppression of the opt-out option. High severity. Applies across both viewport and full-page."
+    },
+    {
+      "id": "kb-ux-009",
+      "type": "principle",
+      "category": "ux-usability",
+      "subcategory": "progress-time-disclosure",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Multi-step flows must show users how many steps remain and how long the process takes. Concealing commitment length is a friction source — users who cannot see the end of a flow are more likely to abandon it mid-way.",
+      "detail": "Unknown commitment length triggers hesitation at the start and abandonment mid-flow. A progress indicator, step count ('Step 2 of 4'), or upfront time estimate ('Takes 2 minutes') gives users enough information to commit. The most effective disclosures combine multiple reassurances: 'Free — takes 2 minutes — no credit card required.' Time estimates must be accurate; an estimate that proves wrong damages trust more than no estimate at all. Applies to onboarding, checkout, registration, surveys, and any multi-step sequence.",
+      "detection_signals": [
+        "Check multi-step flows (onboarding, checkout, registration) for a progress indicator or step counter — flag when none is present",
+        "Check the entry point of a multi-step flow (first screen or CTA) for time or commitment disclosure — if absent, users have no basis for deciding whether to start",
+        "Flag survey or quiz flows with no step count or progress bar",
+        "Check that time estimates visible in the UI are plausible — '2 minutes' for a 10-field form is inaccurate and erodes trust",
+        "Look for loading or processing states with no estimated wait time — 'Processing...' with no indication of duration causes premature abandonment"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability principle: multi-step flows must show users how many steps remain and how long the process takes. This falls under the ux-usability category, progress-time-disclosure subcategory. Concealing commitment length triggers hesitation at entry and abandonment mid-flow. A step counter, progress bar, or upfront time estimate gives users enough information to commit. The most effective disclosures combine multiple reassurances: 'Free — takes 2 minutes — no credit card required.' Time estimates must be accurate — inaccuracy damages trust more than no estimate. To detect: check multi-step flows for a progress indicator; check flow entry points for time or commitment disclosure; flag surveys and quizzes with no progress signal; check processing states for estimated wait time. Applies across viewport and full-page. Medium severity."
+    },
+    {
+      "id": "kb-nav-001",
+      "type": "principle",
+      "category": "navigation-ia",
+      "subcategory": "visible-navigation",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Navigation must make the user's current location visible at all times. Users who cannot see where they are in a site or application lose spatial sense, become disoriented, and abandon tasks. Active states, breadcrumbs, and consistent navigation landmarks are not optional.",
+      "detail": "Most users cannot build or maintain elaborate mental maps of a navigation space. The web is fundamentally invisible — users can see the current page but not the structure around it. Effective navigation creates the illusion that users are always in the same place, with content changing around them. Three tools provide spatial grounding: (1) active state highlighting on the current nav item, (2) breadcrumbs or location labels for pages more than 2 levels deep, (3) consistent navigation elements on every page type — including checkout, error pages, and onboarding flows. When navigation disappears or changes between page types, users lose their sense of position entirely.",
+      "detection_signals": [
+        "Check if the current page or section is visually indicated in the navigation — active state, highlighted item, different color or weight from inactive items",
+        "Flag navigation bars where no item appears selected or active — the user has no spatial reference for their current location",
+        "Check for breadcrumbs or location labels on pages more than 2 levels deep in the hierarchy",
+        "Check whether navigation is present and consistent across all page types — checkout flows, error pages, and onboarding flows commonly strip navigation, leaving users disoriented",
+        "Look for nav items with no visual distinction between active and inactive states — identical styling regardless of current location is a spatial grounding failure"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Navigation IA principle: navigation must make the user's current location visible at all times. This falls under the navigation-ia category, visible-navigation subcategory. Most users cannot build elaborate mental maps — effective navigation creates the illusion of a stable home with content changing around them. Three tools provide spatial grounding: active state on current nav item, breadcrumbs for deep pages, and consistent navigation across all page types including checkout and error pages. To detect: check if current page is visually indicated in nav (active state, color, weight); flag nav bars with no active state indication; check for breadcrumbs on deep pages; verify navigation exists on checkout, error, and onboarding pages; check for visual distinction between active and inactive nav items. High severity. Applies across both viewport and full-page."
+    },
+    {
+      "id": "kb-ux-010",
+      "type": "rule",
+      "category": "ux-usability",
+      "subcategory": "control-discoverability",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Every control necessary for completing a task must be visibly accessible. A control the user cannot find does not exist — it will not be used, and the feature it enables will be considered absent from the product.",
+      "detail": "Hiding controls to create a visual impression of simplicity — the 'Illusion of Simplicity' — is a direct trade-off of user productivity for aesthetics. Hidden scroll bars, gesture-only interactions, hover-only reveals, and menus buried under non-obvious icons reduce functionality to zero for users who cannot discover them. This is distinct from progressive disclosure, where complexity is revealed as users need it — truly hidden controls are not revealed at all without prior knowledge or documentation. The test is simple: can a new user find the control without external help?",
+      "detection_signals": [
+        "Check for interactive elements that are visually identical to non-interactive content — clickable text with no underline, color, or affordance signal is a discoverability failure",
+        "Flag icon-only controls when the icon is non-standard or ambiguous — an icon the user must guess at may as well not exist; text labels should accompany non-universal icons",
+        "Check for primary actions or settings buried under non-obvious parent items with no visual hint at their existence",
+        "Look for controls that only appear on hover — hover-only reveals are invisible on mobile and to users who do not explore systematically",
+        "Check if key actions in the current context are visible without scrolling or expanding — required controls should not need seeking"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability rule: every control necessary for completing a task must be visibly accessible. This falls under the ux-usability category, control-discoverability subcategory. Hiding controls to create the 'Illusion of Simplicity' trades user productivity for aesthetics — a hidden control is a non-existent control. This is distinct from progressive disclosure. The test: can a new user find the control without external help? To detect: check for interactive elements visually identical to non-interactive content; flag ambiguous icon-only controls with no text label; check for primary actions buried under non-obvious menus; look for hover-only reveals invisible on mobile; verify key actions are visible without scrolling. High severity. Applies across both viewport and full-page."
+    },
+    {
+      "id": "kb-ux-011",
+      "type": "rule",
+      "category": "ux-usability",
+      "subcategory": "fitts-law-sizing",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "The size of a control must reflect its importance. Primary actions should be the largest interactive targets in their context; destructive or undesired actions should be smallest and physically separated. Target acquisition time increases with distance and decreases with size — small primary buttons impose a measurable usability cost.",
+      "detail": "Fitts's Law states that the time to acquire a target is a function of its distance and size. In UI design, large targets are faster to interact with — making primary actions large is not just visual hierarchy, it is a functional performance requirement. WCAG's 44×44px minimum touch target is an accessibility floor, not a design ceiling. Primary actions should generously exceed this minimum. Destructive actions — Delete, Remove, Downgrade — should be smaller, lower-contrast, or separated by space to reduce accidental activation. Equal-sized primary and destructive actions are a design error: they imply equal importance and increase the risk of irreversible mistakes.",
+      "detection_signals": [
+        "Check that the primary CTA is the largest button in its immediate context — if a secondary or destructive action is equal size or larger, the sizing hierarchy is wrong",
+        "Flag primary and secondary buttons within the same component that are identical in size — equal sizing implies equal importance",
+        "Check for destructive actions (Delete, Cancel subscription, Remove) that share the same size and style as primary actions — they should be visually subordinate and physically separated",
+        "Check forms: the Submit or primary action button should be clearly more prominent than Cancel or Back controls",
+        "On mobile: primary actions should be generous beyond the 44×44px WCAG accessibility minimum — undersized primary buttons signal low priority and increase tap errors"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability rule: control size must reflect importance. This falls under the ux-usability category, fitts-law-sizing subcategory. Fitts's Law states acquisition time is a function of target size and distance — large targets are faster and easier to hit. Primary actions should be the largest interactive targets in context; destructive actions should be smaller and separated. WCAG's 44×44px minimum is an accessibility floor, not a design ceiling. Equal-sized primary and destructive actions are a design error. To detect: check primary CTA is largest button in context; flag equal-sized primary and secondary buttons; check destructive actions for visual subordination and separation; check form submit prominence; verify mobile primary actions generously exceed the 44×44px minimum. Medium severity. Applies across both viewport and full-page."
+    },
+    {
+      "id": "kb-ux-012",
+      "type": "rule",
+      "category": "ux-usability",
+      "subcategory": "visual-behavioral-consistency",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Elements that behave differently must look different. Applying the same visual style to controls with different behaviors misleads users into forming incorrect mental models. The inverse holds equally: elements that look the same must behave the same.",
+      "detail": "Visual consistency allows users to build accurate mental models — they learn that things looking like X do X. When an element looks like a button but navigates rather than submits, or looks like a link but triggers a destructive action, users are deceived by their own prior learning. This applies to the full interactive vocabulary: icons, buttons, links, and states. An icon commonly understood to mean one thing (gear = settings, trash = recoverable deletion) used for a different function undermines both the user's model and every other designer relying on that convention.",
+      "detection_signals": [
+        "Check that buttons within a category behave similarly — navigation buttons, submission buttons, and destructive buttons should each have a visually distinct style",
+        "Flag cases where links and buttons use the same visual treatment despite serving different roles (navigation vs. action)",
+        "Check icon usage against common conventions: magnifying glass = search, gear = settings, trash = recoverable delete — deviations from these conventions are consistency violations",
+        "Look for primary and destructive buttons using identical visual styles — a 'Delete account' button that looks the same as 'Save changes' will cause accidental destructive actions",
+        "Check if interactive affordances are applied consistently across the page — if some clickable elements look like buttons and others are plain unstyled text with no affordance, the interactive vocabulary is broken"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability rule: elements that behave differently must look different — and elements that look the same must behave the same. This falls under the ux-usability category, visual-behavioral-consistency subcategory. Visual consistency builds accurate mental models. Applying the same style to controls with different behaviors deceives users via their own prior learning. This applies to the full interactive vocabulary: buttons, links, icons, states. Icon conventions (gear = settings, trash = recoverable delete) must not be violated. To detect: check that navigation, submission, and destructive buttons each have distinct styles; flag links and buttons sharing visual treatment despite different roles; check icon conventions for deviations; look for primary and destructive buttons styled identically; verify consistent interactive affordance signals across the page. Medium severity. Applies across both viewport and full-page."
     }
   ]
 }
