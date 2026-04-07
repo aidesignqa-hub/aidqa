@@ -1,17 +1,17 @@
 {
   "meta": {
-    "version": "1.0",
-    "date_generated": "2026-04-05",
-    "source_count": 12,
-    "total_rules": 61,
+    "version": "1.1",
+    "date_generated": "2026-04-07",
+    "source_count": 13,
+    "total_rules": 71,
     "categories": {
-      "visual-hierarchy": 4,
-      "typography": 11,
-      "contrast-color": 1,
-      "spacing-layout": 3,
-      "accessibility": 8,
-      "ux-usability": 17,
-      "content-copy": 7,
+      "visual-hierarchy": 6,
+      "typography": 12,
+      "contrast-color": 2,
+      "spacing-layout": 4,
+      "accessibility": 9,
+      "ux-usability": 18,
+      "content-copy": 10,
       "responsive-mobile": 5,
       "navigation-ia": 1,
       "gestalt": 5
@@ -88,6 +88,12 @@
         "url": "https://www.nngroup.com/articles/text-scanning-patterns-eyetracking/",
         "author": "Kara Pernice",
         "objects": ["kb-sc-001", "kb-sc-002", "kb-sc-003"]
+      },
+      {
+        "title": "Apple Human Interface Guidelines — Foundations",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/",
+        "author": "Apple Inc.",
+        "objects": ["kb-hig-001", "kb-hig-002", "kb-hig-003", "kb-hig-004", "kb-hig-005", "kb-hig-006", "kb-hig-007", "kb-hig-008", "kb-hig-009", "kb-hig-010"]
       }
     ]
   },
@@ -157,7 +163,8 @@
       "detection_signals": [
         "Identify elements whose hierarchy role is communicated only through color — e.g. a CTA button that has the same size and weight as surrounding text but a different color",
         "Check if link text is distinguishable from body text by something other than color alone (underline, weight, or position)",
-        "Check if status indicators (success, error, warning) use only color with no icon, label, or shape difference"
+        "Check if status indicators (success, error, warning) use only color with no icon, label, or shape difference",
+        "Flag when the primary CTA accent color also appears on non-interactive decorative text or section backgrounds — this destroys the color's ability to signal interactivity (see also kb-hig-002)"
       ],
       "image_path": null,
       "vector_embedding_text": "Accessibility rule: visual hierarchy must never rely on color alone to communicate importance or meaning. This falls under the accessibility category, color-only-hierarchy subcategory. Approximately 8% of men and 0.5% of women have color vision deficiency and may not perceive differences between certain color combinations. WCAG 1.4.1 explicitly prohibits using color as the sole visual means of conveying information. Any hierarchy signal that disappears when color is removed — a CTA distinguished only by its green color, a link identifiable only by its blue hue, or a status indicator using only red versus green — fails this requirement. Shape, size, position, typography weight, or iconography must independently communicate the same hierarchy. To detect: mentally remove color from the design and check whether CTAs, links, and status indicators remain distinguishable. Applies across both viewport and full page, higher severity above the fold."
@@ -176,7 +183,8 @@
         "Look for competing treatments on the same text block — bold AND italic AND underline applied together without clear purpose",
         "Check if bold is used for decorative rather than hierarchical reasons (e.g. random phrases bolded across marketing copy)",
         "Check if there is any typographic differentiation between primary and secondary body content at all",
-        "Check if body text or small UI labels use very thin font weights (100–300) — thin weights are appropriate only for large display text (roughly 40px+) where letter strokes remain sufficiently visible at that scale"
+        "Check if body text or small UI labels use very thin font weights (100–300) — thin weights are appropriate only for large display text (roughly 40px+) where letter strokes remain sufficiently visible at that scale",
+        "Apple HIG explicitly names the prohibited weights: Ultralight, Thin, and Light — prefer Regular (400), Medium (500), Semibold (600), or Bold (700) for any text below ~32px"
       ],
       "image_path": null,
       "vector_embedding_text": "Typography principle: font weight signals importance within body content, and its value depends entirely on restraint and consistency — in both directions. This falls under the typography category, type-weight-hierarchy subcategory. Bold advances visually against regular text; italic and underline also attract attention when used selectively. When bold is overused — applied to more than roughly 20–25% of body copy — it loses its signalling value and hierarchy collapses into noise. The opposite problem is equally common: very thin or light weights (100–300) used for body text or small UI labels reduce legibility, especially on low-DPI screens and at small sizes. Both extremes — overweight and underweight — collapse the hierarchy signal weight is supposed to carry. To detect: scan body text for bolding density, check for competing multi-treatment text, and check whether any body copy or labels use weights below 300. Applies to both viewport and full page."
@@ -425,13 +433,14 @@
       "severity_if_violated": "critical",
       "scope": "both",
       "rule": "Normal text must have a contrast ratio of at least 4.5:1 against its background. Large-scale text (18pt regular or 14pt bold and larger) requires a minimum of 3:1. WCAG 1.4.3 AA.",
-      "detail": "Low text contrast is one of the most common and most impactful accessibility failures. It affects users with low vision, color vision deficiency, and anyone reading in suboptimal lighting conditions. The thresholds are: 4.5:1 for normal text, 3:1 for large text. Inactive UI components, purely decorative text, and logotype text are exempt. Contrast ratios can be calculated from the foreground and background hex values available in DOM computed styles.",
+      "detail": "Low text contrast is one of the most common and most impactful accessibility failures. It affects users with low vision, color vision deficiency, and anyone reading in suboptimal lighting conditions. The thresholds are: 4.5:1 for normal text, 3:1 for large text. Inactive UI components, purely decorative text, and logotype text are exempt. Contrast ratios can be calculated from the foreground and background hex values available in DOM computed styles. Apple HIG adds: for dark mode UIs, strive for 7:1 contrast for small custom text, as naive color inversions frequently produce low-contrast dark mode pairings that feel readable but fail measurement.",
       "detection_signals": [
         "Compute contrast ratio from DOM computed styles: text color vs background color for each text element",
         "Common failure: light gray body text such as #999999 on white #ffffff produces approximately 2.85:1 — well below the 4.5:1 threshold",
         "Check placeholder text inside form inputs — placeholder color on input background frequently fails",
         "Check colored text on similarly-colored backgrounds — blue text on a dark navy header, white text on a light gray section",
-        "Large text threshold applies to text at or above 18pt (24px) regular weight or 14pt (approximately 18.67px) bold"
+        "Large text threshold applies to text at or above 18pt (24px) regular weight or 14pt (approximately 18.67px) bold",
+        "If the page screenshot has a predominantly dark background (dark mode), apply the same 4.5:1 check to light-on-dark text — dark mode contrast failures are as common as light mode failures and often overlooked"
       ],
       "image_path": null,
       "vector_embedding_text": "Accessibility rule: normal text must have a contrast ratio of at least 4.5:1 against its background; large text (18pt regular or 14pt bold and above) requires at least 3:1. This falls under the contrast-color category, text-contrast subcategory. WCAG 1.4.3 AA. Low contrast is one of the most common and impactful accessibility failures, affecting users with low vision, color vision deficiency, and anyone in suboptimal lighting. Contrast ratios can be computed from foreground and background hex values in DOM computed styles. Common failures include light gray body copy (#999) on white (#fff) at approximately 2.85:1, placeholder text that nearly disappears inside inputs, and colored text on a similarly-colored background. Inactive UI components and decorative text are exempt. Applies across both viewport and full page, critical severity."
@@ -1220,6 +1229,196 @@
       ],
       "image_path": null,
       "vector_embedding_text": "UX usability rule: elements that behave differently must look different — and elements that look the same must behave the same. This falls under the ux-usability category, visual-behavioral-consistency subcategory. Visual consistency builds accurate mental models. Applying the same style to controls with different behaviors deceives users via their own prior learning. This applies to the full interactive vocabulary: buttons, links, icons, states. Icon conventions (gear = settings, trash = recoverable delete) must not be violated. To detect: check that navigation, submission, and destructive buttons each have distinct styles; flag links and buttons sharing visual treatment despite different roles; check icon conventions for deviations; look for primary and destructive buttons styled identically; verify consistent interactive affordance signals across the page. Medium severity. Applies across both viewport and full-page."
+    },
+    {
+      "id": "kb-hig-001",
+      "type": "rule",
+      "category": "typography",
+      "subcategory": "typeface-count",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "A UI should use no more than 2–3 distinct typeface families. Mixing more typefaces obscures information hierarchy, makes the interface feel inconsistent, and signals a lack of design intent.",
+      "detail": "Each additional typeface creates a new visual language the user must parse. When 4+ families appear on a single page — common in AI-generated UIs that pull from multiple component libraries — no single typographic voice emerges and the hierarchy becomes noise. The only exception is monospace for code display, which is functionally distinct. Brand fonts for display headings + system font for body is the canonical two-family pattern.",
+      "detection_signals": [
+        "Count distinct font families visible across the full page — detect serif, sans-serif, display, and monospace families separately",
+        "Flag if more than 3 distinct font families appear (not counting monospace used specifically for code display)",
+        "Check if the same typeface is used at different optical settings that make it appear as a different font (e.g. compressed vs. expanded variants) — this is not a typeface violation",
+        "AI-generated UIs frequently mix the component library's default font with a separately imported brand font and a third utility font — flag this combination"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Typography rule: a UI should use no more than 2–3 distinct typeface families. This falls under the typography category, typeface-count subcategory. Mixing more than 3 typeface families obscures information hierarchy, fragments the visual voice, and makes the interface feel inconsistently designed. The canonical pattern is a brand or display font for headings and a system font for body copy. AI-generated UIs frequently pull components from multiple libraries, each carrying its own default font. To detect: count distinct font families across the full page; flag if more than 3 appear; monospace for code display is the accepted exception. Full-page scope. Medium severity."
+    },
+    {
+      "id": "kb-hig-002",
+      "type": "rule",
+      "category": "contrast-color",
+      "subcategory": "semantic-color-consistency",
+      "severity_if_violated": "high",
+      "scope": "full-page",
+      "rule": "A color used to signal interactivity must not also be used for decorative or non-interactive elements. Using the same accent color on both clickable buttons and decorative text or backgrounds destroys the color's ability to signal 'this is tappable.'",
+      "detail": "Color is one of the primary signals users rely on to identify interactive elements. When an accent color appears on a primary CTA button and also on a decorative heading, a pull quote, or a background illustration, the signal is broken — users cannot confidently distinguish what is interactive from what is not. This is particularly damaging for borderless or flat-design buttons that rely solely on color for their interactive affordance. The rule also applies to status colors: red/green/amber used for warnings or success states must not appear on neutral decorative elements.",
+      "detection_signals": [
+        "Identify the primary brand/accent color used on the most prominent CTA buttons",
+        "Check whether that same color (or a very similar hue) appears on text, illustrations, borders, or backgrounds that are not interactive",
+        "Flag instances where the CTA color appears on decorative heading text or section backgrounds — this breaks the interactive affordance signal",
+        "Check status colors (red for error, green for success): if these appear on decorative or promotional elements unrelated to system status, flag it",
+        "Borderless buttons (no visible border, color-only affordance) are highest risk — if their color appears elsewhere non-interactively, they lose all affordance"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Color rule: a color used to signal interactivity must not also appear on decorative or non-interactive elements. This falls under the contrast-color category, semantic-color-consistency subcategory. When an accent color used on CTA buttons also appears on decorative headings, pull quotes, or section backgrounds, users cannot distinguish interactive from non-interactive elements. This is highest risk for borderless flat-design buttons that rely on color alone for their affordance. Status colors (red, green, amber) must not appear on elements unrelated to system feedback. To detect: identify the CTA accent color; flag that color appearing on non-interactive text, borders, or backgrounds; check status colors on decorative elements. Full-page scope. High severity."
+    },
+    {
+      "id": "kb-hig-003",
+      "type": "rule",
+      "category": "content-copy",
+      "subcategory": "button-label-verbs",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Button and CTA labels must begin with an action verb that clearly describes the outcome. Labels that are noun-only, vague ('Click here', 'Submit', 'Go'), or cleverly indirect ('Let's do it!') reduce clarity and harm screen reader usability.",
+      "detail": "Verb-first labels make the outcome of pressing the button explicit before the user commits. 'Download the Guide' is unambiguous; 'Get it here' requires the user to remember context from surrounding copy. 'Click here' is the worst case — it describes the mechanism (clicking), not the action, and is meaningless when read by a screen reader out of context. Overly cute labels trade clarity for personality at the expense of comprehension. The standard is: a user reading the button label alone must know what happens when they press it.",
+      "detection_signals": [
+        "Check all visible button and CTA labels for action verbs — flag labels that are noun-only (e.g., 'Options', 'Details') or mechanism-only ('Click here', 'Learn more' without context)",
+        "Flag labels that rely entirely on surrounding context to be meaningful — 'Get it', 'Yes!', 'Start' without a direct object",
+        "Check primary CTAs in the viewport: the most important button should have the most explicit label",
+        "Flag decorative or aspirational labels that replace clarity with brand voice: 'Let's go!', 'Let's do it!', 'Make it happen' — these obscure what actually happens",
+        "In forms: check submit buttons for specificity — 'Send Message' is clearer than 'Submit'; 'Create Account' is clearer than 'Done'"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy rule: button and CTA labels must begin with an action verb that clearly describes the outcome. This falls under the content-copy category, button-label-verbs subcategory. Verb-first labels make the result of a tap or click explicit before the user commits. 'Download the Guide' is unambiguous; 'Click here' describes only the mechanism and is meaningless when read by a screen reader. Overly clever labels like 'Let's do it!' trade clarity for personality. The test: reading the button label alone, the user must know what happens. To detect: flag noun-only, mechanism-only, or context-dependent button labels; check primary CTAs for explicit verb phrases; check form submit buttons for specificity. Applies across both viewport and full-page. Medium severity."
+    },
+    {
+      "id": "kb-hig-004",
+      "type": "rule",
+      "category": "content-copy",
+      "subcategory": "capitalization-consistency",
+      "severity_if_violated": "low",
+      "scope": "full-page",
+      "rule": "UI copy must apply a consistent capitalization style within each element type across the full interface. Mixing title case and sentence case on buttons, or switching between heading styles mid-page, signals inconsistent production and erodes the perception of quality.",
+      "detail": "Capitalization choice (title case vs. sentence case) is a style decision, and neither is objectively superior. The rule is consistency: all navigation labels, all buttons, all section headings within the same level should follow the same pattern. AI-generated UIs frequently produce mixed capitalization because different components were generated with different prompts or at different times. A navigation bar with 'About Us', 'Our Work', and 'contact us' in the same row is a detectable inconsistency. Mixed styles are most common in: button labels, navigation items, card headings, and form field labels.",
+      "detection_signals": [
+        "Read all button labels visible on the page — check whether they consistently use title case or sentence case; flag any mixing",
+        "Check navigation menu items (header and footer) — all items at the same level should use the same capitalization style",
+        "Check section headings at the same hierarchy level (e.g., all H2s) — flag if some use title case and others sentence case",
+        "Check form field labels for consistency — 'First Name' (title) vs. 'First name' (sentence) mixed in the same form is a flag",
+        "Note: ALL CAPS headers are a distinct style choice and can be consistent; the violation is mixing ALL CAPS with non-caps in the same element type"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy rule: UI copy must apply a consistent capitalization style within each element type across the full interface. This falls under the content-copy category, capitalization-consistency subcategory. Neither title case nor sentence case is wrong — inconsistency between them within the same element type is the violation. AI-generated UIs frequently produce mixed capitalization because different sections were generated independently. The most common locations for violation are button labels, navigation items, section headings, and form field labels. To detect: read all button labels and check for consistent capitalization style; check navigation items at the same level; check H2s across the page; check form labels. Full-page scope. Low severity."
+    },
+    {
+      "id": "kb-hig-005",
+      "type": "rule",
+      "category": "content-copy",
+      "subcategory": "error-message-quality",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Error messages must appear adjacent to the source of the error, be specific about what went wrong, and tell the user exactly what to do to fix it. Errors displayed only at the top of a form, generic messages ('Something went wrong'), or blame-placing language ('Invalid input') all fail this standard.",
+      "detail": "Error messages are the most consequential copy in any form or transaction flow — they appear exactly when a user is frustrated, and their quality directly determines whether the user corrects the error or abandons. Apple HIG specifies: display close to the problem, avoid blame, be clear about the fix. 'That password is too short' fails: it names the problem but not the solution. 'Choose a password with at least 8 characters' is complete — it names the problem and prescribes the specific fix. Error modals that appear far from the triggering field add cognitive load. Interjections ('Oops!', 'Uh-oh') are tone-deaf in high-frustration contexts.",
+      "detection_signals": [
+        "Check inline error messages in visible form states — are they adjacent to their field or only displayed at the top of the form?",
+        "Read visible error messages: does each one name both the problem AND the specific fix? Flag messages that name only the problem",
+        "Flag generic error messages: 'Something went wrong', 'Invalid input', 'Error', 'Please try again' without further detail",
+        "Flag error messages that use blame language (e.g., 'You entered an invalid date') vs. neutral instructional language ('Enter the date as DD/MM/YYYY')",
+        "Flag error modals or toast notifications that don't specify which field or action triggered them",
+        "Check for interjections ('Oops!', 'Uh-oh', 'Yikes!') in error contexts — these are inappropriate in high-frustration moments"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy rule: error messages must appear adjacent to their source, be specific about the problem, and provide a precise fix. This falls under the content-copy category, error-message-quality subcategory. Error messages appear when users are most frustrated — their quality determines whether the user corrects or abandons. A complete error message names the problem and prescribes the specific action: 'Choose a password with at least 8 characters' not 'Password too short.' Errors shown only at the top of forms, generic text like 'Something went wrong,' blame language, or interjections like 'Oops!' all fail. To detect: check inline error placement; read error text for problem+fix completeness; flag generic, blame, or interjection language. Applies across both viewport and full-page. High severity."
+    },
+    {
+      "id": "kb-hig-006",
+      "type": "rule",
+      "category": "spacing-layout",
+      "subcategory": "control-spacing",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Interactive controls must have sufficient padding between each other to prevent accidental activation. For controls with visible bezels/borders, approximately 12px minimum gap; for controls without a visible border, approximately 24px gap. Closely packed controls cause misclick errors.",
+      "detail": "Spacing between interactive controls is as critical as the size of each control. When buttons, links, or form elements are positioned too close together, touch or click accuracy degrades and users frequently activate the wrong control. Apple HIG specifies approximately 12pt around bezeled elements and approximately 24pt around non-bezeled elements. In web pixels at standard DPI these translate to approximately 16px and 24px respectively. Critical above the fold where primary actions are clustered, and on mobile where a finger's contact area is larger than the visible tap target.",
+      "detection_signals": [
+        "Check button groups (segmented controls, adjacent CTA + secondary button) for visible gap — gap narrower than approximately 12px is a likely misclick risk",
+        "Check icon-only controls (close buttons, social icons, nav items) — these commonly cluster with insufficient spacing",
+        "On mobile screenshot: check bottom-of-screen action areas where CTAs and secondary actions appear in close proximity",
+        "Check form submit buttons and cancel/back links — a 'Submit' button placed immediately adjacent to a 'Delete' or 'Cancel' with no gap is a destructive misclick risk",
+        "DOM: check padding and margin between adjacent interactive elements (buttons, links, inputs) — compute the gap between each pair's bounding boxes"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Spacing layout rule: interactive controls must have sufficient padding between each other to prevent accidental activation. This falls under the spacing-layout category, control-spacing subcategory. Apple HIG specifies approximately 12px around bezeled elements and 24px around non-bezeled elements. Closely packed controls cause touch and click misactivation — destructive when adjacent actions have very different outcomes (Submit vs. Cancel). Most critical above the fold and on mobile where touch contact areas are large. To detect: check button groups for visible gap; check icon clusters; check mobile action areas; check adjacent Submit and Cancel pairs; DOM: compute gap between adjacent interactive element bounding boxes. Applies across both viewport and full-page. Medium severity."
+    },
+    {
+      "id": "kb-hig-007",
+      "type": "principle",
+      "category": "visual-hierarchy",
+      "subcategory": "branding-content-ratio",
+      "severity_if_violated": "low",
+      "scope": "full-page",
+      "rule": "Brand assets (logos, wordmarks) should appear at most once per view in a clearly designated location (typically top-left navigation). Repeating a logo or wordmark multiple times across a single screen displaces content and signals a lack of design maturity.",
+      "detail": "Users rarely need to be reminded which product they are using. Screen space is finite, and every pixel given to a repeated logo is taken from content, hierarchy, or breathing room. Apple HIG explicitly states: 'Resist the temptation to display your logo throughout your app unless it's essential for providing context.' In web UI, the violation most commonly appears as: logo in the navigation + logo in the hero section — two high-prominence appearances in the above-fold area. Footer placement is conventional and does not count as a duplication.",
+      "detection_signals": [
+        "Count logo/wordmark appearances in the above-fold area — flag if the logo appears more than once above the fold (nav + hero duplication is the most common form)",
+        "Check hero sections: is the logo or wordmark repeated immediately below the navigation bar that already contains it?",
+        "Check if a brand watermark or logo appears over product imagery as a design element separate from the navigation logo",
+        "Note: favicon, browser tab, and footer logo repetition are conventional and acceptable. The violation is above-fold duplication.",
+        "Check whether repeated brand assets displace the primary value proposition or push the CTA below the fold"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Visual hierarchy principle: brand assets should appear at most once in a primary navigation location per view. This falls under the visual-hierarchy category, branding-content-ratio subcategory. Users already know which product they are using — repeated logos take space from content. Apple HIG: resist displaying logos throughout the UI unless essential for context. The most common violation: logo in navigation + logo in hero section on the same view. Footer repetition is conventional and accepted. To detect: count logo appearances above the fold — flag more than one primary-context appearance; check if hero section repeats the nav logo; check if brand watermarks overlay product imagery. Full-page scope. Low severity."
+    },
+    {
+      "id": "kb-hig-008",
+      "type": "principle",
+      "category": "accessibility",
+      "subcategory": "motion-cognitive-load",
+      "severity_if_violated": "medium",
+      "scope": "viewport",
+      "rule": "UI motion and animation must serve a specific communicative purpose. Looping animations, auto-playing video without controls, and rapid blinking elements in the viewport increase cognitive load and can trigger photosensitivity responses. Motion should never be the primary channel for critical information.",
+      "detail": "Gratuitous animation distracts users from content, increases cognitive load for all users, and poses accessibility risks including photosensitive epilepsy for elements flashing at 3+ Hz. Apple HIG states: 'Don't add motion for the sake of adding motion.' Critical information conveyed only through animation (a loading spinner with no text, a progress bar with no percentage) excludes users with motion-sensitive conditions and is lost when Reduce Motion is enabled. Autoplay video with audio hijacks the user's attention without consent and is a known trust-damager.",
+      "detection_signals": [
+        "Check the viewport for elements that appear to be animated (looping illustrations, particle effects, animated backgrounds, auto-playing video) — detectable from motion blur artifacts or video player UI in the screenshot",
+        "Check for autoplay video indicators in the viewport — most platforms show a play/pause control when video is present",
+        "Flag hero sections where the primary visual is an animation or video with no apparent static fallback",
+        "Flag loading or processing states visible in the screenshot where the only indicator is a spinner with no text status beside it",
+        "Check for elements that appear to use rapid contrast changes or strobing patterns — high-frequency white-to-black alternation is a photosensitivity risk"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility principle: UI motion and animation must serve a specific communicative purpose and must not be the sole channel for critical information. This falls under the accessibility category, motion-cognitive-load subcategory. Looping animations, autoplay video, and rapid blinking elements increase cognitive load and can cause photosensitive responses. Apple HIG: do not add motion for the sake of motion. Critical information conveyed only through animation is inaccessible when Reduce Motion is enabled. Autoplay video with audio is a consent violation and trust-damager. To detect: check viewport for animated elements (hero animations, looping backgrounds, autoplay video); flag loading states with no text status; flag high-contrast alternating patterns. Viewport scope. Medium severity."
+    },
+    {
+      "id": "kb-hig-009",
+      "type": "rule",
+      "category": "ux-usability",
+      "subcategory": "empty-state-guidance",
+      "severity_if_violated": "medium",
+      "scope": "viewport",
+      "rule": "Empty states — views where a list, dashboard, or content area has no data — must explain why the state is empty and provide a clear action to populate it or get started. A blank area with no guidance leaves users stranded.",
+      "detail": "Empty states occur throughout a product: an empty inbox, a dashboard with no connected data, a search result with no matches, a completed task list. The user who encounters an empty state is either new (they haven't yet added data) or at a dead end (a search returned nothing). Both require immediate guidance: what is this area for, and what should I do now? The best empty states combine a brief explanation with a direct action button. 'No projects yet — Create your first project [button]' is complete. A blank area with only a generic illustration and no text or CTA is a stranded user experience. Search no-results states are especially critical — they must offer alternative suggestions or a fallback action.",
+      "detection_signals": [
+        "Check for visually empty content areas (tables with no rows, empty card grids, blank inbox-style layouts) — does each have explanatory text and an action?",
+        "Flag large white or background-colored areas with only a generic illustration and no text or action button",
+        "Check search or filter results that visibly show 'no results' — is there a suggestion, alternate query, or next-step action?",
+        "Check dashboard-style layouts where data widgets show placeholder states — do placeholder states explain the empty condition and provide a next step?",
+        "On first-run / onboarding views: does the empty state guide the user toward the first meaningful action in the product?"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability rule: empty states must explain why the view is empty and provide a clear action to populate it. This falls under the ux-usability category, empty-state-guidance subcategory. Users encountering empty states are either new (no data yet) or at a dead end (no search results) — both need immediate guidance. Complete empty states combine an explanation with an action button: 'No projects yet — Create your first project.' A blank area with only an illustration and no text or CTA is a failure. Search no-results states must offer suggestions or fallback actions. To detect: check visually empty content areas for explanatory text and action; flag blank illustration-only cards; check no-results states; check placeholder widgets on dashboards. Viewport scope. Medium severity."
+    },
+    {
+      "id": "kb-hig-010",
+      "type": "principle",
+      "category": "visual-hierarchy",
+      "subcategory": "spatial-importance-placement",
+      "severity_if_violated": "medium",
+      "scope": "viewport",
+      "rule": "In left-to-right reading interfaces, the most important content and primary CTA must be positioned in the upper half of the viewport, visible without scrolling. Placing the value proposition below decorative elements, or the primary CTA below the viewport midpoint on first load, imposes a scroll cost that directly reduces conversion.",
+      "detail": "Reading order is the default cognitive map users apply to any new screen: top to bottom, leading to trailing. Apple HIG: 'place the most important items near the top and leading side of the window.' This is consistent with F-pattern and layer-cake scanning research — the top-left quadrant is the highest-attention zone for LTR interfaces. AI-generated UIs that use fully centered symmetric layouts often fail this principle by giving equal spatial priority to primary and secondary content, with no placement advantage asserted for the core message.",
+      "detection_signals": [
+        "On the viewport screenshot: identify the primary value proposition (headline or hero statement) — is it positioned in the upper half of the viewport, visible without scrolling?",
+        "Identify the primary CTA button — is it visible without scrolling on the desktop viewport (and on mobile)?",
+        "Flag layouts where the primary CTA appears below the visual midpoint of the viewport on first load",
+        "Check if a large decorative illustration or image appears above the primary headline — this places decoration in the highest-attention zone ahead of the message",
+        "For fully centered layouts: check if the centered content uses size, color, or spacing to assert hierarchy between primary and secondary content, or treats all content with equal visual weight"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Visual hierarchy principle: the most important content and primary CTA must be positioned in the upper half of the viewport, visible without scrolling, in LTR interfaces. This falls under the visual-hierarchy category, spatial-importance-placement subcategory. Reading order — top to bottom, left to right — is the default cognitive map for any new screen. The top-left quadrant is the highest-attention zone. CTAs below the viewport midpoint on first load impose a scroll cost that directly reduces conversion. AI-generated fully centered layouts often fail by treating primary and secondary content with equal spatial priority. To detect: check if the value proposition is in the upper viewport half; check if the primary CTA is visible without scrolling; flag decorative imagery stacked above the headline; check centered layouts for hierarchy absence. Viewport scope. Medium severity."
     }
   ]
 }
