@@ -52,6 +52,28 @@ export async function generateOverlay(
   return img.encode() as unknown as Uint8Array
 }
 
+// Draws a dashed blue horizontal line at foldY to indicate the viewport boundary.
+// Applied in-memory before sending to Gemini — the stored normalized.png stays clean.
+export async function addFoldLine(imageBytes: Uint8Array, foldY = 900): Promise<Uint8Array> {
+  const img = await Image.decode(imageBytes)
+  if (img.height <= foldY + 50) return imageBytes // image is viewport-height or smaller — no fold to mark
+
+  const color = Image.rgbToColor(74, 144, 226) // #4A90E2 blue — visible on light and dark backgrounds
+  const dashOn = 20
+  const dashOff = 10
+  const thickness = 2
+
+  for (let t = 0; t < thickness; t++) {
+    const y = Math.min(foldY + t, img.height - 1)
+    for (let x = 0; x < img.width; x++) {
+      const dashPhase = x % (dashOn + dashOff)
+      if (dashPhase < dashOn) img.setPixelAt(x + 1, y + 1, color)
+    }
+  }
+
+  return img.encode() as unknown as Uint8Array
+}
+
 function drawRect(img: Image, x: number, y: number, w: number, h: number, color: number, thickness: number) {
   const ix = Math.max(0, Math.round(x))
   const iy = Math.max(0, Math.round(y))

@@ -16,12 +16,22 @@ async function isRateLimited(userId: string, userEmail: string | undefined): Pro
   const monthStart = new Date()
   monthStart.setDate(1)
   monthStart.setHours(0, 0, 0, 0)
+
+  // Check for a per-user monthly limit override set by admins in the Supabase dashboard.
+  // Users without a row get the system default of 7 scans/month.
+  const { data: limitRow } = await supabase
+    .from('user_scan_limits')
+    .select('monthly_limit')
+    .eq('user_id', userId)
+    .maybeSingle()
+  const limit = limitRow?.monthly_limit ?? 7
+
   const { count } = await supabase.from('scans')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
     .eq('status', 'completed')
     .gte('created_at', monthStart.toISOString())
-  return (count ?? 0) >= 7
+  return (count ?? 0) >= limit
 }
 
 // ─── POST /v1/scans ────────────────────────────────────────────────────────────
@@ -127,7 +137,7 @@ async function processScan(
     clearTimeout(deadlineTimer)
   } catch (err) {
     clearTimeout(deadlineTimer)
-    console.error(`[${scanId}] processScan failed:`, err)
+    console.error(`[scan:${scanId}] processScan wrapper caught error — marking scan as failed. Error: ${String(err)}`)
     await supabase.from('scans').update({
       status: 'failed',
       error_message: err instanceof Error ? err.message : 'Scan processing failed',
@@ -147,7 +157,9 @@ async function _runProcessScan(
   }
 ): Promise<void> {
   const t0 = Date.now()
-  const lap = (label: string) => console.log(`[${scanId}] ⏱ ${label}: ${((Date.now() - t0) / 1000).toFixed(1)}s`)
+  const elapsed = () => `${((Date.now() - t0) / 1000).toFixed(1)}s`
+
+  console.log(`[scan:${scanId}] Pipeline starting — type=${input.inputType}, input=${input.inputUrl ?? input.inputFilename ?? 'buffer'}`)
 
   try {
     await supabase.from('scans').update({ status: 'processing' }).eq('id', scanId)
@@ -161,6 +173,7 @@ async function _runProcessScan(
 
     // ── Phase 1: Capture ──────────────────────────────────────────────────────
     if (input.inputType === 'url' && input.inputUrl) {
+      console.log(`[scan:${scanId}] Phase 1: capturing URL via Browserless — ${input.inputUrl}`)
       // Two parallel Browserless sessions: DOM+axe capture and full-page screenshot.
       // Parallel avoids adding to total wall-clock time while keeping each response
       // lightweight — screenshot returns raw binary (no base64 overhead, ~10x less memory).
@@ -185,8 +198,7 @@ async function _runProcessScan(
         uploadFile(domPath, domJson, 'application/json'),
       ])
 
-      lap('Phase 1 capture (URL)')
-      console.log(`[${scanId}] Capture: dom1440=${dom1440.length} elements, axe=${axeViolations.length} violations, dom375=${dom375.length} elements`)
+      console.log(`[scan:${scanId}] Phase 1 complete (${elapsed()}): screenshot=${(originalBytes.length / 1024).toFixed(0)}kb, dom_elements=${dom1440.length}, axe_violations=${axeViolations.length}, mobile_elements=${dom375.length}`)
 
       await supabase.from('scans').update({
         original_path: `${basePath}/original.png`,
@@ -195,11 +207,12 @@ async function _runProcessScan(
       }).eq('id', scanId)
 
     } else if (input.fileBuffer) {
+      console.log(`[scan:${scanId}] Phase 1: normalizing uploaded screenshot — ${input.inputFilename ?? 'file'}, ${(input.fileBuffer.length / 1024).toFixed(0)}kb`)
       normalizedBytes = await normalizeImage(input.fileBuffer)
       const ext = input.inputFilename?.split('.').pop() ?? 'png'
       await uploadFile(`${basePath}/original.${ext}`, input.fileBuffer, `image/${ext}`)
       await uploadFile(`${basePath}/normalized.png`, normalizedBytes, 'image/png')
-      lap('Phase 1 capture (screenshot)')
+      console.log(`[scan:${scanId}] Phase 1 complete (${elapsed()}): normalized screenshot uploaded, no DOM available`)
 
       await supabase.from('scans').update({
         original_path: `${basePath}/original.${ext}`,
@@ -212,13 +225,17 @@ async function _runProcessScan(
     // ── Phase 2: Gemini Vision ────────────────────────────────────────────────
     let aiFindings: Finding[] = []
 
+    console.log(`[scan:${scanId}] Phase 2: calling Gemini Vision — dom_snapshot=${dom1440 ? 'yes' : 'no (screenshot-only)'}`)
     try {
       const normalizedUrl = await getSignedUrl(`${basePath}/normalized.png`, 3600)
-      aiFindings = await callGeminiVision(normalizedUrl)
+      const domSnapshot = (dom1440 && axeViolations && dom375)
+        ? { dom1440, axeViolations, dom375 }
+        : undefined
+      aiFindings = await callGeminiVision(normalizedUrl, domSnapshot)
       await supabase.from('scans').update({ ai_status: 'completed' }).eq('id', scanId)
-      lap('Phase 2 Gemini Vision')
+      console.log(`[scan:${scanId}] Phase 2 complete (${elapsed()}): Gemini returned ${aiFindings.length} finding(s)`)
     } catch (aiErr) {
-      console.error(`[${scanId}] Gemini Vision failed:`, aiErr)
+      console.error(`[scan:${scanId}] Phase 2 FAILED (${elapsed()}): Gemini Vision threw an error — ${String(aiErr)}`)
       await supabase.from('scans').update({
         ai_status: 'failed',
         ai_error: String(aiErr),
@@ -226,9 +243,10 @@ async function _runProcessScan(
     }
 
     // ── Phase 3: Merge, score ─────────────────────────────────────────────────
+    console.log(`[scan:${scanId}] Phase 3: merging findings and calculating score`)
     const finalFindings = mergeAndPrioritize([], aiFindings)
-
     const { overall, categoryScores } = calculateScore(finalFindings)
+    console.log(`[scan:${scanId}] Phase 3 complete (${elapsed()}): ${finalFindings.length} final finding(s), score=${overall}`)
 
     // Overlay generation disabled: imagescript TypedArrays accumulate across warm starts
     // and push external memory over Supabase's 256MB limit. Overlay is generated client-side instead.
@@ -236,6 +254,7 @@ async function _runProcessScan(
 
     // Insert findings rows
     if (finalFindings.length > 0) {
+      console.log(`[scan:${scanId}] Inserting ${finalFindings.length} finding(s) into database`)
       const { data: insertedFindings } = await supabase.from('findings').insert(
         finalFindings.map(f => ({
           scan_id: scanId,
@@ -256,8 +275,11 @@ async function _runProcessScan(
 
       // Phase 3: Embed findings for similarity search (non-blocking)
       if (insertedFindings && insertedFindings.length > 0) {
+        console.log(`[scan:${scanId}] Queuing embedding for ${insertedFindings.length} finding(s) (background, non-blocking)`)
         EdgeRuntime.waitUntil(embedAndStoreFindingsAsync(insertedFindings, userId))
       }
+    } else {
+      console.warn(`[scan:${scanId}] No findings to insert — scan will complete with 0 findings and score=${overall}`)
     }
 
     await supabase.from('scans').update({
@@ -268,9 +290,9 @@ async function _runProcessScan(
       completed_at: new Date().toISOString(),
     }).eq('id', scanId)
 
-    lap('✅ completed')
+    console.log(`[scan:${scanId}] Pipeline complete — ${finalFindings.length} findings, score=${overall}, total_time=${elapsed()}`)
   } catch (err) {
-    lap('❌ failed')
+    console.error(`[scan:${scanId}] Pipeline FAILED at ${elapsed()} — ${String(err)}`)
     throw err
   }
 }

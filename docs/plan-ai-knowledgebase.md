@@ -83,7 +83,15 @@ Leave in place. Once the knowledge base is populated, do a manual pass to verify
 
 ---
 
-## Phase 2: Reference Image Pipeline
+## ✅ Phase 2: Reference Image Pipeline — DONE
+
+**What was built:**
+- Created `aidqa-kb` Supabase Storage bucket (separate from the main `aidqa` bucket) — this was the actual landing spot, not `aidqa/kb/images/`
+- Uploaded 5 curated reference images (`images/` folder in `aidqa-kb`) and `knowledgebase.json` at root via `scripts/upload-kb-images.py`
+- Added `downloadKbFile()` to `storage.ts` — fetches from `aidqa-kb` bucket by relative path
+- Added `CURATED_IMAGES` array in `gemini.ts` — 5 images with labels, fetched at call time and injected as `inlineData` parts before the page screenshot
+- `loadKnowledgeBase()` — cached module-level load of `knowledgebase.json`, strips `image_path` and `vector_embedding_text` before injecting into prompt
+- Knowledge objects injected into `buildPrompt()` under `[DESIGN KNOWLEDGE]` section
 
 **Goal:** Make the knowledge base reference images accessible to Gemini as visual calibration examples.
 
@@ -117,7 +125,31 @@ True on-demand image retrieval requires Level 2 RAG. For Level 1, include a fixe
 
 ---
 
-## Phase 3: DOM Pre-processing
+## ✅ Phase 3: DOM Pre-processing + Fold Line Annotation — DONE
+
+**What was built:**
+
+**`capture.ts`** — Added `getDepth(el)` inline helper to the Browserless DOM extractor; each captured element now includes `tagDepth: number` (DOM nesting depth from document root).
+
+**`scan/domContext.ts`** (new file) — `buildDomContext(snapshot: EnhancedCapture): string`
+- Filters: strips tagDepth > 8, off-screen elements (x/y < -10), empty containers (div/section/etc. with no text and not interactive)
+- Keeps: all headings (h1-h6), all interactive elements, first 20 body text nodes (p/li/span/label etc.)
+- Style subset: color, backgroundColor, fontSize, fontWeight, lineHeight, borderRadius, padding, width, height
+- Outputs: axe violations block + [desktop 1440px] section + [mobile 375px] section
+- Hard cap: 40,000 chars (~10K tokens) with truncation notice
+
+**`normalize.ts`** — Added `addFoldLine(imageBytes, foldY=900): Promise<Uint8Array>` — draws a blue dashed horizontal line at y=900 in memory using imagescript, only if image height > 950px. The stored `normalized.png` stays clean; fold line only appears on the copy sent to Gemini.
+
+**`gemini.ts`** — Updated `callGeminiVision(imageSignedUrl, domSnapshot?: EnhancedCapture)`:
+- Applies fold line to image bytes before Gemini call
+- Calls `buildDomContext()` if domSnapshot provided
+- Injects `[DOM DATA]` section into `buildPrompt()` between `[REFERENCE EXAMPLES]` and the page screenshot
+
+**`handlers.ts`** — Passes `{ dom1440, axeViolations, dom375 }` to `callGeminiVision()` for URL scans; `undefined` for screenshot-only scans.
+
+**`docs/Design_knowledgebase/architecture_summary_with_all_prompts.md`** (new file) — Full markdown conversion of colleague's 10-page PDF: pipeline architecture, 7-step prompt stack, permanent system prompt, JSON schemas, output contract. Ready as reference for Phase 4.
+
+---
 
 **Goal:** Serialize only the design-relevant subset of the DOM snapshot to include in the Gemini prompt.
 

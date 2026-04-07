@@ -72,6 +72,11 @@ export async function captureEnhanced(url: string): Promise<EnhancedCapture> {
         || ['button', 'link', 'checkbox', 'radio', 'menuitem'].includes(role)
         || cursor === 'pointer';
     };
+    const getDepth = (el) => {
+      let d = 0, node = el.parentElement;
+      while (node && d < 20) { d++; node = node.parentElement; }
+      return d;
+    };
     return [...document.querySelectorAll('*')]
       .filter(el => isVisible(el))
       .map(el => {
@@ -89,6 +94,7 @@ export async function captureEnhanced(url: string): Promise<EnhancedCapture> {
           computedStyles: styles,
           textContent: (el.textContent || '').trim().slice(0, 100),
           isInteractive: isInteractive(el),
+          tagDepth: getDepth(el),
         };
       })
       .filter(el => el.boundingBox.width > 0 && el.boundingBox.height > 0)

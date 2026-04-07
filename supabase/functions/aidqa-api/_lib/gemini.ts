@@ -1,6 +1,9 @@
 import type { Finding } from './types.ts'
+import type { EnhancedCapture } from './types.ts'
 import { encodeBase64 } from 'jsr:@std/encoding/base64'
-import { downloadFile, downloadKbFile } from './storage.ts'
+import { downloadKbFile } from './storage.ts'
+import { addFoldLine } from '../scan/normalize.ts'
+import { buildDomContext } from '../scan/domContext.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.0-flash'
@@ -54,7 +57,10 @@ const CURATED_IMAGES = [
 let knowledgeCache: KnowledgeObject[] | null = null
 
 async function loadKnowledgeBase(): Promise<KnowledgeObject[]> {
-  if (knowledgeCache) return knowledgeCache
+  if (knowledgeCache) {
+    console.log(`Knowledge base: using cached ${knowledgeCache.length} objects`)
+    return knowledgeCache
+  }
   try {
     const bytes = await downloadKbFile('knowledgebase.json')
     const raw = JSON.parse(new TextDecoder().decode(bytes)) as {
@@ -65,24 +71,28 @@ async function loadKnowledgeBase(): Promise<KnowledgeObject[]> {
         id, type, category, subcategory, severity_if_violated, scope, rule, detail, detection_signals,
       })
     )
-    console.log('[AI] Knowledge base loaded:', knowledgeCache.length, 'objects')
+    console.log(`Knowledge base: loaded ${knowledgeCache.length} objects from storage`)
     return knowledgeCache
   } catch (e) {
-    console.warn('[AI] Knowledge base unavailable, proceeding without it:', e)
+    console.error('Knowledge base: FAILED to load from storage — proceeding without it. Error:', String(e))
     return []
   }
 }
 
-function buildPrompt(knowledgeObjects: KnowledgeObject[]): string {
+function buildPrompt(knowledgeObjects: KnowledgeObject[], domContext?: string): string {
   const knowledgeSection = knowledgeObjects.length > 0
     ? `\n[DESIGN KNOWLEDGE]\nThe following design rules and principles are extracted from authoritative sources (Nielsen Norman Group, WCAG 2.2, Apple HIG, etc.). Apply them when evaluating the page.\n- type "rule" = measurable violation with specific thresholds\n- type "principle" = evaluative judgment about hierarchy, clarity, and flow\n- scope "viewport" = apply only to the above-the-fold area (~900px from top)\n- scope "full-page" = evaluate across the entire screenshot\n- scope "both" = applies everywhere; higher severity above the fold\n\n<knowledge_objects>\n${JSON.stringify(knowledgeObjects)}\n</knowledge_objects>\n`
+    : ''
+
+  const domSection = domContext
+    ? `\n[DOM DATA]\nComputed design properties extracted from the live page at 1440px desktop and 375px mobile.\nA dashed blue line on the screenshot marks the viewport fold at y=900 — what users see without scrolling.\nUse this data to identify specific values (exact font sizes, color hex, contrast failures) rather than estimating from the screenshot alone.\n<dom_context>\n${domContext}\n</dom_context>\n`
     : ''
 
   return `You are a senior product designer performing a design QA audit on a UI screenshot.
 ${knowledgeSection}
 [REFERENCE EXAMPLES]
 The images labeled "REFERENCE EXAMPLE" that appear before the page screenshot are calibration examples - NOT the page being audited. Use them to understand what good and bad implementations look like in practice. Compare the page you are auditing against these benchmarks.
-
+${domSection}
 [PAGE SCREENSHOT]
 The final image in this request is the UI being audited, captured at 1440px desktop width.
 
@@ -164,7 +174,8 @@ async function fetchWithBackoff(url: string, init: RequestInit, maxRetries = 4):
 }
 
 export async function callGeminiVision(
-  imageSignedUrl: string
+  imageSignedUrl: string,
+  domSnapshot?: EnhancedCapture
 ): Promise<Finding[]> {
   if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set')
 
@@ -174,8 +185,31 @@ export async function callGeminiVision(
     fetch(imageSignedUrl),
   ])
   if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.status}`)
-  const imageBytes = new Uint8Array(await imageResponse.arrayBuffer())
+  let imageBytes = new Uint8Array(await imageResponse.arrayBuffer())
+  console.log(`Gemini Vision: screenshot downloaded, ${(imageBytes.length / 1024).toFixed(0)}kb`)
+
+  // Draw viewport fold line at y=900 on a copy of the image (stored normalized.png stays clean)
+  try {
+    imageBytes = await addFoldLine(imageBytes)
+    console.log('Gemini Vision: fold line drawn at y=900')
+  } catch (e) {
+    console.warn('Gemini Vision: fold line failed (non-fatal), skipping:', String(e))
+  }
+
   const base64Image = encodeBase64(imageBytes)
+
+  // Build DOM context if snapshot is available (URL scans only)
+  let domContext: string | undefined
+  if (domSnapshot) {
+    try {
+      domContext = buildDomContext(domSnapshot)
+      console.log(`Gemini Vision: DOM context built — ${domContext.length} chars`)
+    } catch (e) {
+      console.error('Gemini Vision: buildDomContext FAILED (non-fatal), proceeding without DOM context:', String(e))
+    }
+  } else {
+    console.log('Gemini Vision: no DOM snapshot (screenshot-only scan) — DOM context skipped')
+  }
 
   // Fetch curated reference images (non-fatal — proceed even if some are missing)
   const refImageParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = []
@@ -185,16 +219,19 @@ export async function callGeminiVision(
       refImageParts.push({ text: img.label })
       refImageParts.push({ inlineData: { mimeType: img.mimeType, data: encodeBase64(imgBytes) } })
     } catch (e) {
-      console.warn(`[AI] Skipping reference image ${img.path}:`, e)
+      console.warn(`Gemini Vision: reference image MISSING — ${img.path}. Run scripts/upload-kb-images.py to fix. Error: ${String(e)}`)
     }
   }
-  console.log('[AI] Reference images loaded:', refImageParts.length / 2, '/', CURATED_IMAGES.length)
+  const refImagesLoaded = refImageParts.length / 2
+  console.log(`Gemini Vision: ${refImagesLoaded}/${CURATED_IMAGES.length} reference images loaded`)
+
+  console.log(`Gemini Vision: sending request — model=${MODEL}, knowledge_objects=${knowledgeObjects.length}, ref_images=${refImagesLoaded}, dom=${domContext ? 'yes (' + domContext.length + ' chars)' : 'no'}`)
 
   const parts = [
     ...refImageParts,
     { text: '[PAGE BEING AUDITED]' },
     { inlineData: { mimeType: 'image/png', data: base64Image } },
-    { text: buildPrompt(knowledgeObjects) },
+    { text: buildPrompt(knowledgeObjects, domContext) },
   ]
 
   console.log('[AI] Sending vision request to Gemini, model:', MODEL)
@@ -217,29 +254,40 @@ export async function callGeminiVision(
   }
 
   const result = await response.json()
-  console.log('[AI] Gemini vision response received, usage:', result.usageMetadata)
-  console.log('[AI] Finish reason:', result.candidates?.[0]?.finishReason)
+  const finishReason = result.candidates?.[0]?.finishReason ?? 'unknown'
+  const usage = result.usageMetadata
+  console.log(`Gemini Vision: response received — finish_reason=${finishReason}, input_tokens=${usage?.promptTokenCount ?? '?'}, output_tokens=${usage?.candidatesTokenCount ?? '?'}`)
+
   const responseParts: Array<{ text?: string; thought?: boolean }> = result.candidates?.[0]?.content?.parts ?? []
-  console.log('[AI] Parts count:', responseParts.length, '| thought flags:', responseParts.map((p: { thought?: boolean }) => !!p.thought))
+  const thoughtParts = responseParts.filter((p) => p.thought).length
+  if (thoughtParts > 0) console.log(`Gemini Vision: response contains ${thoughtParts} thought part(s) (filtered out)`)
   const textPart = responseParts.findLast((p: { text?: string; thought?: boolean }) => !p.thought && p.text) ?? responseParts[responseParts.length - 1]
   const text = textPart?.text ?? ''
-  console.log('[AI] Extracted text (first 300 chars):', text.slice(0, 300))
-  if (!text) throw new Error('Empty response from Gemini')
+
+  if (!text) throw new Error('Gemini returned empty text — no content in response')
+
+  console.log(`Gemini Vision: raw response preview (first 400 chars): ${text.slice(0, 400)}`)
 
   let parsed: { findings?: unknown[] }
   try {
     parsed = JSON.parse(text)
   } catch (e) {
-    console.error('[AI] JSON.parse failed:', e, '| Raw text:', text.slice(0, 500))
+    console.error(`Gemini Vision: JSON parse FAILED — raw text (first 600 chars): ${text.slice(0, 600)}`)
     throw new Error(`Gemini returned unparseable JSON: ${e}`)
   }
+
   const findings: Finding[] = (parsed.findings ?? []).map((f: Finding) => ({
     ...f,
     source: 'ai' as const,
     score_impact: f.score_impact ?? undefined,
   }))
 
-  console.log('[AI] Gemini vision findings:', findings.length, '| raw findings from model:', JSON.stringify(parsed.findings ?? []).slice(0, 500))
+  if (findings.length === 0) {
+    console.warn(`Gemini Vision: 0 findings returned — this is unusual. Full parsed response: ${JSON.stringify(parsed).slice(0, 600)}`)
+  } else {
+    const titles = findings.map((f) => f.title ?? 'untitled').join(', ')
+    console.log(`Gemini Vision: ${findings.length} findings returned — ${titles}`)
+  }
   return findings
 }
 

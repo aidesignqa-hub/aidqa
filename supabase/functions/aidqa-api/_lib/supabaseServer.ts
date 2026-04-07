@@ -28,4 +28,4 @@ export async function getUserInfoFromRequest(req: Request): Promise<{ id: string
   return { id: user.id, email: user.email }
 }
 
-export const ADMIN_EMAILS = new Set(['oskars.zvingulis@gmail.com'])
+export const ADMIN_EMAILS = new Set(['oskars.zvingulis@gmail.com', 'janis.vedla@startschool.org'])
