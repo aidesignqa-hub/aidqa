@@ -53,7 +53,7 @@ type Artifacts = {
 
 const SEVERITY_COLORS: Record<string, string> = {
   critical: 'destructive',
-  high: 'outline',
+  high: 'warning',
   medium: 'secondary',
   low: 'secondary',
 }
@@ -78,6 +78,17 @@ export default function ScanResult() {
   const [rescanLoading, setRescanLoading] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const findingRefs = useRef<Array<HTMLDivElement | null>>([])
+
+  useEffect(() => {
+    const findingIndex = findings.findIndex(f => f.id === selectedFinding)
+    if (findingIndex !== -1 && findingRefs.current[findingIndex]) {
+      findingRefs.current[findingIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      })
+    }
+  }, [selectedFinding, findings])
 
   useEffect(() => {
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -388,16 +399,7 @@ export default function ScanResult() {
                 )
               })()}
 
-              {/* Preview fix — shown when a finding is selected */}
-              {selectedFinding && (
-                <Button
-                  className="w-full no-print"
-                  onClick={() => setShowPreview(true)}
-                >
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  Preview fix
-                </Button>
-              )}
+              
 
               {/* Delta summary */}
               {hasDelta && (
@@ -426,8 +428,9 @@ export default function ScanResult() {
                     </CardContent>
                   </Card>
                 )}
-                {findings.map(f => (
+                {findings.map((f, index) => (
                   <Card
+                    ref={el => findingRefs.current[index] = el}
                     key={f.id}
                     className={`cursor-pointer transition-all ${selectedFinding === f.id ? 'ring-2 ring-primary' : ''}`}
                     onClick={() => setSelectedFinding(f.id === selectedFinding ? null : f.id)}
@@ -437,7 +440,7 @@ export default function ScanResult() {
                         <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${SEVERITY_DOT[f.severity]}`} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                            <Badge variant={SEVERITY_COLORS[f.severity] as 'destructive' | 'outline' | 'secondary'} className="text-xs">
+                            <Badge variant={SEVERITY_COLORS[f.severity] as 'destructive' | 'secondary' | 'warning'} className="text-xs">
                               {f.severity}
                             </Badge>
                             <Badge variant="outline" className="text-xs capitalize">{f.category.replace('_', ' ')}</Badge>
@@ -493,6 +496,17 @@ export default function ScanResult() {
                           </pre>
                         )}
                       </div>
+
+                      {selectedFinding === f.id && (
+                        <Button
+                          className="w-full mt-2"
+                          size="sm"
+                          onClick={() => setShowPreview(true)}
+                        >
+                          <Wand2 className="w-4 h-4 mr-2" />
+                          Preview fix
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
