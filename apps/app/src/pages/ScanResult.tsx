@@ -338,10 +338,10 @@ export default function ScanResult() {
 
         {/* Results */}
         {scan?.status === 'completed' && (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 items-start scan-results-grid">
 
-            {/* Left: image viewer */}
-            <div className="space-y-2">
+            {/* Left: image viewer — excluded from PDF */}
+            <div className="space-y-2 no-print">
               <div className="relative border rounded-lg overflow-hidden bg-muted">
                 {artifacts.normalized_path ? (
                   <div className="relative">
@@ -450,7 +450,7 @@ export default function ScanResult() {
                         </div>
                         <button
                           title="Mark as intentional"
-                          className="shrink-0 ml-1 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          className="shrink-0 ml-1 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors no-print"
                           onClick={(e) => handleDismiss(f.id, e)}
                         >
                           <X className="w-3.5 h-3.5" />
@@ -485,21 +485,19 @@ export default function ScanResult() {
                       {/* AI fix instruction */}
                       <div>
                         <button
-                          className="text-xs text-primary underline-offset-2 hover:underline"
+                          className="text-xs text-primary underline-offset-2 hover:underline no-print"
                           onClick={e => { e.stopPropagation(); setExpandedFix(expandedFix === f.id ? null : f.id) }}
                         >
                           {expandedFix === f.id ? 'Hide' : 'Show'} AI fix instruction
                         </button>
-                        {expandedFix === f.id && (
-                          <pre className="mt-2 text-xs bg-muted p-2 rounded whitespace-pre-wrap font-mono">
-                            {f.ai_fix_instruction}
-                          </pre>
-                        )}
+                        <pre className={`mt-2 text-xs bg-muted p-2 rounded whitespace-pre-wrap font-mono ai-fix-pre ${expandedFix === f.id ? '' : 'hidden'}`}>
+                          {f.ai_fix_instruction}
+                        </pre>
                       </div>
 
                       {selectedFinding === f.id && (
                         <Button
-                          className="w-full mt-2"
+                          className="w-full mt-2 no-print"
                           size="sm"
                           onClick={() => setShowPreview(true)}
                         >

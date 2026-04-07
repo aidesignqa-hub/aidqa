@@ -128,4 +128,8 @@ All colors MUST be HSL.
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body { background: white !important; color: black !important; }
   .print\:break-before { break-before: page; }
+  /* PDF report: collapse two-column layout to single column */
+  .scan-results-grid { display: block !important; }
+  /* Always show AI fix instructions in print */
+  .ai-fix-pre { display: block !important; }
 }
