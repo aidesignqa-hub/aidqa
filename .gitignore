@@ -48,3 +48,6 @@ plugin/
 
 # Video files (host on CDN/Supabase Storage instead)
 *.mp4
+
+# Temp/session files
+%TEMP%*
