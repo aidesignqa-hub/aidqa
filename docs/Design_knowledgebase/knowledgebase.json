@@ -2,16 +2,16 @@
   "meta": {
     "version": "1.1",
     "date_generated": "2026-04-07",
-    "source_count": 13,
-    "total_rules": 71,
+    "source_count": 14,
+    "total_rules": 79,
     "categories": {
       "visual-hierarchy": 6,
       "typography": 12,
       "contrast-color": 2,
       "spacing-layout": 4,
-      "accessibility": 9,
+      "accessibility": 14,
       "ux-usability": 18,
-      "content-copy": 10,
+      "content-copy": 13,
       "responsive-mobile": 5,
       "navigation-ia": 1,
       "gestalt": 5
@@ -88,6 +88,12 @@
         "url": "https://www.nngroup.com/articles/text-scanning-patterns-eyetracking/",
         "author": "Kara Pernice",
         "objects": ["kb-sc-001", "kb-sc-002", "kb-sc-003"]
+      },
+      {
+        "title": "Material Design 3 — Foundations",
+        "url": "https://m3.material.io/foundations",
+        "author": "Google Material Design",
+        "objects": ["kb-m3-009", "kb-m3-010", "kb-m3-011", "kb-m3-012", "kb-m3-013", "kb-m3-014", "kb-m3-015", "kb-m3-016"]
       },
       {
         "title": "Apple Human Interface Guidelines — Foundations",
@@ -471,12 +477,14 @@
       "severity_if_violated": "high",
       "scope": "both",
       "rule": "Interactive elements must have a clickable or touchable target area of at least 24×24 CSS pixels, either through the element's own size or through adequate spacing from neighboring targets. WCAG 2.5.8 AA.",
-      "detail": "Small targets are a significant barrier for users with motor impairments, tremors, or large fingers. The 24×24px minimum applies to the target area — which can include padding around a small icon — not just the visible icon itself. If a target is smaller than 24×24px, it must have sufficient spacing from neighboring targets so that the combined area meets the threshold. Exceptions: inline text links, targets whose size is controlled by the user agent.",
+      "detail": "Small targets are a significant barrier for users with motor impairments, tremors, or large fingers. The 24×24px minimum applies to the target area — which can include padding around a small icon — not just the visible icon itself. If a target is smaller than 24×24px, it must have sufficient spacing from neighboring targets so that the combined area meets the threshold. Exceptions: inline text links, targets whose size is controlled by the user agent. Material Design 3 sets a higher usability bar: preferred touch targets of 48×48px for touch interfaces and 44×44px for pointer devices, reflecting real-world accuracy research rather than a minimum floor.",
       "detection_signals": [
         "Check bounding box dimensions of all interactive elements from DOM data — flag any below 24px in either width or height",
         "Common failures: small icon buttons such as close, edit, or delete actions rendered at 16×16px with no surrounding padding",
         "Tightly clustered icon links — for example social media icons in a footer — where each icon is under 24×24px and has minimal spacing between items",
-        "Checkbox and radio button hit areas that are limited to the small visual indicator without extending to include the label text"
+        "Checkbox and radio button hit areas that are limited to the small visual indicator without extending to include the label text",
+        "M3 preferred touch target: 48×48px — flag interactive elements that technically clear the 24×24px WCAG floor but fall well below 44–48px on mobile or touch-primary interfaces",
+        "M3 preferred pointer target: 44×44px — flag icon buttons and compact controls on desktop interfaces that are noticeably smaller than this"
       ],
       "image_path": null,
       "vector_embedding_text": "Accessibility rule: interactive elements must have a clickable or touchable target area of at least 24×24 CSS pixels, through element size or adequate spacing from neighboring targets. This falls under the accessibility category, target-size subcategory. WCAG 2.5.8 AA. Small targets are a significant barrier for users with motor impairments or tremors. The threshold applies to the target area including padding, not just the visible icon. If a target is smaller than 24×24px it must have sufficient surrounding spacing from neighboring targets. Common failures: small icon buttons (close, edit, delete actions) at 16×16px with no padding; tightly clustered social media icon links in footers with minimal spacing between items; checkboxes whose hit area is limited to the small visual indicator. Bounding box dimensions are available from DOM data. Applies across both viewport and full page."
@@ -493,8 +501,9 @@
       "detection_signals": [
         "Look for input fields where no visible text label is positioned above or beside the field — only text inside the input itself",
         "Check if inputs have a label element in DOM or visible text adjacent to the field that persists when the input is focused",
-        "Look for groups of radio buttons or checkboxes with no overarching group label explaining what the user is selecting between",
-        "Check date, phone, and postal code fields for format instructions — 'MM/DD/YYYY', '+1 (XXX) XXX-XXXX' — either as a label or helper text"
+        "Look for groups of radio buttons or checkboxes with no overarching group label explaining what the user is selecting between — individual option labels alone do not communicate the question being asked",
+        "Check date, phone, and postal code fields for format instructions — 'MM/DD/YYYY', '+1 (XXX) XXX-XXXX' — either as a label or helper text; placeholder-only format hints disappear on input and are insufficient",
+        "Check pages with multiple distinct forms for unique labels that identify each form's purpose — two unlabeled forms on one page create structural ambiguity for AT users navigating by form landmarks"
       ],
       "image_path": null,
       "vector_embedding_text": "Accessibility rule: every form input must have a persistent visible label. Placeholder text inside the input does not qualify — it disappears when the user starts typing. This falls under the accessibility category, form-labels subcategory. WCAG 3.3.2 A. Placeholder-only forms are a common design failure that is especially problematic for users with cognitive impairments and users filling out long forms. When the placeholder disappears on focus, users must remember what each field was for without any on-screen reference. A persistent label must remain visible above or beside the input at all times. To detect: look for inputs with no visible text label positioned outside the field boundary. Check radio and checkbox groups for an overarching group label. Check fields requiring specific formats for visible format instructions. Applies across both viewport and full page."
@@ -525,12 +534,14 @@
       "severity_if_violated": "medium",
       "scope": "full-page",
       "rule": "The purpose of every link must be determinable from its text alone or from its text together with its immediate surrounding context. Links labeled only 'Read more,' 'Click here,' 'Learn more,' or 'Here' with no surrounding context are failures. WCAG 2.4.4 A.",
-      "detail": "Generic link labels make it impossible for users navigating by links alone — screen reader users, keyboard users, and users scanning a dense page — to determine where each link leads without reading surrounding context. When the same generic label appears multiple times on a page, even surrounding context may not disambiguate them. Link text must be specific enough to stand alone: 'Read the pricing guide' not 'Read more.'",
+      "detail": "Generic link labels make it impossible for users navigating by links alone — screen reader users, keyboard users, and users scanning a dense page — to determine where each link leads without reading surrounding context. When the same generic label appears multiple times on a page, even surrounding context may not disambiguate them. Link text must be specific enough to stand alone: 'Read the pricing guide' not 'Read more.' The same failure applies to buttons: multiple 'Save', 'Edit', or 'Delete' buttons on one page pointing to different items are equally ambiguous without surrounding context or accessible labels that disambiguate each instance.",
       "detection_signals": [
         "Scan all visible link text for generic labels: 'Read more', 'Click here', 'Learn more', 'Here', 'Details', 'More', 'View', 'See all'",
         "Flag multiple instances of the same generic link text on a single page pointing to different destinations",
         "Check blog listing pages, feature grids, and card components where each card ends with an identical 'Read more' or 'Learn more' link",
-        "Check download links labeled only 'PDF' or 'Download' with no indication of which document"
+        "Check download links labeled only 'PDF' or 'Download' with no document name — 'Download the Q3 report' is clear; 'Download' alone is not",
+        "Flag multiple buttons with the same generic label — 'Save', 'Edit', 'Delete' — appearing in the same view when they act on different items; adjacent card titles or row labels must genuinely disambiguate them",
+        "Repeated generic links are acceptable when immediately adjacent headings, card titles, or visible labels clearly distinguish each instance — verify the disambiguating context is actually present and adjacent, not just assumed"
       ],
       "image_path": null,
       "vector_embedding_text": "Accessibility rule: the purpose of every link must be determinable from its text alone or from its immediate surrounding context. Generic link labels — 'Read more', 'Click here', 'Learn more', 'Here' — are failures when they appear without descriptive context. This falls under the accessibility category, link-purpose subcategory. WCAG 2.4.4 A. Generic labels make it impossible for users navigating by link list to determine where each link leads. When the same label appears multiple times on a page pointing to different destinations, even surrounding context cannot disambiguate them. Link text must be specific: 'Read the pricing guide' rather than 'Read more'. To detect: scan all visible link text for generic labels. Flag multiple identical generic link labels on a single page. Check card components, blog listings, and feature grids for repeated identical link labels. Full-page scope."
@@ -543,12 +554,15 @@
       "severity_if_violated": "high",
       "scope": "both",
       "rule": "Icon-only interactive elements must have a visible text label or an immediately adjacent text alternative that communicates their purpose. An icon alone — hamburger menu, close button, share button, search button — is not sufficient for all users. WCAG 1.1.1 A.",
-      "detail": "Icons are not universally understood. While a magnifying glass is widely recognised as search, many icons are ambiguous — a share icon varies across platforms, a settings gear may not be obvious to less tech-savvy users, and a custom icon may be entirely novel. A visible text label alongside the icon removes all ambiguity. For icon-only toolbar buttons and navigation items, the label need not be large but must be present and legible.",
+      "detail": "Icons are not universally understood. While a magnifying glass is widely recognised as search, many icons are ambiguous — a share icon varies across platforms, a settings gear may not be obvious to less tech-savvy users, and a custom icon may be entirely novel. A visible text label alongside the icon removes all ambiguity. For icon-only toolbar buttons and navigation items, the label need not be large but must be present and legible. This rule extends beyond interactive icons to any non-text element that conveys meaning: status icons, progress indicators, and data visualisations all require accessible text alternatives when they communicate essential information.",
       "detection_signals": [
         "Look for buttons or interactive elements containing only an icon or symbol with no visible text label",
         "Check navigation bars for icon-only items where the function must be inferred from the icon shape alone",
         "Check toolbar buttons, floating action buttons, and utility bars for icon-only actions with no text",
-        "Look for card or list item actions (edit, delete, share, bookmark) that are represented solely as small icons with no label"
+        "Look for card or list item actions (edit, delete, share, bookmark) that are represented solely as small icons with no label",
+        "Check status icons — error badges, success checkmarks, warning triangles — for accessible names; icons communicating state without visible text need an aria-label or equivalent",
+        "Check progress bars and loading indicators for accessible text describing what is loading or what the progress value represents",
+        "For guidance on label content (purpose vs. appearance, no role repetition in labels), see kb-m3-015"
       ],
       "image_path": null,
       "vector_embedding_text": "Accessibility rule: icon-only interactive elements must have a visible text label communicating their purpose. An icon alone — hamburger menu, close button, share button, search button — is not sufficient for all users. This falls under the accessibility category, non-text-content subcategory. WCAG 1.1.1 A. Icons are not universally understood: while some are widely recognised, many are ambiguous across platforms or unfamiliar to less tech-savvy users. A visible text label alongside or below the icon removes ambiguity entirely. For toolbar buttons and navigation items, the label need not be large but must be present and legible. To detect: look for buttons and interactive elements containing only an icon with no accompanying text. Check navigation bars, toolbars, floating action buttons, and card action buttons for icon-only treatments. Applies across both viewport and full page."
@@ -635,13 +649,15 @@
       "severity_if_violated": "high",
       "scope": "both",
       "rule": "All-caps text is acceptable only for very short labels — navigation items, category overlines, button labels, form field labels (typically 1–5 words). It must never be applied to body copy, long headings, or multi-line text blocks.",
-      "detail": "Users read words by recognising their overall shape — the silhouette of ascending and descending letterforms. All-caps text eliminates this shape variation: every word becomes a uniform rectangle of equal cap-height, forcing character-by-character decoding rather than word recognition. This significantly slows reading speed. All-caps is only appropriate at scales where the shape-recognition benefit of mixed case is outweighed by the visual authority or category-signalling value of capitalisation — short labels, overlines, and UI affordances.",
+      "detail": "Users read words by recognising their overall shape — the silhouette of ascending and descending letterforms. All-caps text eliminates this shape variation: every word becomes a uniform rectangle of equal cap-height, forcing character-by-character decoding rather than word recognition. This significantly slows reading speed. All-caps is only appropriate at scales where the shape-recognition benefit of mixed case is outweighed by the visual authority or category-signalling value of capitalisation — short labels, overlines, and UI affordances. Material Design 3 classifies caps blocks as an explicit accessibility anti-pattern, not merely a readability concern: 'Avoid using caps blocks altogether; they're not accessible.' This is because some screen reader and text-to-speech implementations respond differently to CSS text-transform: uppercase than to natively cased text.",
       "detection_signals": [
         "DOM: flag text-transform: uppercase on any element containing more than approximately 5 words of text content",
         "Check headings: multi-line or long headings in all-caps are a clear violation",
         "Look for body copy sections or feature description blocks rendered in all-caps",
         "All-caps is acceptable for: navigation labels, button text, overlines (short category labels above headlines), form field labels — assess whether the all-caps element falls into one of these short-label use cases",
-        "Note: letter-spacing should always be increased when all-caps is used — tight all-caps is harder to read than spaced all-caps"
+        "Note: letter-spacing should always be increased when all-caps is used — tight all-caps is harder to read than spaced all-caps",
+        "Flag dialog body text, helper text, form instructions, and error messages rendered in all-caps — these are accessibility anti-pattern contexts where all-caps is never appropriate regardless of length",
+        "Flag all-caps headings spanning more than one line — these combine the readability failure (shape loss) with the accessibility concern"
       ],
       "image_path": null,
       "vector_embedding_text": "Typography rule: all-caps text is acceptable only for very short labels — navigation items, category overlines, button labels — typically 1–5 words. It must never be applied to body copy, long headings, or multi-line text blocks. This falls under the typography category, all-caps-usage subcategory. Users read words by recognising their overall shape — the silhouette of ascending and descending letterforms. All-caps eliminates this shape variation, making every word a uniform rectangle and forcing character-by-character decoding. This significantly slows reading speed. The appropriate contexts are short-label uses where visual authority or category-signalling outweighs the readability cost. When all-caps is used, letter-spacing should be increased to compensate for optical tightening of capitals. To detect: flag text-transform: uppercase on elements containing more than approximately 5 words. Applies across both viewport and full page, higher severity above the fold."
@@ -889,7 +905,8 @@
         "A button saying 'Download' on a dedicated download page is fine; the same label in an ambiguous modal with no context is a failure — assess label in context, not in isolation",
         "Specific verb + object labels ('Send invoice', 'Create account', 'Book appointment') are always unambiguous — positive signal regardless of surrounding context",
         "Secondary helper text below a CTA ('We'll email your client a copy') is a good compensating signal — it clarifies outcome without lengthening the button label itself",
-        "Aim for a maximum of 3 words per button label as a useful target — labels exceeding 5–6 words should be reviewed for compression without losing meaning"
+        "Aim for a maximum of 3 words per button label as a useful target — labels exceeding 5–6 words should be reviewed for compression without losing meaning",
+        "Flag CTA button labels clipped by an ellipsis — a truncated button label is always a failure regardless of surrounding context; 'Download re...' communicates nothing"
       ],
       "image_path": null,
       "vector_embedding_text": "Content copy rule: the outcome of clicking a button must be clear from the label alone or from the label read with its immediate surrounding context. This falls under the content-copy category, cta-copy subcategory. Users decide whether to click within seconds — generic labels cause hesitation because the outcome is unpredictable. A single-word label is acceptable when the surrounding UI makes the destination obvious. The failure is when the label is the only signal: a checkout flow where every step says 'Next' tells users nothing about what they are committing to. Specific verb + object labels are always unambiguous. To detect: flag generic labels only when surrounding context doesn't clarify the action; check hero CTAs for specificity; treat secondary helper text below a button as a compensating signal. Applies across both viewport and full page."
@@ -909,7 +926,8 @@
         "Flag instructional text that restates what the UI element already communicates visually — a text input next to a 'Search' button labeled 'Enter your search term here' is redundant",
         "Check for noun phrase constructions that compress to verb phrases: 'Completion of registration' → 'Complete registration'; 'Submission of your form' → 'Submit'",
         "Check for filler openers in helper text and instructions: 'In order to', 'Please note that', 'You should be aware that' — these delay the actual information",
-        "Note: brevity must not override clarity — a shorter label that creates ambiguity is worse than a longer one that is specific (see kb-cc-001)"
+        "Note: brevity must not override clarity — a shorter label that creates ambiguity is worse than a longer one that is specific (see kb-cc-001)",
+        "Distinguish brevity from truncation — a label that is short because it was written concisely is correct; a label that appears short because its container clips it with an ellipsis is a content failure, not a brevity win. 'Short but clipped' is worse than 'slightly longer but fully visible'"
       ],
       "image_path": null,
       "vector_embedding_text": "Content copy principle: UI copy must be as short as possible without losing meaning. This falls under the content-copy category, copy-brevity subcategory. Users scan interfaces rather than read them — every unnecessary word is friction. Concise copy improved task success in Nielsen Norman Group research; a verbose sign-up heading reduced conversions by 12% vs a shorter equivalent. Remove words until the meaning changes. Prefer verb phrases over noun constructions. Brevity and outcome clarity are complementary — be as short as possible while ensuring the outcome remains clear from label or context. To detect: look for multi-clause labels, redundant qualifiers, noun phrases that compress to verb phrases, and filler openers in instructions. Brevity must not override clarity. Applies across both viewport and full page."
@@ -1162,13 +1180,16 @@
       "severity_if_violated": "high",
       "scope": "both",
       "rule": "Navigation must make the user's current location visible at all times. Users who cannot see where they are in a site or application lose spatial sense, become disoriented, and abandon tasks. Active states, breadcrumbs, and consistent navigation landmarks are not optional.",
-      "detail": "Most users cannot build or maintain elaborate mental maps of a navigation space. The web is fundamentally invisible — users can see the current page but not the structure around it. Effective navigation creates the illusion that users are always in the same place, with content changing around them. Three tools provide spatial grounding: (1) active state highlighting on the current nav item, (2) breadcrumbs or location labels for pages more than 2 levels deep, (3) consistent navigation elements on every page type — including checkout, error pages, and onboarding flows. When navigation disappears or changes between page types, users lose their sense of position entirely.",
+      "detail": "Most users cannot build or maintain elaborate mental maps of a navigation space. The web is fundamentally invisible — users can see the current page but not the structure around it. Effective navigation creates the illusion that users are always in the same place, with content changing around them. Three tools provide spatial grounding: (1) active state highlighting on the current nav item, (2) breadcrumbs or location labels for pages more than 2 levels deep, (3) consistent navigation elements on every page type — including checkout, error pages, and onboarding flows. When navigation disappears or changes between page types, users lose their sense of position entirely. For AT users, landmark labels and heading hierarchy serve the same spatial grounding function: a page with multiple unlabeled navigation regions is as disorienting for a screen reader user as a page with no active state for a sighted user.",
       "detection_signals": [
         "Check if the current page or section is visually indicated in the navigation — active state, highlighted item, different color or weight from inactive items",
         "Flag navigation bars where no item appears selected or active — the user has no spatial reference for their current location",
         "Check for breadcrumbs or location labels on pages more than 2 levels deep in the hierarchy",
         "Check whether navigation is present and consistent across all page types — checkout flows, error pages, and onboarding flows commonly strip navigation, leaving users disoriented",
-        "Look for nav items with no visual distinction between active and inactive states — identical styling regardless of current location is a spatial grounding failure"
+        "Look for nav items with no visual distinction between active and inactive states — identical styling regardless of current location is a spatial grounding failure",
+        "DOM: if multiple navigation regions are present (main nav + pagination, main nav + sidebar nav), check whether each has a unique aria-label — unlabeled duplicate nav landmarks are indistinguishable for AT users",
+        "DOM: check whether the main content area is identifiable via a main landmark or role='main' — AT users rely on this to skip repeated navigation",
+        "Check whether the visible page heading (h1) reflects the current page title — a mismatch between visual heading and structural identity is a spatial grounding failure for all users"
       ],
       "image_path": null,
       "vector_embedding_text": "Navigation IA principle: navigation must make the user's current location visible at all times. This falls under the navigation-ia category, visible-navigation subcategory. Most users cannot build elaborate mental maps — effective navigation creates the illusion of a stable home with content changing around them. Three tools provide spatial grounding: active state on current nav item, breadcrumbs for deep pages, and consistent navigation across all page types including checkout and error pages. To detect: check if current page is visually indicated in nav (active state, color, weight); flag nav bars with no active state indication; check for breadcrumbs on deep pages; verify navigation exists on checkout, error, and onboarding pages; check for visual distinction between active and inactive nav items. High severity. Applies across both viewport and full-page."
@@ -1229,6 +1250,158 @@
       ],
       "image_path": null,
       "vector_embedding_text": "UX usability rule: elements that behave differently must look different — and elements that look the same must behave the same. This falls under the ux-usability category, visual-behavioral-consistency subcategory. Visual consistency builds accurate mental models. Applying the same style to controls with different behaviors deceives users via their own prior learning. This applies to the full interactive vocabulary: buttons, links, icons, states. Icon conventions (gear = settings, trash = recoverable delete) must not be violated. To detect: check that navigation, submission, and destructive buttons each have distinct styles; flag links and buttons sharing visual treatment despite different roles; check icon conventions for deviations; look for primary and destructive buttons styled identically; verify consistent interactive affordance signals across the page. Medium severity. Applies across both viewport and full-page."
+    },
+    {
+      "id": "kb-m3-009",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "landmark-labeling",
+      "severity_if_violated": "high",
+      "scope": "full-page",
+      "rule": "When a page contains multiple landmarks of the same type — such as more than one navigation, region, or form — each must have a unique accessible label describing its purpose. Labels must never repeat the landmark role name.",
+      "detail": "Assistive technologies navigate web pages primarily through landmarks. When two navigation regions exist with no distinguishing label, AT users cannot tell them apart and may skip the wrong one entirely. Material Design 3 specifies: add clear and specific labels to any landmark roles that appear multiple times; never repeat the role name in the label — 'navigation navigation' is not a label, it is a duplication. All region landmarks should have labels; other repeated landmarks benefit from labels whenever a label adds meaning beyond the role name alone.",
+      "detection_signals": [
+        "DOM: find repeated landmark roles — multiple nav, [role='navigation'], [role='region'], or [role='form'] elements on the same page",
+        "Flag repeated landmarks with no aria-label or aria-labelledby",
+        "Flag labels that include the landmark role name — 'navigation navigation', 'search search' — role is auto-announced by AT and must not be repeated in the label",
+        "Flag labels that are generic or positional rather than descriptive — 'nav 1', 'second menu' — these do not help users understand purpose",
+        "Positive signal: unique descriptive labels such as 'primary navigation', 'pagination', 'site search', 'contact form' on repeated landmark types"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: when a page contains multiple landmarks of the same type, each must have a unique accessible label describing its purpose. Labels must never repeat the landmark role name. This falls under the accessibility category, landmark-labeling subcategory. AT users navigate primarily through landmarks — unlabeled duplicate nav or region elements are indistinguishable. Material Design 3 specifies: add specific labels to repeated landmark roles; never repeat the role in the label. To detect: find repeated nav, region, or form elements in DOM; flag missing aria-label; flag labels that contain the role name; flag generic positional labels. Positive signal: unique descriptive labels on each repeated landmark type. Full-page scope. High severity."
+    },
+    {
+      "id": "kb-m3-010",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "heading-structure",
+      "severity_if_violated": "high",
+      "scope": "full-page",
+      "rule": "Headings must reflect real content hierarchy, not visual styling. No heading levels should be skipped. Each page should have one h1. Heading tags must not be chosen based on preferred font size.",
+      "detail": "AT users navigate web pages primarily through headings — they form a traversable outline of the document. When heading levels are skipped (h2 followed by h4), the outline is broken and AT users lose their place. When h3 is used instead of h2 because it renders at a preferred visual size, the heading serves styling rather than structure. Material Design 3: 'Identify headings based on content hierarchy, rather than visual styling. Headings should not skip a level. A single h1 for the page title is recommended.' A page with multiple h1s (unless structured with explicit sectioning elements) fragments the primary orientation point for AT users.",
+      "detection_signals": [
+        "DOM: extract h1–h6 elements in source order and check for skipped levels — h2 followed by h4, h1 followed by h3, etc.",
+        "Flag pages with no h1 when the page clearly has a primary title or dominant heading",
+        "Flag pages with multiple h1 elements not justified by explicit document sectioning",
+        "Flag heading tags that appear mismatched to their visual prominence — an h4 at the very top of a page followed by h2s is likely a visual-styling violation",
+        "Positive signal: headings form a clean sequential hierarchy (h1 → h2 → h3) that maps to the visible content structure without gaps"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: headings must reflect real content hierarchy, not visual styling. No levels should be skipped; each page should have one h1; heading tags must not be chosen for preferred font size. This falls under the accessibility category, heading-structure subcategory. AT users navigate through headings as a document outline — skipped levels break the outline and misplace users. Material Design 3: identify headings based on content hierarchy, not visual styling; do not skip levels; recommend a single h1. To detect: extract h1–h6 in source order; flag skipped levels; flag missing or multiple h1s; flag headings mismatched to visual prominence. Full-page scope. High severity."
+    },
+    {
+      "id": "kb-m3-011",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "target-spacing",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Interactive targets placed adjacent to each other should have at least 8px of space between them. Spacing between targets is independent of target size — adequately sized targets still cause misactivation when packed too closely.",
+      "detail": "Material Design 3: 'In most cases, targets separated by 8dp of space or more promote balanced information density and usability.' Touch targets often extend invisibly beyond the visual element — a 24dp icon may have a 48dp touch area — and when those invisible areas overlap between adjacent elements, the wrong element activates. This is most common in icon rows, toolbars, pagination controls, social icon clusters, and footer link groups. This rule is distinct from kb-hig-006 (which addresses misclick risk between functionally-opposed actions); this addresses general proximity across any adjacent interactive targets.",
+      "detection_signals": [
+        "DOM: measure the gap between bounding boxes of adjacent interactive elements — flag gaps smaller than 8px",
+        "Check icon rows, toolbars, social media link clusters, and pagination controls for tightly packed elements",
+        "Check footer link groups — a common failure location where social icons and legal links cluster with insufficient spacing",
+        "Screenshot: look for groups of icons or small controls with no visible gap between them",
+        "Treat this as a usability threshold, not a hard WCAG fail — raise severity when clustered controls perform destructive or irreversible actions"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: interactive targets placed adjacent to each other should have at least 8px of space between them. This falls under the accessibility category, target-spacing subcategory. Material Design 3 specifies 8dp spacing promotes balanced information density and usability. Touch targets extend invisibly beyond the visible element — adjacent targets with overlapping invisible touch areas cause misactivation. Most common failure locations: icon rows, toolbars, pagination, social icon clusters, footer link groups. Distinct from kb-hig-006 (functionally-opposed action spacing) — this covers general adjacency across any interactive targets. Applies across both viewport and full-page. Medium severity."
+    },
+    {
+      "id": "kb-m3-012",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "embedded-text-in-images",
+      "severity_if_violated": "high",
+      "scope": "both",
+      "rule": "Essential text must not exist only inside a raster image. Screen readers cannot read image-embedded text. If an image contains essential information as text, that same information must appear in visible page text, a caption, or the image's alt text.",
+      "detail": "Material Design 3: 'Screen readers are unable to read text that is embedded in imagery. If there is essential information embedded as text in the image, include the essential information in the alt text.' Promotional banners, marketing hero images, infographic overlays, and event announcement cards commonly embed their primary message as image text. Users with images disabled, slow connections, high-zoom text settings, or who rely on AT lose this information entirely. The fix is not to remove the image — it is to ensure the essential content is also available in real text.",
+      "detection_signals": [
+        "Screenshot: look for meaningful text rendered inside images — promotional banners with offer text, infographic labels, cards where the headline is baked into the image asset",
+        "DOM: check whether the same information appears nearby in visible text, a figcaption, or alt text on that image",
+        "Flag hero images or promo blocks where the primary message (headline, offer, CTA text) exists only within the image with no visible page text equivalent",
+        "Flag diagrams or charts with labeled data points that have no equivalent visible text or table",
+        "Exempt: decorative text used purely as a visual element when the same information is clearly present in nearby visible copy"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: essential text must not exist only inside a raster image — screen readers cannot read image-embedded text. This falls under the accessibility category, embedded-text-in-images subcategory. Material Design 3: include essential image-embedded text in alt text or visible page text. Promotional banners, hero images, infographics, and event cards commonly fail this. Users with images disabled, AT users, or users at high zoom lose the information entirely. To detect: look for meaningful text inside images in the screenshot; check if that information exists in visible copy, figcaption, or alt text; flag promo heroes and infographics where the primary message is image-only. Applies across both viewport and full-page. High severity."
+    },
+    {
+      "id": "kb-m3-013",
+      "type": "principle",
+      "category": "content-copy",
+      "subcategory": "image-context",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "Informative images should be accompanied by a caption or adjacent text that explains their relevance to the surrounding content. An image whose purpose is not explained by nearby copy forces the user to infer meaning alone.",
+      "detail": "Material Design 3: 'Captions explain contextual information about the image to help the reader understand how it relates to the content. Both sighted and screen reader users rely on captions.' An informative image — a diagram, product photo, chart, article illustration — earns its place by conveying meaning that enhances the text. When no caption or adjacent copy explains what the image shows and why it is there, users must interpret it independently. This is particularly common in AI-generated UIs where images are inserted as visual filler rather than communicative elements. Decorative images used purely for atmosphere or texture are exempt.",
+      "detection_signals": [
+        "Screenshot: identify informative images — diagrams, charts, article illustrations, product photos, instructional visuals — and check for accompanying caption or adjacent explanatory text",
+        "DOM: look for a figcaption element, an adjacent paragraph, or a nearby heading that explains the image's relevance",
+        "Flag images that carry clear meaning but have no surrounding explanatory text — the image sits alone with no context as to why it is there",
+        "Positive signal: a caption or adjacent text explains what the image shows and why it matters in the current context",
+        "Exempt: abstract backgrounds, texture fills, and purely decorative photos that add atmosphere without conveying specific information"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy principle: informative images should be accompanied by caption or adjacent text explaining their relevance. This falls under the content-copy category, image-context subcategory. Material Design 3: captions help both sighted and AT users understand how the image relates to the content. Images without context force users to infer meaning independently — a common failure in AI-generated UIs where images serve as visual filler. To detect: identify informative images (diagrams, charts, illustrations, product photos); check for figcaption, adjacent paragraph, or heading explaining the image; flag context-free informative images. Exempt: decorative images with no specific information. Full-page scope. Medium severity."
+    },
+    {
+      "id": "kb-m3-014",
+      "type": "rule",
+      "category": "content-copy",
+      "subcategory": "truncation-recovery",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Truncated text is only acceptable if users can access the full content through a recovery path — a tooltip, an expanded view, or a link. An ellipsis with no recovery mechanism makes the truncated content permanently inaccessible.",
+      "detail": "Material Design 3: 'If there's an ellipsis, but no way to show the truncated text, it is not accessible.' Truncation is sometimes necessary when space is constrained, but the truncated content must always remain accessible through one of three patterns: (1) a tooltip on hover/focus revealing the full text, (2) a link or interaction that expands the full content, (3) tapping or clicking the element opens a full view. Truncation with none of these is not a brevity technique — it is content removal. This applies especially to button labels: a truncated button label communicates nothing about the action.",
+      "detection_signals": [
+        "Screenshot: look for visible ellipses (...) in labels, headings, card titles, table cells, navigation items, and button labels",
+        "Flag any truncated text where no recovery mechanism is apparent — no tooltip indicator, no expand control, no clickable state leading to full content",
+        "Flag button labels clipped with an ellipsis — a truncated button label is always a failure; buttons must show their full intent",
+        "Check table cells, list items, and card titles for ellipsis truncation without a clearly linked full view",
+        "Positive signal: clipped text has a tooltip, 'Read more' link, or a clearly interactive affordance indicating the full content is accessible"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy rule: truncated text is only acceptable if users can access the full content through a tooltip, expanded view, or link. This falls under the content-copy category, truncation-recovery subcategory. Material Design 3: an ellipsis with no recovery path is not accessible. Truncation is sometimes necessary but the content must always remain reachable. Truncated button labels are always a failure — buttons must show their full intent. To detect: look for ellipses in labels, headings, card titles, table cells, and buttons; flag any truncated text with no visible recovery mechanism; flag all truncated button labels. Positive signal: clipped text has tooltip, expand control, or linked full view. Applies across both viewport and full-page. Medium severity."
+    },
+    {
+      "id": "kb-m3-015",
+      "type": "rule",
+      "category": "accessibility",
+      "subcategory": "label-purpose",
+      "severity_if_violated": "medium",
+      "scope": "both",
+      "rule": "Accessibility labels on icons, images, and interactive elements must describe what the element does or means — not what it looks like. The element's role must not be included in the label, as the browser announces it automatically.",
+      "detail": "Material Design 3: 'The accessibility labels for these icons describe their purpose — NOT what the icon looks like (for example, magnifying glass).' A label of 'Magnifying glass' tells a screen reader user what is rendered, not what it does. 'Search' is complete. Adding the role compounds the problem: a button labeled 'Settings button' announces as 'Settings button button' — the role is auto-appended by the browser and repeating it creates a redundant double-announcement. Labels should be concise, action-oriented or meaning-oriented, and role-free.",
+      "detection_signals": [
+        "DOM: inspect aria-label, alt text, title attributes, and aria-labelledby text for icon buttons and meaningful images",
+        "Flag labels that describe icon appearance rather than purpose — 'magnifying glass' instead of 'Search', 'three dots' instead of 'More options', 'gear' instead of 'Settings', 'hamburger' instead of 'Open menu'",
+        "Flag labels containing role words — 'Settings button', 'Navigation menu', 'Search icon' — role is auto-announced by AT and repeating it causes a double-announcement",
+        "Check progress indicators, status icons, and data visualisations for meaningful accessible names — 'Loading' is acceptable; 'spinning circle' is not",
+        "Positive signal: labels describe action or outcome — 'Open settings', 'Search', 'More options', 'Go to homepage'"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Accessibility rule: labels on icons and interactive elements must describe what the element does, not what it looks like, and must not include the element role. This falls under the accessibility category, label-purpose subcategory. Material Design 3: labels describe purpose, not appearance — not 'magnifying glass' but 'Search'. Role is auto-announced by AT; including it in the label causes double-announcement ('Settings button button'). To detect: inspect aria-label, alt text, and title attributes; flag appearance-descriptive labels; flag labels containing role words; check progress indicators and status icons for meaningful names. Positive signal: labels describe action or outcome. Applies across both viewport and full-page. Medium severity."
+    },
+    {
+      "id": "kb-m3-016",
+      "type": "rule",
+      "category": "content-copy",
+      "subcategory": "caps-block-antipattern",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "All-caps must never be used for running text, dialog content, helper text, instructions, or any multi-word text that is not a short intentional label. Caps blocks — extended all-caps text beyond a label — are an accessibility anti-pattern that reduces legibility and can cause inconsistent screen reader behaviour.",
+      "detail": "Material Design 3 explicitly classifies caps blocks as an anti-pattern: 'Avoid using caps blocks altogether; they're not accessible.' The accessibility concern is distinct from the readability concern: CSS text-transform: uppercase does not change the underlying text content, but some screen reader and text-to-speech combinations respond differently to visually transformed uppercase text. The readability failure is absolute — all-caps eliminates the distinctive word shapes that enable rapid reading, replacing them with uniform-height rectangles. Short intentional labels (overlines, compact utility labels, navigation items of 1–3 words) are the only acceptable use. See also kb-ty-005 for the typography-angle detection of the same pattern.",
+      "detection_signals": [
+        "Screenshot: identify extended all-caps text — more than 4–5 consecutive words in any non-label context",
+        "Flag dialog body text, helper text, form instructions, tooltips, and error messages rendered in all-caps",
+        "DOM: flag text-transform: uppercase on containers holding paragraph, helper, dialog, or instructional text",
+        "Acceptable all-caps contexts: overlines above headlines, compact utility labels, navigation items of 1–3 words — verify the flagged element does not fall into these categories before raising",
+        "Flag all-caps headings spanning more than one line — this combines the typography violation (kb-ty-005) with the accessibility anti-pattern; raise severity accordingly"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Content copy rule: all-caps must never be used for running text, dialog content, helper text, or any multi-word text beyond a short intentional label. This falls under the content-copy category, caps-block-antipattern subcategory. Material Design 3: avoid caps blocks altogether — they are not accessible. CSS text-transform: uppercase can cause inconsistent screen reader behaviour; all-caps also eliminates word shape recognition, slowing reading significantly. Acceptable: overlines, compact utility labels, navigation items of 1–3 words. To detect: identify extended all-caps text beyond label contexts; flag dialog, helper, instruction, and error text in all-caps; check DOM for text-transform: uppercase on paragraph or instructional containers. See also kb-ty-005. Full-page scope. Medium severity."
     },
     {
       "id": "kb-hig-001",
