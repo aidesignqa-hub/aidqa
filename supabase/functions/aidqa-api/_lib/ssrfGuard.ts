@@ -37,6 +37,8 @@ export function isUrlSafe(urlStr: string): boolean {
       if (a === 169 && b === 254) return false
       // 127.x.x.x
       if (a === 127) return false
+      // 0.x.x.x (0.0.0.0 — "all interfaces", treated as loopback on many platforms)
+      if (a === 0) return false
     }
   }
 

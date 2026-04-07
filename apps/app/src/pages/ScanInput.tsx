@@ -137,12 +137,17 @@ export default function ScanInput() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     const dropped = e.dataTransfer.files[0]
-    if (dropped && /\.(png|jpe?g|webp)$/i.test(dropped.name)) {
-      setFile(dropped)
-      setError(null)
-    } else {
+    if (!dropped) return
+    if (!/\.(png|jpe?g|webp)$/i.test(dropped.name)) {
       setError('Only PNG, JPG, or WEBP files are accepted')
+      return
     }
+    if (dropped.size > 10 * 1024 * 1024) {
+      setError('File too large. Maximum size is 10 MB.')
+      return
+    }
+    setFile(dropped)
+    setError(null)
   }
 
   const isAdmin = usage?.plan === 'admin'
@@ -297,7 +302,12 @@ export default function ScanInput() {
                     </>
                   )}
                   <input ref={fileInputRef} type="file" accept=".png,.jpg,.jpeg,.webp" className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) { setFile(f); setError(null) } }}
+                    onChange={e => {
+                      const f = e.target.files?.[0]
+                      if (!f) return
+                      if (f.size > 10 * 1024 * 1024) { setError('File too large. Maximum size is 10 MB.'); return }
+                      setFile(f); setError(null)
+                    }}
                   />
                 </div>
                 <p className="text-xs px-3 py-2 rounded-lg" style={{ color: '#5A6679', backgroundColor: '#F4F5F7' }}>

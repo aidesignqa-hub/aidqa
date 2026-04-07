@@ -1,11 +1,14 @@
-const ALLOWED_ORIGINS = new Set([
-  'https://app.aidesignqa.com',
-  'https://aidqa-six.vercel.app',
-  'https://aidqa-aidesignqa-6662s-projects.vercel.app',
-  'https://aidqa-git-main-aidesignqa-6662s-projects.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3000',
-])
+const raw = Deno.env.get('ALLOWED_ORIGINS') ?? ''
+const ALLOWED_ORIGINS = new Set(
+  raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : [
+    'https://app.aidesignqa.com',
+    'https://aidqa-six.vercel.app',
+    'https://aidqa-aidesignqa-6662s-projects.vercel.app',
+    'https://aidqa-git-main-aidesignqa-6662s-projects.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ]
+)
 
 function getAllowedOrigin(req: Request): string {
   const origin = req.headers.get('origin') ?? ''

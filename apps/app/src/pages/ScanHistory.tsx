@@ -19,6 +19,7 @@ export default function ScanHistory() {
   const navigate = useNavigate()
   const [scans, setScans] = useState<Scan[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const LIMIT = 20
@@ -26,13 +27,19 @@ export default function ScanHistory() {
   useEffect(() => {
     const fetchScans = async () => {
       setLoading(true)
+      setError(null)
       try {
         const headers = await getAuthHeaders()
         const res = await fetch(`${getApiBaseUrl()}/v1/scans?page=${page}&limit=${LIMIT}`, { headers })
-        if (!res.ok) return
+        if (!res.ok) {
+          setError('Failed to load scan history. Please try again.')
+          return
+        }
         const data = await res.json()
         setScans(data.scans ?? [])
         setTotal(data.total ?? 0)
+      } catch {
+        setError('Could not connect. Check your internet connection and try again.')
       } finally {
         setLoading(false)
       }
@@ -55,7 +62,14 @@ export default function ScanHistory() {
           </div>
         )}
 
-        {!loading && scans.length === 0 && (
+        {!loading && error && (
+          <div className="text-center py-16 text-muted-foreground">
+            <p className="mb-3 text-destructive">{error}</p>
+            <Button variant="outline" onClick={() => setPage(p => p)}>Retry</Button>
+          </div>
+        )}
+
+        {!loading && scans.length === 0 && !error && (
           <div className="text-center py-16 text-muted-foreground">
             <p className="mb-3">No scans yet.</p>
             <Button variant="outline" onClick={() => navigate('/')}>Start your first scan</Button>
