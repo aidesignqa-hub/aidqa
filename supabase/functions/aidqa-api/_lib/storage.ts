@@ -1,6 +1,7 @@
 import { supabase } from './supabaseServer.ts'
 
 const BUCKET = 'aidqa'
+const KB_BUCKET = 'aidqa-kb'
 
 export async function uploadFile(path: string, data: Uint8Array, contentType: string): Promise<void> {
   const { error } = await supabase.storage.from(BUCKET).upload(path, data, {
@@ -13,6 +14,12 @@ export async function uploadFile(path: string, data: Uint8Array, contentType: st
 export async function downloadFile(path: string): Promise<Uint8Array> {
   const { data, error } = await supabase.storage.from(BUCKET).download(path)
   if (error || !data) throw new Error(`Storage download failed: ${error?.message}`)
+  return new Uint8Array(await data.arrayBuffer())
+}
+
+export async function downloadKbFile(path: string): Promise<Uint8Array> {
+  const { data, error } = await supabase.storage.from(KB_BUCKET).download(path)
+  if (error || !data) throw new Error(`KB storage download failed: ${error?.message}`)
   return new Uint8Array(await data.arrayBuffer())
 }
 

@@ -1,5 +1,6 @@
 import type { Finding } from './types.ts'
 import { encodeBase64 } from 'jsr:@std/encoding/base64'
+import { downloadFile, downloadKbFile } from './storage.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.0-flash'
@@ -7,46 +8,115 @@ const MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.0-flash'
 const GEMINI_URL = (model: string, key: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`
 
-function buildPrompt(): string {
-  return `You are a senior product designer performing a design QA review on a static UI screenshot.
+interface KnowledgeObject {
+  id: string
+  type: string
+  category: string
+  subcategory: string
+  severity_if_violated: string
+  scope: string
+  rule: string
+  detail: string
+  detection_signals: string[]
+}
 
-## Screenshot
-The attached image is a UI screenshot at 1440px desktop width.
+// Curated reference images injected into every Gemini vision call as calibration examples.
+// Each file must be uploaded to Supabase Storage at kb/images/ (run scripts/upload-kb-images.py).
+const CURATED_IMAGES = [
+  {
+    path: 'kb/images/williamssonoma.png',
+    label: 'REFERENCE EXAMPLE - Visual Hierarchy (Focal Point): Williams-Sonoma product page - all blocks are equal in size, color, and spacing with no dominant element. This illustrates collapsed visual hierarchy.',
+    mimeType: 'image/png',
+  },
+  {
+    path: 'kb/images/moma.png',
+    label: 'REFERENCE EXAMPLE - Visual Hierarchy (Color Count): MoMA - excessive distinct colors at similar saturation, reducing the ability to perceive hierarchy between page elements.',
+    mimeType: 'image/png',
+  },
+  {
+    path: 'kb/images/hipcamp.png',
+    label: 'REFERENCE EXAMPLE - Typography (Type Scale): Hipcamp - a systematically scaled type hierarchy with a clear H1 > subheading > body progression.',
+    mimeType: 'image/png',
+  },
+  {
+    path: 'kb/images/spotify.png',
+    label: 'REFERENCE EXAMPLE - Spacing (Proximity Grouping): Spotify - tight spacing groups related elements; generous gaps separate sections. Proximity communicates structure without explicit visual dividers.',
+    mimeType: 'image/png',
+  },
+  {
+    path: 'kb/images/shopify.png',
+    label: 'REFERENCE EXAMPLE - Spacing (Explicit Containers): Shopify - demonstrates container discipline; whitespace and minimal borders used rather than stacking border + shadow + background fill on the same element.',
+    mimeType: 'image/png',
+  },
+]
 
-## Known design system — do NOT flag these as issues
+// Module-level cache - knowledge base loaded once per function instance.
+let knowledgeCache: KnowledgeObject[] | null = null
+
+async function loadKnowledgeBase(): Promise<KnowledgeObject[]> {
+  if (knowledgeCache) return knowledgeCache
+  try {
+    const bytes = await downloadKbFile('knowledgebase.json')
+    const raw = JSON.parse(new TextDecoder().decode(bytes)) as {
+      knowledge: Array<KnowledgeObject & { image_path: string | null; vector_embedding_text: string }>
+    }
+    knowledgeCache = (raw.knowledge ?? []).map(
+      ({ id, type, category, subcategory, severity_if_violated, scope, rule, detail, detection_signals }) => ({
+        id, type, category, subcategory, severity_if_violated, scope, rule, detail, detection_signals,
+      })
+    )
+    console.log('[AI] Knowledge base loaded:', knowledgeCache.length, 'objects')
+    return knowledgeCache
+  } catch (e) {
+    console.warn('[AI] Knowledge base unavailable, proceeding without it:', e)
+    return []
+  }
+}
+
+function buildPrompt(knowledgeObjects: KnowledgeObject[]): string {
+  const knowledgeSection = knowledgeObjects.length > 0
+    ? `\n[DESIGN KNOWLEDGE]\nThe following design rules and principles are extracted from authoritative sources (Nielsen Norman Group, WCAG 2.2, Apple HIG, etc.). Apply them when evaluating the page.\n- type "rule" = measurable violation with specific thresholds\n- type "principle" = evaluative judgment about hierarchy, clarity, and flow\n- scope "viewport" = apply only to the above-the-fold area (~900px from top)\n- scope "full-page" = evaluate across the entire screenshot\n- scope "both" = applies everywhere; higher severity above the fold\n\n<knowledge_objects>\n${JSON.stringify(knowledgeObjects)}\n</knowledge_objects>\n`
+    : ''
+
+  return `You are a senior product designer performing a design QA audit on a UI screenshot.
+${knowledgeSection}
+[REFERENCE EXAMPLES]
+The images labeled "REFERENCE EXAMPLE" that appear before the page screenshot are calibration examples - NOT the page being audited. Use them to understand what good and bad implementations look like in practice. Compare the page you are auditing against these benchmarks.
+
+[PAGE SCREENSHOT]
+The final image in this request is the UI being audited, captured at 1440px desktop width.
+
+[KNOWN DESIGN SYSTEM - do NOT flag these as issues]
 This UI uses an intentional design system. The following are correct by design:
-- Orange (#FF8B00) on the "Design QA" badge — this is a deliberate accent tag, not an error
-- Blue (#2563EB) primary CTA button — this is correct brand usage
-- Dark navy (#172B4D) for headings, medium gray (#5A6679) for secondary text — both are intentional
-- Light gray (#F9FAFB) page background with white (#FFFFFF) card surfaces — correct
+- Orange (#FF8B00) on the "Design QA" badge - deliberate accent tag, not an error
+- Blue (#2563EB) primary CTA button - correct brand usage
+- Dark navy (#172B4D) for headings, medium gray (#5A6679) for secondary text - intentional
+- Light gray (#F9FAFB) page background with white (#FFFFFF) card surfaces - correct
 
-## NEVER flag these — they are invisible in a static screenshot
-This is a static image. The following states DO NOT appear in screenshots and therefore cannot be evaluated. Do not report findings about any of these under any circumstances — even if you think they might be missing:
-- Loading spinners, skeleton screens, progress indicators, "Scanning…" text
+[NEVER flag these - invisible in a static screenshot]
+This is a static image. Discard any finding that mentions these - they cannot be evaluated:
+- Loading spinners, skeleton screens, progress indicators, "Scanning..." text
 - Error messages, error borders, error toasts, inline validation errors
 - Hover states, focus rings, active states
 - Form validation feedback of any kind
 - Empty states or zero-data states
 - Disabled element styling when the element is interactable in code
 
-If a finding you are drafting mentions any of the above concepts, discard it entirely.
+[WHAT TO CHECK - scoped to measurable dimensions only]
 
-## What to check — scoped to measurable dimensions only
-Only flag issues within these dimensions, because these are the only things the scoring system measures and rewards:
+**accessibility** - Color contrast only. Flag text where you are HIGHLY CONFIDENT the contrast ratio is definitively below 4.5:1 for normal text or below 3:1 for large text (18pt or 14pt bold). Do NOT flag borderline cases. A missed finding is better than a false positive.
 
-**accessibility** — Color contrast only. Flag text where you are HIGHLY CONFIDENT the contrast ratio is definitively below 4.5:1 for normal text or below 3:1 for large text (≥18pt or 14pt bold). Do NOT flag borderline cases. Do NOT flag text you are uncertain about. Skip it if you are not sure — a missed finding is better than a false positive that cannot be fixed.
+**hierarchy** - Is there a clear visual primary action? Does the heading scale (h1 > h2 > body) guide the eye correctly? Are competing elements of equal visual weight when one should dominate?
 
-**hierarchy** — Is there a clear visual primary action? Does the heading scale (h1 > h2 > body) guide the eye in the correct order? Are competing elements of equal visual weight when one should dominate?
+**layout** - Whitespace imbalance visible in the screenshot. Elements visually misaligned. Scan path that forces the eye to jump unexpectedly.
 
-**layout** — Whitespace imbalance visible in the screenshot (one area cramped, another excessive). Elements visually misaligned with each other. Scan path that forces the eye to jump unexpectedly.
+**consistency** - Interactive elements of the same type styled differently. Inconsistent spacing between repeated elements.
 
-**consistency** — Interactive elements of the same type that are styled differently from each other (e.g. two buttons with different border-radius, two cards with different padding). Inconsistent spacing between repeated elements.
+**design_system** - Typography that clearly breaks from the established scale. Spacing values visually inconsistent with the rest of the layout.
 
-**design_system** — Typography that clearly breaks from the established scale (e.g. body text at 10px, heading at 48px with nothing in between). Spacing values that are visually inconsistent with the rest of the layout.
+**ux_readiness** - ONLY: Is the primary action immediately obvious to a first-time visitor? Is the purpose of the page clear from the visible content alone?
 
-**ux_readiness** — ONLY: Is the primary action immediately obvious to a first-time visitor looking at this screenshot? Is the purpose of the page clear from the visible content alone? Do NOT flag any dynamic states here.
-
-## Output format
+[OUTPUT FORMAT]
 Return ONLY a valid JSON object. No prose before or after. No comments.
 
 Allowed values:
@@ -76,7 +146,7 @@ Allowed values:
 Rules:
 - Maximum 7 findings. Return fewer if the UI is mostly sound. Return an empty array if everything looks good.
 - Only report a finding if you are highly confident it is a real, visible problem in this screenshot.
-- Severity "critical" only for contrast failures that are definitively failing WCAG AA, or completely broken layouts.
+- Severity "critical" only for contrast failures definitively failing WCAG AA, or completely broken layouts.
 - Be specific and scoped. "Heading font size is identical to body text, creating no hierarchy" is good. "Add animations" is not.
 - Do not suggest adding new features, illustrations, or content. Only flag what is visibly broken.`
 }
@@ -98,23 +168,41 @@ export async function callGeminiVision(
 ): Promise<Finding[]> {
   if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set')
 
-  console.log('[AI] Fetching image for Gemini vision call')
-  const imageResponse = await fetch(imageSignedUrl)
+  // Load knowledge base and page image in parallel
+  const [knowledgeObjects, imageResponse] = await Promise.all([
+    loadKnowledgeBase(),
+    fetch(imageSignedUrl),
+  ])
   if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.status}`)
   const imageBytes = new Uint8Array(await imageResponse.arrayBuffer())
   const base64Image = encodeBase64(imageBytes)
+
+  // Fetch curated reference images (non-fatal — proceed even if some are missing)
+  const refImageParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = []
+  for (const img of CURATED_IMAGES) {
+    try {
+      const imgBytes = await downloadKbFile(`images/${img.path.replace('kb/images/', '')}`)
+      refImageParts.push({ text: img.label })
+      refImageParts.push({ inlineData: { mimeType: img.mimeType, data: encodeBase64(imgBytes) } })
+    } catch (e) {
+      console.warn(`[AI] Skipping reference image ${img.path}:`, e)
+    }
+  }
+  console.log('[AI] Reference images loaded:', refImageParts.length / 2, '/', CURATED_IMAGES.length)
+
+  const parts = [
+    ...refImageParts,
+    { text: '[PAGE BEING AUDITED]' },
+    { inlineData: { mimeType: 'image/png', data: base64Image } },
+    { text: buildPrompt(knowledgeObjects) },
+  ]
 
   console.log('[AI] Sending vision request to Gemini, model:', MODEL)
   const response = await fetchWithBackoff(GEMINI_URL(MODEL, GEMINI_API_KEY), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{
-        parts: [
-          { inlineData: { mimeType: 'image/png', data: base64Image } },
-          { text: buildPrompt() },
-        ],
-      }],
+      contents: [{ parts }],
       generationConfig: {
         responseMimeType: 'application/json',
         maxOutputTokens: 8192,
@@ -131,9 +219,9 @@ export async function callGeminiVision(
   const result = await response.json()
   console.log('[AI] Gemini vision response received, usage:', result.usageMetadata)
   console.log('[AI] Finish reason:', result.candidates?.[0]?.finishReason)
-  const parts: Array<{ text?: string; thought?: boolean }> = result.candidates?.[0]?.content?.parts ?? []
-  console.log('[AI] Parts count:', parts.length, '| thought flags:', parts.map((p: { thought?: boolean }) => !!p.thought))
-  const textPart = parts.findLast((p: { text?: string; thought?: boolean }) => !p.thought && p.text) ?? parts[parts.length - 1]
+  const responseParts: Array<{ text?: string; thought?: boolean }> = result.candidates?.[0]?.content?.parts ?? []
+  console.log('[AI] Parts count:', responseParts.length, '| thought flags:', responseParts.map((p: { thought?: boolean }) => !!p.thought))
+  const textPart = responseParts.findLast((p: { text?: string; thought?: boolean }) => !p.thought && p.text) ?? responseParts[responseParts.length - 1]
   const text = textPart?.text ?? ''
   console.log('[AI] Extracted text (first 300 chars):', text.slice(0, 300))
   if (!text) throw new Error('Empty response from Gemini')

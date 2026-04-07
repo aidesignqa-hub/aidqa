@@ -8,7 +8,7 @@ The design knowledge base lives in `docs/Design_knowledgebase/` — 15 cleaned m
 
 ---
 
-## Phase 1: Knowledge Object Extraction (human-in-the-loop)
+## ✅ Phase 1: Knowledge Object Extraction (human-in-the-loop) — DONE
 
 **Goal:** Turn the 15 MD articles into a curated `knowledgebase.json` of structured knowledge objects — both strict testable rules AND softer design principles.
 
