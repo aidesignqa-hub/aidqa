@@ -1,19 +1,19 @@
 {
   "meta": {
-    "version": "1.1",
+    "version": "1.2",
     "date_generated": "2026-04-07",
-    "source_count": 14,
-    "total_rules": 79,
+    "source_count": 15,
+    "total_rules": 83,
     "categories": {
-      "visual-hierarchy": 6,
+      "visual-hierarchy": 7,
       "typography": 12,
       "contrast-color": 2,
       "spacing-layout": 4,
       "accessibility": 14,
-      "ux-usability": 18,
+      "ux-usability": 20,
       "content-copy": 13,
       "responsive-mobile": 5,
-      "navigation-ia": 1,
+      "navigation-ia": 2,
       "gestalt": 5
     },
     "sources": [
@@ -100,6 +100,12 @@
         "url": "https://developer.apple.com/design/human-interface-guidelines/",
         "author": "Apple Inc.",
         "objects": ["kb-hig-001", "kb-hig-002", "kb-hig-003", "kb-hig-004", "kb-hig-005", "kb-hig-006", "kb-hig-007", "kb-hig-008", "kb-hig-009", "kb-hig-010"]
+      },
+      {
+        "title": "Web Style Guide, 4th Edition",
+        "url": "https://webstyleguide.com/",
+        "author": "Patrick J. Lynch and Sarah Horton",
+        "objects": ["kb-nav-002", "kb-ux-019", "kb-ux-020", "kb-vh-011"]
       }
     ]
   },
@@ -317,7 +323,8 @@
         "Check if primary and secondary CTAs are visually distinct — different color, weight, or size, not just a slight shade difference",
         "Check if in-text links are distinguishable from surrounding body text by more than color alone (underline, weight, or positional context)",
         "Flag if destructive actions (delete, remove, cancel) use the same visual treatment as safe actions (save, confirm)",
-        "Check if ghost/outline buttons are distinguishable from non-interactive bordered containers"
+        "Check if ghost/outline buttons are distinguishable from non-interactive bordered containers",
+        "DOM: flag text-decoration: underline applied to non-<a> elements (span, p, div, strong) — underline carries a near-universal affordance for 'clickable link'; applying it to non-interactive text is a false affordance that trains users to click elements that do nothing"
       ],
       "image_path": null,
       "vector_embedding_text": "Gestalt rule: elements with different UI functions must not appear visually similar. This falls under the gestalt category, functional-distinction subcategory. Visual similarity signals sameness of function — so when a primary CTA and a secondary text link share the same visual weight, users cannot prioritize between them. When links are only distinguishable from body text by color, they become invisible to color-blind users. When destructive actions look identical to constructive ones, users make costly mistakes. Clear functional distinction requires meaningful visual differences — not just a slight color shade variation, but differences in weight, size, shape, or position. To detect: check that primary and secondary CTAs are meaningfully differentiated; check that in-text links have a non-color distinction signal; check that destructive actions are visually differentiated from safe actions. Applies across both viewport and full page, higher severity above the fold."
@@ -533,7 +540,7 @@
       "subcategory": "link-purpose",
       "severity_if_violated": "medium",
       "scope": "full-page",
-      "rule": "The purpose of every link must be determinable from its text alone or from its text together with its immediate surrounding context. Links labeled only 'Read more,' 'Click here,' 'Learn more,' or 'Here' with no surrounding context are failures. WCAG 2.4.4 A.",
+      "rule": "The purpose of every link must be determinable from its text alone or from its text together with its immediate surrounding context. Links labeled only 'Read more,' 'Click here,' 'Learn more,' or 'Here' with no surrounding context are failures. WCAG 2.4.4 A. Beyond accessibility, strong link text creates 'information scent' — the verbal cue that tells users whether following the link will satisfy their goal.",
       "detail": "Generic link labels make it impossible for users navigating by links alone — screen reader users, keyboard users, and users scanning a dense page — to determine where each link leads without reading surrounding context. When the same generic label appears multiple times on a page, even surrounding context may not disambiguate them. Link text must be specific enough to stand alone: 'Read the pricing guide' not 'Read more.' The same failure applies to buttons: multiple 'Save', 'Edit', or 'Delete' buttons on one page pointing to different items are equally ambiguous without surrounding context or accessible labels that disambiguate each instance.",
       "detection_signals": [
         "Scan all visible link text for generic labels: 'Read more', 'Click here', 'Learn more', 'Here', 'Details', 'More', 'View', 'See all'",
@@ -541,7 +548,8 @@
         "Check blog listing pages, feature grids, and card components where each card ends with an identical 'Read more' or 'Learn more' link",
         "Check download links labeled only 'PDF' or 'Download' with no document name — 'Download the Q3 report' is clear; 'Download' alone is not",
         "Flag multiple buttons with the same generic label — 'Save', 'Edit', 'Delete' — appearing in the same view when they act on different items; adjacent card titles or row labels must genuinely disambiguate them",
-        "Repeated generic links are acceptable when immediately adjacent headings, card titles, or visible labels clearly distinguish each instance — verify the disambiguating context is actually present and adjacent, not just assumed"
+        "Repeated generic links are acceptable when immediately adjacent headings, card titles, or visible labels clearly distinguish each instance — verify the disambiguating context is actually present and adjacent, not just assumed",
+        "Information scent check: assess whether the link text front-loads the keywords that tell users what they will find — 'How to reduce churn in SaaS' has high scent; 'Read our latest article' has near-zero scent. Users follow links based on whether the label predicts a reward; vague labels break the scent trail and cause abandonment before the destination is reached (Spool, Perfetti, Brittan — UIE)"
       ],
       "image_path": null,
       "vector_embedding_text": "Accessibility rule: the purpose of every link must be determinable from its text alone or from its immediate surrounding context. Generic link labels — 'Read more', 'Click here', 'Learn more', 'Here' — are failures when they appear without descriptive context. This falls under the accessibility category, link-purpose subcategory. WCAG 2.4.4 A. Generic labels make it impossible for users navigating by link list to determine where each link leads. When the same label appears multiple times on a page pointing to different destinations, even surrounding context cannot disambiguate them. Link text must be specific: 'Read the pricing guide' rather than 'Read more'. To detect: scan all visible link text for generic labels. Flag multiple identical generic link labels on a single page. Check card components, blog listings, and feature grids for repeated identical link labels. Full-page scope."
@@ -630,11 +638,13 @@
       "subcategory": "text-alignment",
       "severity_if_violated": "medium",
       "scope": "both",
-      "rule": "Body text must never be fully justified. Full justification creates irregular word-spacing gaps — known as 'rivers of white' — that disrupt reading flow. Left-aligned ragged-right is correct for body copy in left-to-right languages.",
+      "rule": "Body text must never be fully justified or right-aligned. Full justification creates irregular word-spacing gaps that disrupt reading flow. Right-aligned paragraph text forces the eye to find a new, unpredictable starting point on each line. Left-aligned ragged-right is the only correct alignment for body copy in left-to-right languages.",
       "detail": "Full justification stretches word spacing on short lines to fill the column, creating visually uneven gaps that the eye picks up as a distracting texture within the text block. These 'rivers of white' are particularly disruptive for readers with dyslexia. Browsers do not apply CSS hyphenation by default, which makes web-based full justification worse than print (where hyphenation compensates). Left-aligned text with a natural ragged right edge is consistently easier to read on screen.",
       "detection_signals": [
         "DOM: flag any text-align: justify on body text, paragraph, or article elements",
+        "DOM: flag text-align: right on paragraph or body text elements — right-alignment is only appropriate for specific UI patterns (price columns in tables, timestamps in message threads) and never correct for paragraph-length reading copy",
         "Visually: look for body paragraphs where word spacing is visibly uneven across lines — some lines with large gaps between words",
+        "Visually: check for body paragraphs where each line starts at a different horizontal position — this is right-aligned text, which creates a ragged left edge that breaks reading rhythm",
         "Check long-form content areas (blog posts, articles, documentation) especially — justification is most harmful at paragraph length",
         "Center-aligned body text (not headings) is also a concern for multi-line paragraphs — acceptable for short captions or pull quotes, not extended reading"
       ],
@@ -1189,7 +1199,9 @@
         "Look for nav items with no visual distinction between active and inactive states — identical styling regardless of current location is a spatial grounding failure",
         "DOM: if multiple navigation regions are present (main nav + pagination, main nav + sidebar nav), check whether each has a unique aria-label — unlabeled duplicate nav landmarks are indistinguishable for AT users",
         "DOM: check whether the main content area is identifiable via a main landmark or role='main' — AT users rely on this to skip repeated navigation",
-        "Check whether the visible page heading (h1) reflects the current page title — a mismatch between visual heading and structural identity is a spatial grounding failure for all users"
+        "Check whether the visible page heading (h1) reflects the current page title — a mismatch between visual heading and structural identity is a spatial grounding failure for all users",
+        "Check for dead-end pages: pages that have no navigation at all — users who arrive via deep link, search result, or share have no way out except the browser back button",
+        "Flag pages where the only exit path is the browser back button — no logo link, no nav bar, no footer links, no breadcrumb — this is a structural navigation failure for any user arriving from outside the site's normal flow"
       ],
       "image_path": null,
       "vector_embedding_text": "Navigation IA principle: navigation must make the user's current location visible at all times. This falls under the navigation-ia category, visible-navigation subcategory. Most users cannot build elaborate mental maps — effective navigation creates the illusion of a stable home with content changing around them. Three tools provide spatial grounding: active state on current nav item, breadcrumbs for deep pages, and consistent navigation across all page types including checkout and error pages. To detect: check if current page is visually indicated in nav (active state, color, weight); flag nav bars with no active state indication; check for breadcrumbs on deep pages; verify navigation exists on checkout, error, and onboarding pages; check for visual distinction between active and inactive nav items. High severity. Applies across both viewport and full-page."
@@ -1592,6 +1604,81 @@
       ],
       "image_path": null,
       "vector_embedding_text": "Visual hierarchy principle: the most important content and primary CTA must be positioned in the upper half of the viewport, visible without scrolling, in LTR interfaces. This falls under the visual-hierarchy category, spatial-importance-placement subcategory. Reading order — top to bottom, left to right — is the default cognitive map for any new screen. The top-left quadrant is the highest-attention zone. CTAs below the viewport midpoint on first load impose a scroll cost that directly reduces conversion. AI-generated fully centered layouts often fail by treating primary and secondary content with equal spatial priority. To detect: check if the value proposition is in the upper viewport half; check if the primary CTA is visible without scrolling; flag decorative imagery stacked above the headline; check centered layouts for hierarchy absence. Viewport scope. Medium severity."
+    },
+    {
+      "id": "kb-nav-002",
+      "type": "rule",
+      "category": "navigation-ia",
+      "subcategory": "menu-cognitive-load",
+      "severity_if_violated": "medium",
+      "scope": "viewport",
+      "rule": "Top-level navigation should contain no more than 7–10 visible items. Exceeding this limit overloads working memory and increases time-to-decision for every page visit.",
+      "detail": "Barry Schwartz's Paradox of Choice demonstrates that more options produce worse decisions and higher anxiety, not better outcomes. Navigation is the primary wayfinding tool on any site — every additional top-level item taxes users on every page load, not just first load. Research consistently shows comprehension and selection speed degrade beyond 7 items. Mega-menus with grouped sub-items are a different pattern and evaluated separately; the concern here is primary nav item count in the main bar.",
+      "detection_signals": [
+        "DOM: count visible primary navigation links in the main nav element — flag if the count is ≥10",
+        "Screenshot: count top-level nav items visible in the horizontal nav bar at desktop viewport width",
+        "Check whether items have been artificially split or relabeled to appear as separate nav entries when they could be grouped under a parent",
+        "Note: utility links (Login, Sign Up, language switcher) in the top-right utility bar are a separate pattern — count only the primary site navigation items"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Navigation rule: top-level navigation should contain no more than 7–10 visible items. This falls under the navigation-ia category, menu-cognitive-load subcategory. Barry Schwartz's Paradox of Choice shows that more options produce worse decisions and higher anxiety. Navigation is taxed on every page visit — not just first load — so excess items have compounding cost. Beyond 7 items, comprehension and selection speed measurably degrade. To detect: count visible primary navigation links in the main nav element via DOM or screenshot; flag if count reaches 10 or more. Utility links (login, language) in a separate utility bar should not be counted. Viewport scope. Medium severity."
+    },
+    {
+      "id": "kb-ux-019",
+      "type": "principle",
+      "category": "ux-usability",
+      "subcategory": "first-impression-credibility",
+      "severity_if_violated": "high",
+      "scope": "viewport",
+      "rule": "Users form credibility and trust judgments within 50 milliseconds of first viewing a page. Visual disorder, unclear purpose, weak hierarchy, or an amateurish aesthetic can trigger a permanent trust rejection before the user reads a word.",
+      "detail": "Lindgaard et al. (2006) demonstrated that aesthetic judgments made in 50ms are highly consistent with judgments made after extended viewing — meaning first impressions are sticky and reliable predictors of user trust. The 50ms window is too short for reading; it is entirely driven by visual gestalt: color palette control, spacing rhythm, typographic quality, and whether the overall composition signals intentionality. AI-generated UIs that ship with default system fonts, inconsistent spacing, misaligned elements, or generic stock imagery are consistently rated as lower credibility — not because of content, but because the visual signal says no expert was involved.",
+      "detection_signals": [
+        "Apply the holistic viewport assessment: does the page, in the first second, project professionalism — or does it look like it was assembled by a tool without design attention?",
+        "Check for: system/default fonts used throughout with no typographic identity; no consistent spacing rhythm (elements appear arbitrarily placed); flat or inconsistent color palette; generic stock photos with no production quality",
+        "Check if the visual composition has a clear hierarchy signal — does the eye immediately land on the most important element?",
+        "Look for visual disorder signals: misaligned elements, inconsistent border-radii, mixed button styles, orphaned elements with no spatial relationship to their surroundings",
+        "Check the above-fold composition specifically — the credibility window is viewport-only; what is below the fold is irrelevant to this judgment"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability principle: users form trust and credibility judgments within 50 milliseconds of viewing a page, before reading any content. This falls under the ux-usability category, first-impression-credibility subcategory. Lindgaard et al. (2006) showed that 50ms aesthetic judgments strongly predict extended viewing assessments — meaning first impressions are sticky. The 50ms window is visual-only: driven by palette control, spacing rhythm, typographic quality, and compositional intentionality — not copy or features. AI-generated UIs with default fonts, inconsistent spacing, misaligned elements, or generic stock photos signal low credibility instantly. To detect: holistic viewport assessment — does the page project professionalism in the first second? Check for typographic identity, spacing rhythm, palette consistency, hierarchy clarity, and visual coherence. Viewport scope. High severity."
+    },
+    {
+      "id": "kb-ux-020",
+      "type": "principle",
+      "category": "ux-usability",
+      "subcategory": "interface-content-balance",
+      "severity_if_violated": "high",
+      "scope": "viewport",
+      "rule": "Navigation chrome and interface controls must recede visually relative to primary content. When the header, sidebar, or nav bar dominates the visual weight of the viewport, users must work harder to perceive and engage with the actual content the site exists to deliver.",
+      "detail": "Interface chrome — headers, navbars, footers, toolbars, sidebars — is the scaffolding, not the product. Lynch & Horton: 'Interface design for web pages is about creating a framework that puts users in touch with the content they came for — not a structure that competes with the content for visual attention.' A header that occupies 25%+ of the above-fold viewport in a dominant color anchors the user's eye in the wrong zone. The goal is for the user's eye to pass through the chrome and land immediately on the primary content or CTA. This failure is especially common in AI-generated UIs where the header is given a bold background color and large type, making it the most visually prominent zone on the page.",
+      "detection_signals": [
+        "Check the viewport screenshot: estimate the visual weight (size × contrast × color saturation) of the header/nav relative to the content area below it",
+        "Flag headers that: occupy more than 20% of the viewport height; use a bold/dark background color that has more visual mass than the hero or body content; contain large display text that visually competes with the page headline",
+        "Check if the user's eye is naturally drawn to the header first and stays there, rather than passing through it to the content",
+        "For sidebars: check if sidebar visual weight (background fill, box shadows, text density) competes with the main content column",
+        "Flag tool/action bars with heavy visual treatment on content pages where reading and absorbing content is the primary task"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "UX usability principle: navigation chrome must recede visually relative to primary content. This falls under the ux-usability category, interface-content-balance subcategory. Interface elements — headers, navbars, toolbars, sidebars — are scaffolding; they should put users in contact with content, not compete with it for attention. When a header occupies 25% or more of the above-fold viewport with a dominant color or large type, it anchors the eye in the wrong zone. The goal is for the eye to pass through chrome and land on the primary content or CTA. AI-generated UIs commonly fail this by applying bold background colors and large type to the header. To detect: estimate visual weight ratio of header vs. content area; flag headers over 20% viewport height with dominant color; check eye-landing pattern; assess sidebar weight on content pages. Viewport scope. High severity."
+    },
+    {
+      "id": "kb-vh-011",
+      "type": "principle",
+      "category": "visual-hierarchy",
+      "subcategory": "emphasis-saturation",
+      "severity_if_violated": "medium",
+      "scope": "full-page",
+      "rule": "When multiple graphic emphasis devices (bold text, colored backgrounds, borders, badges, icons, horizontal rules) are applied simultaneously at the same visual weight across most elements, the emphasis cancels out and no hierarchy emerges. Everything emphasized means nothing is.",
+      "detail": "Each emphasis tool — bold, color highlight, border, badge, icon — derives its signal value from contrast against a non-emphasized baseline. When a layout applies several emphasis signals to most elements (bold headings + colored cards + icon badges + decorative dividers all competing at the same intensity), users cannot determine what requires priority attention. This pattern — sometimes called 'clown's pants design' — is a common artifact of AI-generated UIs that apply visual decoration liberally to every section without establishing a calm, un-emphatic default. The fix is not to remove decoration but to establish a quiet baseline that allows intentional emphasis to signal by contrast.",
+      "detection_signals": [
+        "Count distinct active emphasis devices used across the full page: bold text, colored backgrounds on cards/sections, icon usage, badges/tags, horizontal rules or dividers, colored borders",
+        "Flag pages where 4 or more distinct emphasis devices are applied to the majority of content blocks simultaneously — the cumulative effect is visual noise, not hierarchy",
+        "Check if there is an un-emphatic baseline: look for at least one content type (body text, a content section) that uses no decoration and provides the visual resting state for the page",
+        "Compare section-to-section: if every section uses a different colored background, every heading has an icon, and every card has a colored border, the page has no hierarchy — only decoration",
+        "Look specifically for: colored card backgrounds on every card in a grid; icon prepended to every heading; horizontal rules between every section at same weight; badges on every list item"
+      ],
+      "image_path": null,
+      "vector_embedding_text": "Visual hierarchy principle: multiple simultaneous emphasis devices applied at equal weight across most elements cancels hierarchy — nothing is emphasized when everything is. This falls under the visual-hierarchy category, emphasis-saturation subcategory. Each emphasis tool (bold, color highlight, border, badge, icon) derives signal value from contrast against a non-emphasized baseline. When a layout applies bold headings, colored card backgrounds, icon badges, and decorative dividers to most content simultaneously, users cannot identify priority. This pattern is common in AI-generated UIs that apply decoration liberally. The fix is establishing a quiet un-emphatic baseline so intentional emphasis signals by contrast. To detect: count distinct active emphasis devices (bold, backgrounds, icons, badges, borders, dividers); flag when 4 or more are applied to the majority of content blocks; check for an un-emphatic baseline content type. Full-page scope. Medium severity."
     }
   ]
 }
