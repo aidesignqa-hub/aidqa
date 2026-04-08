@@ -1,3 +1,10 @@
+// =============================================================================
+// [FUTURE: Level 2 RAG] — Used by rag.ts (retrieveRAGContext) and the dormant
+// embedAndStoreFindingsAsync in handlers.ts. Neither is active in the pipeline.
+// embedText() calls Gemini's text-embedding-004 model to produce 768-dim vectors.
+// cosineSimilarity() is a pure math helper for ranking by semantic closeness.
+// =============================================================================
+
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const EMBEDDING_MODEL = 'text-embedding-004'
 const EMBEDDING_URL = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`

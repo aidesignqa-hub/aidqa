@@ -2,7 +2,6 @@ import type { Finding } from './types.ts'
 import type { EnhancedCapture } from './types.ts'
 import { encodeBase64 } from 'jsr:@std/encoding/base64'
 import { downloadKbFile } from './storage.ts'
-import { addFoldLine } from '../scan/normalize.ts'
 import { buildDomContext } from '../scan/domContext.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
@@ -56,6 +55,12 @@ const CURATED_IMAGES = [
 // Module-level cache - knowledge base loaded once per function instance.
 let knowledgeCache: KnowledgeObject[] | null = null
 
+// Reference image base64 cache - loaded once per function instance.
+// Stores already-encoded strings (JS heap) rather than Uint8Arrays (external memory)
+// to prevent TypedArray accumulation across warm starts.
+type RefImagePart = { text: string } | { inlineData: { mimeType: string; data: string } }
+let refImageCache: RefImagePart[] | null = null
+
 async function loadKnowledgeBase(): Promise<KnowledgeObject[]> {
   if (knowledgeCache) {
     console.log(`Knowledge base: using cached ${knowledgeCache.length} objects`)
@@ -79,13 +84,34 @@ async function loadKnowledgeBase(): Promise<KnowledgeObject[]> {
   }
 }
 
+async function loadReferenceImages(): Promise<RefImagePart[]> {
+  if (refImageCache) {
+    console.log(`Gemini Vision: using cached ${refImageCache.length / 2} reference images`)
+    return refImageCache
+  }
+  const parts: RefImagePart[] = []
+  for (const img of CURATED_IMAGES) {
+    try {
+      const imgBytes = await downloadKbFile(`images/${img.path.replace('kb/images/', '')}`)
+      parts.push({ text: img.label })
+      parts.push({ inlineData: { mimeType: img.mimeType, data: encodeBase64(imgBytes) } })
+      // imgBytes is now eligible for GC — only the base64 string is retained
+    } catch (e) {
+      console.warn(`Gemini Vision: reference image MISSING — ${img.path}. Run scripts/upload-kb-images.py to fix. Error: ${String(e)}`)
+    }
+  }
+  refImageCache = parts
+  console.log(`Gemini Vision: loaded and cached ${parts.length / 2} reference images`)
+  return parts
+}
+
 function buildPrompt(knowledgeObjects: KnowledgeObject[], domContext?: string): string {
   const knowledgeSection = knowledgeObjects.length > 0
     ? `\n[DESIGN KNOWLEDGE]\nThe following design rules and principles are extracted from authoritative sources (Nielsen Norman Group, WCAG 2.2, Apple HIG, etc.). Apply them when evaluating the page.\n- type "rule" = measurable violation with specific thresholds\n- type "principle" = evaluative judgment about hierarchy, clarity, and flow\n- scope "viewport" = apply only to the above-the-fold area (~900px from top)\n- scope "full-page" = evaluate across the entire screenshot\n- scope "both" = applies everywhere; higher severity above the fold\n\n<knowledge_objects>\n${JSON.stringify(knowledgeObjects)}\n</knowledge_objects>\n`
     : ''
 
   const domSection = domContext
-    ? `\n[DOM DATA]\nComputed design properties extracted from the live page at 1440px desktop and 375px mobile.\nA dashed blue line on the screenshot marks the viewport fold at y=900 — what users see without scrolling.\nUse this data to identify specific values (exact font sizes, color hex, contrast failures) rather than estimating from the screenshot alone.\n<dom_context>\n${domContext}\n</dom_context>\n`
+    ? `\n[DOM DATA]\nComputed design properties extracted from the live page at 1440px desktop and 375px mobile.\nThe viewport fold is at y=900 — elements above this line are what users see without scrolling.\nUse this data to identify specific values (exact font sizes, color hex, contrast failures) rather than estimating from the screenshot alone.\n<dom_context>\n${domContext}\n</dom_context>\n`
     : ''
 
   return `You are a senior product designer performing a design QA audit on a UI screenshot.
@@ -95,6 +121,7 @@ The images labeled "REFERENCE EXAMPLE" that appear before the page screenshot ar
 ${domSection}
 [PAGE SCREENSHOT]
 The final image in this request is the UI being audited, captured at 1440px desktop width.
+The viewport fold is at y=900px from the top — elements above this are visible without scrolling.
 
 [KNOWN DESIGN SYSTEM - do NOT flag these as issues]
 This UI uses an intentional design system. The following are correct by design:
@@ -179,24 +206,24 @@ export async function callGeminiVision(
 ): Promise<Finding[]> {
   if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set')
 
-  // Load knowledge base and page image in parallel
-  const [knowledgeObjects, imageResponse] = await Promise.all([
+  // Load knowledge base, page image, and reference images in parallel.
+  // Reference images are module-cached as base64 strings — no Uint8Array allocated on warm calls.
+  const [knowledgeObjects, imageResponse, refImageParts] = await Promise.all([
     loadKnowledgeBase(),
     fetch(imageSignedUrl),
+    loadReferenceImages(),
   ])
   if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.status}`)
   let imageBytes = new Uint8Array(await imageResponse.arrayBuffer())
   console.log(`Gemini Vision: screenshot downloaded, ${(imageBytes.length / 1024).toFixed(0)}kb`)
 
-  // Draw viewport fold line at y=900 on a copy of the image (stored normalized.png stays clean)
-  try {
-    imageBytes = await addFoldLine(imageBytes)
-    console.log('Gemini Vision: fold line drawn at y=900')
-  } catch (e) {
-    console.warn('Gemini Vision: fold line failed (non-fatal), skipping:', String(e))
-  }
-
+  // NOTE: addFoldLine (imagescript) is intentionally skipped here.
+  // Image.decode() allocates a full raw RGBA pixel buffer (~30–60 MB external memory for a full-page
+  // screenshot) and does not get GC'd before the Gemini request is built, reliably causing OOM.
+  // The fold position is communicated to Gemini via the prompt text instead.
   const base64Image = encodeBase64(imageBytes)
+  // Release the large Uint8Array — base64Image (heap string) is all we need from here on.
+  imageBytes = new Uint8Array(0)
 
   // Build DOM context if snapshot is available (URL scans only)
   let domContext: string | undefined
@@ -211,19 +238,8 @@ export async function callGeminiVision(
     console.log('Gemini Vision: no DOM snapshot (screenshot-only scan) — DOM context skipped')
   }
 
-  // Fetch curated reference images (non-fatal — proceed even if some are missing)
-  const refImageParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = []
-  for (const img of CURATED_IMAGES) {
-    try {
-      const imgBytes = await downloadKbFile(`images/${img.path.replace('kb/images/', '')}`)
-      refImageParts.push({ text: img.label })
-      refImageParts.push({ inlineData: { mimeType: img.mimeType, data: encodeBase64(imgBytes) } })
-    } catch (e) {
-      console.warn(`Gemini Vision: reference image MISSING — ${img.path}. Run scripts/upload-kb-images.py to fix. Error: ${String(e)}`)
-    }
-  }
   const refImagesLoaded = refImageParts.length / 2
-  console.log(`Gemini Vision: ${refImagesLoaded}/${CURATED_IMAGES.length} reference images loaded`)
+  console.log(`Gemini Vision: ${refImagesLoaded}/${CURATED_IMAGES.length} reference images ready`)
 
   console.log(`Gemini Vision: sending request — model=${MODEL}, knowledge_objects=${knowledgeObjects.length}, ref_images=${refImagesLoaded}, dom=${domContext ? 'yes (' + domContext.length + ' chars)' : 'no'}`)
 
@@ -291,6 +307,10 @@ export async function callGeminiVision(
   return findings
 }
 
+// [FUTURE: Level 2 RAG] Not called from the pipeline.
+// Intended use: after callGeminiVision(), pass findings + retrieveRAGContext() output
+// here to get more specific repair_guidance and ai_fix_instruction grounded in
+// WCAG criterion numbers and exact CSS values. See rag.ts for retrieval logic.
 export async function callGeminiRepairGuidance(
   findings: Finding[],
   ragContext = ''

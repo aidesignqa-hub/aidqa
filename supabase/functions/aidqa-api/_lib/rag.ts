@@ -1,8 +1,26 @@
+// =============================================================================
+// [FUTURE: Level 2 RAG] — NOT wired into the active pipeline.
+//
+// This file contains:
+//   1. KNOWLEDGE_BASE — 35 hardcoded entries (WCAG, HIG, Material, best practices)
+//   2. retrieveRAGContext(finding) — ranks KB entries by embedding similarity or
+//      keyword overlap and returns the top-3 as text for repair guidance enrichment.
+//
+// Intended flow (not yet implemented):
+//   callGeminiVision() returns findings
+//   → for each finding: retrieveRAGContext(finding) → top-3 KB entries
+//   → callGeminiRepairGuidance(findings, ragContext) → enriched repair_guidance + ai_fix_instruction
+//
+// This is distinct from knowledgebase.json (79 rules in Supabase Storage), which IS
+// injected into the Gemini Vision prompt today. This file would add a second enrichment
+// pass focused on repair quality, not detection.
+// =============================================================================
+
 import type { Finding } from './types.ts'
 import { embedText, cosineSimilarity } from './embedding.ts'
 
 // ─── Knowledge Base ───────────────────────────────────────────────────────────
-// ~50 entries covering WCAG 2.1 AA, Apple HIG, Material Design 3, and design system best practices.
+// ~35 entries covering WCAG 2.1 AA, Apple HIG, Material Design 3, and design system best practices.
 // Used for RAG-enriched repair guidance — retrieved by keyword overlap or embedding similarity.
 
 export interface KnowledgeEntry {
