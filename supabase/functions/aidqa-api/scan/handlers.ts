@@ -561,13 +561,21 @@ export async function handleGetUsage(req: Request): Promise<Response> {
   monthStart.setDate(1)
   monthStart.setHours(0, 0, 0, 0)
 
-  const { count } = await supabase.from('scans')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('status', 'completed')
-    .gte('created_at', monthStart.toISOString())
+  const [{ count }, { data: limitRow }] = await Promise.all([
+    supabase.from('scans')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'completed')
+      .gte('created_at', monthStart.toISOString()),
+    supabase.from('user_scan_limits')
+      .select('monthly_limit')
+      .eq('user_id', userId)
+      .maybeSingle(),
+  ])
 
-  return corsResponse({ scans_this_month: count ?? 0, limit: 7, plan: 'free' })
+  const limit = limitRow?.monthly_limit ?? 7
+  const plan = limit >= 999 ? 'unlimited' : 'free'
+  return corsResponse({ scans_this_month: count ?? 0, limit, plan })
 }
 
 // ─── DELETE /v1/scans/:id ──────────────────────────────────────────────────────
