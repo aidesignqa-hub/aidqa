@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-orange)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]";
 
@@ -7,13 +9,16 @@ export function QualitySection() {
   return (
     <section
       className="relative py-24 md:py-36 overflow-hidden"
-      style={{
-        backgroundImage: "url(/design/quality-bg.png)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundColor: "#0a0a14",
-      }}
+      style={{ backgroundColor: "#0a0a14" }}
     >
+      {/* Background image — lazy, below fold */}
+      <Image
+        src="/design/quality-bg.png"
+        alt=""
+        fill
+        loading="lazy"
+        className="object-cover object-center pointer-events-none"
+      />
       <div className="absolute inset-0 bg-[#09090f]/50 pointer-events-none" />
 
       <div className="relative z-10 max-w-[1100px] mx-auto px-6 md:px-10">

@@ -60,9 +60,9 @@ const SEVERITY_COLORS: Record<string, string> = {
 
 const SEVERITY_DOT: Record<string, string> = {
   critical: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-yellow-500',
-  low: 'bg-blue-500',
+  high: 'bg-orange-400',
+  medium: 'bg-yellow-400',
+  low: 'bg-blue-400',
 }
 
 
@@ -253,7 +253,7 @@ export default function ScanResult() {
   const isLoading = !scan || scan.status === 'pending' || scan.status === 'processing'
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0a0a0b]">
       <NavBar />
       <main className="max-w-6xl mx-auto px-4 py-8">
 
@@ -342,7 +342,7 @@ export default function ScanResult() {
 
             {/* Left: image viewer — excluded from PDF */}
             <div className="space-y-2 no-print">
-              <div className="relative border rounded-lg overflow-hidden bg-muted">
+              <div className="relative border border-[rgba(255,255,255,0.06)] rounded-lg overflow-hidden bg-[#111113]">
                 {artifacts.normalized_path ? (
                   <div className="relative">
                     <img
@@ -381,7 +381,7 @@ export default function ScanResult() {
               {findings.length > 0 && (() => {
                 const counts: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 }
                 findings.forEach(f => { if (counts[f.severity] !== undefined) counts[f.severity]++ })
-                const dotColors: Record<string, string> = { critical: 'bg-red-500', high: 'bg-orange-500', medium: 'bg-yellow-500', low: 'bg-blue-500' }
+                const dotColors: Record<string, string> = { critical: 'bg-red-500', high: 'bg-orange-400', medium: 'bg-yellow-400', low: 'bg-blue-400' }
                 return (
                   <Card>
                     <CardContent className="pt-4 pb-3">
@@ -497,7 +497,8 @@ export default function ScanResult() {
 
                       {selectedFinding === f.id && (
                         <Button
-                          className="w-full mt-2 no-print"
+                          className="w-full mt-2 no-print bg-[#18181b] text-white border border-[rgba(255,255,255,0.08)] hover:bg-[#111113] hover:text-white"
+                          variant="outline"
                           size="sm"
                           onClick={() => setShowPreview(true)}
                         >

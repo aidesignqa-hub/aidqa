@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-orange)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]";
 
@@ -8,13 +10,16 @@ export function ProductDemoSection() {
     <section
       id="product-demo"
       className="relative py-20 md:py-28 overflow-hidden"
-      style={{
-        backgroundImage: "url(/design/demo-bg.png)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundColor: "#0c0c18",
-      }}
+      style={{ backgroundColor: "#0c0c18" }}
     >
+      {/* Background image — lazy, below fold */}
+      <Image
+        src="/design/demo-bg.png"
+        alt=""
+        fill
+        loading="lazy"
+        className="object-cover object-center pointer-events-none"
+      />
       {/* Dark overlay for contrast */}
       <div className="absolute inset-0 bg-[#09090f]/60 pointer-events-none" />
 

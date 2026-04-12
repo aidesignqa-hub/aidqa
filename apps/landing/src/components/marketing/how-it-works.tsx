@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 const steps = [
   {
@@ -36,13 +37,16 @@ export function HowItWorks() {
     <section
       id="how-it-works"
       className="relative py-20 md:py-28 overflow-hidden"
-      style={{
-        backgroundImage: "url(/design/hiw-bg.png)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundColor: "#0d0d1a",
-      }}
+      style={{ backgroundColor: "#0d0d1a" }}
     >
+      {/* Background image — lazy, below fold */}
+      <Image
+        src="/design/hiw-bg.png"
+        alt=""
+        fill
+        loading="lazy"
+        className="object-cover object-center pointer-events-none"
+      />
       <div className="absolute inset-0 bg-[#09090f]/70 pointer-events-none" />
 
       <div className="relative z-10 max-w-[1100px] mx-auto px-6 md:px-10">

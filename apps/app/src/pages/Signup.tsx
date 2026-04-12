@@ -37,13 +37,13 @@ export default function Signup() {
 
   if (done) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <Card className="w-full max-w-sm p-8 space-y-4 text-center">
-          <h1 className="text-2xl font-bold">Check your email</h1>
-          <p className="text-sm text-muted-foreground">
-            We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.
+      <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center p-6">
+        <Card className="w-full max-w-md p-8 space-y-4 text-center rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[#111113]">
+          <h1 className="text-2xl font-bold text-white">Check your email</h1>
+          <p className="text-sm text-[#a1a1aa]">
+            We sent a confirmation link to <strong className="text-[#f4f4f5]">{email}</strong>. Click it to activate your account.
           </p>
-          <Link to="/login" className="text-primary hover:underline text-sm">
+          <Link to="/login" className="text-[#f97316] hover:underline text-sm">
             Back to sign in
           </Link>
         </Card>
@@ -52,11 +52,11 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <Card className="w-full max-w-sm p-8 space-y-6">
+    <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center p-6">
+      <Card className="w-full max-w-md p-8 space-y-6 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[#111113]">
         <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-bold">Create an account</h1>
-          <p className="text-sm text-muted-foreground">Start monitoring visual regressions</p>
+          <h1 className="text-2xl font-bold text-white">Create an account</h1>
+          <p className="text-sm text-[#a1a1aa]">Start monitoring visual regressions</p>
         </div>
 
         {error && (
@@ -67,7 +67,7 @@ export default function Signup() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-[#f4f4f5]">Email</Label>
             <Input
               id="email"
               type="email"
@@ -75,10 +75,11 @@ export default function Signup() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
+              className="bg-[#18181b] border-[rgba(255,255,255,0.08)] text-white placeholder:text-[#71717a] rounded-xl h-11"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-[#f4f4f5]">Password</Label>
             <Input
               id="password"
               type="password"
@@ -87,16 +88,21 @@ export default function Signup() {
               placeholder="••••••••"
               minLength={6}
               required
+              className="bg-[#18181b] border-[rgba(255,255,255,0.08)] text-white placeholder:text-[#71717a] rounded-xl h-11"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full bg-[#f97316] hover:bg-[#ea6c0a] text-black font-semibold rounded-full h-11"
+            disabled={loading}
+          >
             {loading ? 'Creating account...' : 'Create account'}
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm text-[#a1a1aa]">
           Already have an account?{' '}
-          <Link to="/login" className="text-primary hover:underline">
+          <Link to="/login" className="text-[#f97316] hover:underline">
             Sign in
           </Link>
         </p>

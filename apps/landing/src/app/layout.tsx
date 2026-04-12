@@ -5,8 +5,8 @@ import './globals.css';
 import { PHProvider } from './providers';
 import { PostHogPageView } from './posthog-pageview';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-geist-sans' });
-const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-geist-mono' });
+const inter = Inter({ subsets: ['latin'], variable: '--font-geist-sans', display: 'swap' });
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' });
 
 const DESCRIPTION = 'AIDQA automatically audits AI-generated interfaces for layout drift, hierarchy issues, spacing inconsistency, and accessibility risk. Get prioritized findings and repair guidance before you ship.';
 

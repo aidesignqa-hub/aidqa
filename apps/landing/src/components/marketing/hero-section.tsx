@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-orange)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]";
 
@@ -11,16 +13,14 @@ export function HeroSection() {
         background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(120,30,60,0.55) 0%, rgba(9,9,15,1) 70%)",
       }}
     >
-      {/* Background image */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: "url(/design/hero-bg.png)",
-          backgroundSize: "cover",
-          backgroundPosition: "center top",
-          opacity: 0.35,
-          mixBlendMode: "screen",
-        }}
+      {/* Background image — priority for LCP */}
+      <Image
+        src="/design/hero-bg.png"
+        alt=""
+        fill
+        priority
+        className="object-cover object-top pointer-events-none"
+        style={{ opacity: 0.35, mixBlendMode: "screen" }}
       />
 
       {/* Decorative grid overlay */}

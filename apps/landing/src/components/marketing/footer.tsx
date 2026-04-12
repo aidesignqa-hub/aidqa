@@ -14,14 +14,12 @@ export function Footer() {
       className="relative overflow-hidden"
       style={{ backgroundColor: "#07070f" }}
     >
-      {/* SVG background */}
+      {/* Subtle gradient decoration replacing the heavy footer-bg.svg */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: "url(/design/footer-bg.svg)",
-          backgroundSize: "cover",
-          backgroundPosition: "center bottom",
-          opacity: 0.18,
+          background: "radial-gradient(ellipse 120% 80% at 50% 120%, rgba(30,25,50,0.6) 0%, transparent 70%)",
+          opacity: 0.6,
         }}
       />
 

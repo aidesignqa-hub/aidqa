@@ -46,11 +46,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <Card className="w-full max-w-sm p-8 space-y-6">
+    <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center p-6">
+      <Card className="w-full max-w-md p-8 space-y-6 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[#111113]">
         <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-bold">Sign in to AIDQA</h1>
-          <p className="text-sm text-muted-foreground">AI design QA for your UI</p>
+          <h1 className="text-2xl font-bold text-white">Sign in to AIDQA</h1>
+          <p className="text-sm text-[#a1a1aa]">AI design QA for your UI</p>
         </div>
 
         {error && (
@@ -61,7 +61,7 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-[#f4f4f5]">Email</Label>
             <Input
               id="email"
               type="email"
@@ -69,10 +69,11 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
+              className="bg-[#18181b] border-[rgba(255,255,255,0.08)] text-white placeholder:text-[#71717a] rounded-xl h-11"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-[#f4f4f5]">Password</Label>
             <Input
               id="password"
               type="password"
@@ -80,26 +81,31 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+              className="bg-[#18181b] border-[rgba(255,255,255,0.08)] text-white placeholder:text-[#71717a] rounded-xl h-11"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full bg-[#f97316] hover:bg-[#ea6c0a] text-black font-semibold rounded-full h-11"
+            disabled={loading}
+          >
             {loading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+            <span className="w-full border-t border-[rgba(255,255,255,0.08)]" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">or</span>
+            <span className="bg-[#111113] px-2 text-[#71717a]">or</span>
           </div>
         </div>
 
         <Button
           type="button"
           variant="outline"
-          className="w-full"
+          className="w-full border-[rgba(255,255,255,0.08)] bg-[#18181b] text-[#f4f4f5] hover:bg-[#18181b]/80 hover:text-white rounded-xl h-11"
           disabled={googleLoading || loading}
           onClick={handleGoogleSignIn}
         >
@@ -130,9 +136,9 @@ export default function Login() {
           )}
         </Button>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm text-[#a1a1aa]">
           No account?{' '}
-          <Link to="/signup" className="text-primary hover:underline">
+          <Link to="/signup" className="text-[#f97316] hover:underline">
             Sign up
           </Link>
         </p>

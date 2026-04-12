@@ -48,64 +48,69 @@ export default function ScanHistory() {
   }, [page])
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0a0a0b]">
       <NavBar />
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold">Scan history</h1>
-          <Button onClick={() => navigate('/')}>New scan</Button>
+          <h1 className="text-xl font-semibold text-white">Scan history</h1>
+          <Button
+            className="bg-[#f97316] hover:bg-[#ea6c0a] text-black font-semibold rounded-full"
+            onClick={() => navigate('/')}
+          >
+            New scan
+          </Button>
         </div>
 
         {loading && (
           <div className="flex justify-center py-16">
-            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-[#f97316] border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
         {!loading && error && (
-          <div className="text-center py-16 text-muted-foreground">
-            <p className="mb-3 text-destructive">{error}</p>
-            <Button variant="outline" onClick={() => setPage(p => p)}>Retry</Button>
+          <div className="text-center py-16 text-[#a1a1aa]">
+            <p className="mb-3 text-red-400">{error}</p>
+            <Button variant="outline" className="border-[rgba(255,255,255,0.08)] text-[#a1a1aa] hover:text-white hover:bg-[#18181b]" onClick={() => setPage(p => p)}>Retry</Button>
           </div>
         )}
 
         {!loading && scans.length === 0 && !error && (
-          <div className="text-center py-16 text-muted-foreground">
+          <div className="text-center py-16 text-[#a1a1aa]">
             <p className="mb-3">No scans yet.</p>
-            <Button variant="outline" onClick={() => navigate('/')}>Start your first scan</Button>
+            <Button variant="outline" className="border-[rgba(255,255,255,0.08)] text-[#a1a1aa] hover:text-white hover:bg-[#18181b]" onClick={() => navigate('/')}>Start your first scan</Button>
           </div>
         )}
 
         {!loading && scans.length > 0 && (
           <>
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border border-[rgba(255,255,255,0.06)] rounded-2xl overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50">
+                <thead className="bg-[#18181b]">
                   <tr>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">URL / File</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Findings</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Date</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-[#a1a1aa]">URL / File</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-[#a1a1aa]">Findings</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-[#a1a1aa]">Status</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-[#a1a1aa]">Date</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-[rgba(255,255,255,0.06)]">
                   {scans.map(scan => (
                     <tr
                       key={scan.id}
-                      className="hover:bg-muted/30 cursor-pointer transition-colors"
+                      className="bg-[#111113] hover:bg-[#18181b] cursor-pointer transition-colors"
                       onClick={() => navigate(`/scans/${scan.id}`)}
                     >
                       <td className="px-4 py-3 max-w-xs">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs shrink-0">
+                          <Badge variant="outline" className="text-xs shrink-0 border-[rgba(255,255,255,0.08)] text-[#a1a1aa]">
                             {scan.input_type === 'url' ? 'URL' : 'File'}
                           </Badge>
-                          <span className="truncate text-sm">
+                          <span className="truncate text-sm text-[#f4f4f5]">
                             {scan.input_url ?? scan.input_filename ?? scan.id}
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="px-4 py-3 text-[#a1a1aa]">
                         {scan.finding_count ?? '—'}
                       </td>
                       <td className="px-4 py-3">
@@ -116,7 +121,7 @@ export default function ScanHistory() {
                           {scan.status}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">
+                      <td className="px-4 py-3 text-[#a1a1aa] text-xs">
                         {new Date(scan.created_at).toLocaleDateString()}
                       </td>
                     </tr>
@@ -128,14 +133,14 @@ export default function ScanHistory() {
             {/* Pagination */}
             {total > LIMIT && (
               <div className="flex items-center justify-between mt-4">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-[#a1a1aa]">
                   Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total}
                 </p>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+                  <Button variant="outline" size="sm" className="border-[rgba(255,255,255,0.08)] text-[#a1a1aa] hover:text-white hover:bg-[#18181b]" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
                     Previous
                   </Button>
-                  <Button variant="outline" size="sm" disabled={page * LIMIT >= total} onClick={() => setPage(p => p + 1)}>
+                  <Button variant="outline" size="sm" className="border-[rgba(255,255,255,0.08)] text-[#a1a1aa] hover:text-white hover:bg-[#18181b]" disabled={page * LIMIT >= total} onClick={() => setPage(p => p + 1)}>
                     Next
                   </Button>
                 </div>
