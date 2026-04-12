@@ -103,9 +103,10 @@ export async function captureEnhanced(url: string): Promise<EnhancedCapture> {
 
   // Max 2 attempts — each attempt has a 40s abort. Total worst case: ~83s, safely under 150s limit.
   for (let attempt = 1; attempt <= 2; attempt++) {
+    let timeout: ReturnType<typeof setTimeout> | undefined
     try {
       const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 40000)
+      timeout = setTimeout(() => controller.abort(), 40000)
 
       const response = await fetch(endpoint, {
         method: 'POST',
