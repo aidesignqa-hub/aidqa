@@ -1,96 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
-import { ThemeToggle } from "./theme-toggle";
-
-const navLinks = [
-  { href: "#product", label: "Product" },
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#demo", label: "Demo" },
-  { href: "#early-access", label: "Early Access" },
-];
-
-const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-orange)] focus-visible:ring-offset-2";
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-orange)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]";
 
 export function Navigation() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-lg bg-[var(--background)]/80 border-b border-[var(--border-subtle)]">
-      <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-4">
-        <div className="flex items-center justify-between">
-          {/* Left: Logo + Desktop Links */}
-          <div className="flex items-center gap-12 min-w-0 shrink-0">
-            <button
-              className={`rounded ${focusRing}`}
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              aria-label="Back to top"
-            >
-              <img src="/aidqa-logo.png" alt="AIDQA" className="h-8 w-auto" />
-            </button>
+    <nav className="absolute top-0 left-0 right-0 z-50 px-6 md:px-10 py-5 flex items-center justify-between">
+      {/* Logo mark */}
+      <a href="/" aria-label="AIDQA home" className={`shrink-0 rounded ${focusRing}`}>
+        <img
+          src="/design/logo.svg"
+          alt="AIDQA"
+          className="h-10 w-auto"
+        />
+      </a>
 
-            <div className="hidden md:flex items-center gap-8">
-              {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className={`hover:opacity-70 transition-opacity rounded ${focusRing}`}
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: CTAs + Theme Toggle + Hamburger */}
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              className={`hidden sm:block px-6 py-3 min-h-[44px] rounded-full hover:bg-[var(--card)] transition-colors shrink-0 ${focusRing}`}
-              onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
-            >
-              Watch demo
-            </button>
-            <button
-              className={`px-4 py-2 sm:px-6 sm:py-3 text-sm min-h-[44px] rounded-full bg-[var(--accent-orange)] text-white hover:opacity-90 transition-opacity shrink-0 ${focusRing}`}
-              onClick={() => document.getElementById("early-access")?.scrollIntoView({ behavior: "smooth" })}
-            >
-              Join early access
-            </button>
-            <div className="shrink-0">
-              <ThemeToggle />
-            </div>
-
-            {/* Hamburger — mobile only */}
-            <button
-              className={`md:hidden p-2 rounded-lg hover:bg-[var(--card)] transition-colors shrink-0 ${focusRing}`}
-              aria-label={mobileOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileOpen}
-              onClick={() => setMobileOpen(!mobileOpen)}
-            >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-[var(--border-subtle)] bg-[var(--background)]">
-          <div className="max-w-[1200px] mx-auto px-6 py-4 flex flex-col gap-1">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className={`py-3 text-lg hover:opacity-70 transition-opacity rounded ${focusRing}`}
-                onClick={() => setMobileOpen(false)}
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* CTA */}
+      <a
+        href="https://app.aidesignqa.com"
+        className={`flex items-center gap-1.5 text-sm text-white/80 hover:text-white transition-colors rounded ${focusRing}`}
+      >
+        <span className="text-[var(--accent-orange)]">→</span>
+        <span>test it</span>
+      </a>
     </nav>
   );
 }

@@ -6,8 +6,7 @@ import { callGeminiVision, callGeminiDesignPreview } from '../_lib/gemini.ts'
 import { captureEnhanced, captureFullPageScreenshot } from './capture.ts'
 import { normalizeImage, generateOverlay } from './normalize.ts'
 import { calculateScore, mergeAndPrioritize } from './score.ts'
-// [FUTURE: Level 2 RAG] embedText used by embedAndStoreFindingsAsync below — not active in pipeline
-// import { embedText } from '../_lib/embedding.ts'
+
 import type { Finding, DesignSystemConfig } from '../_lib/types.ts'
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
@@ -274,12 +273,7 @@ async function _runProcessScan(
         }))
       ).select('id, title, why_it_matters')
 
-      // [FUTURE: Level 2 RAG] Embed findings for cross-scan similarity search.
-      // Disabled until finding_embeddings reads are implemented.
-      // To re-enable: uncomment the embedText import above and the block below.
-      // if (insertedFindings && insertedFindings.length > 0) {
-      //   EdgeRuntime.waitUntil(embedAndStoreFindingsAsync(insertedFindings, userId))
-      // }
+
     } else {
       console.warn(`[scan:${scanId}] No findings to insert — scan will complete with 0 findings and score=${overall}`)
     }
@@ -299,28 +293,6 @@ async function _runProcessScan(
   }
 }
 
-// [FUTURE: Level 2 RAG] Store finding embeddings for cross-scan similarity search.
-// Not called from the pipeline — see commented block above.
-// Requires: embedText import uncommented, finding_embeddings read path implemented.
-async function embedAndStoreFindingsAsync(
-  findings: Array<{ id: string; title: string; why_it_matters: string }>,
-  userId: string
-): Promise<void> {
-  for (const f of findings) {
-    try {
-      const text = `${f.title}. ${f.why_it_matters}`
-      const embedding = await embedText(text)
-      if (!embedding) continue
-      await supabase.from('finding_embeddings').insert({
-        finding_id: f.id,
-        user_id: userId,
-        embedding: JSON.stringify(embedding),
-      })
-    } catch (err) {
-      console.error('[embedFindings] failed for finding', f.id, err)
-    }
-  }
-}
 
 // ─── GET /v1/scans ─────────────────────────────────────────────────────────────
 

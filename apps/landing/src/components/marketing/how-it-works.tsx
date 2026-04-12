@@ -1,47 +1,101 @@
+"use client";
+
+import { useState } from "react";
+
+const steps = [
+  {
+    number: "01",
+    icon: "/design/hiw-icon-1.svg",
+    hoverIcons: ["/design/hiw-hover-1a.svg", "/design/hiw-hover-1b.svg"],
+    title: "Submit a URL or screenshot",
+    description:
+      "URL, AIDQA renders a normalized frame and extracts structural metadata.",
+  },
+  {
+    number: "02",
+    icon: "/design/hiw-icon-2.svg",
+    hoverIcons: ["/design/hiw-hover-2a.svg", "/design/hiw-hover-2b.svg"],
+    title: "Automated inspection runs",
+    description:
+      "Checks layout, hierarchy, consistency, accessibility, and design-system patterns. No baseline required.",
+  },
+  {
+    number: "03",
+    icon: "/design/hiw-icon-3.svg",
+    hoverIcons: ["/design/hiw-hover-3a.svg", "/design/hiw-hover-3b.svg"],
+    title: "Get prioritized findings",
+    description:
+      "3–7 findings ranked by severity, each with an evidence region, explanation of impact, and concrete repair guidance.",
+  },
+];
+
 export function HowItWorks() {
-  const steps = [
-    {
-      number: "01",
-      title: "Submit a screenshot or URL",
-      description: "Upload a PNG, JPG, or paste a public URL. AIDQA renders a normalized frame and extracts structural metadata.",
-    },
-    {
-      number: "02",
-      title: "Automated inspection runs",
-      description: "The rule engine checks layout, hierarchy, consistency, accessibility, and design-system patterns. No baseline required.",
-    },
-    {
-      number: "03",
-      title: "Get prioritized findings",
-      description: "You receive 3–7 findings ranked by severity, each with an evidence region, explanation of impact, and concrete repair guidance.",
-    },
-  ];
+  const [hovered, setHovered] = useState<number | null>(null);
 
   return (
-    <section id="how-it-works" className="py-20 md:py-32 bg-[var(--card)]">
-      <div className="max-w-[1200px] mx-auto px-6 md:px-8">
-        <h2 className="mb-4 text-center">How it works</h2>
-        <p className="text-center text-xl mb-20" style={{ color: "var(--text-muted)" }}>
-          Submit → Inspect → Fix. No setup required.
-        </p>
+    <section
+      id="how-it-works"
+      className="relative py-20 md:py-28 overflow-hidden"
+      style={{
+        backgroundImage: "url(/design/hiw-bg.png)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundColor: "#0d0d1a",
+      }}
+    >
+      <div className="absolute inset-0 bg-[#09090f]/70 pointer-events-none" />
 
-        <div className="grid md:grid-cols-3 gap-8 md:gap-0">
-          {steps.map((step, index) => (
+      <div className="relative z-10 max-w-[1100px] mx-auto px-6 md:px-10">
+        <div className="text-center mb-14">
+          <h2 className="text-white font-bold mb-3">How it works</h2>
+          <p style={{ color: "var(--text-muted)" }}>
+            Submit → Inspect → Fix. No setup required.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {steps.map((step, i) => (
             <div
               key={step.number}
-              className={`relative ${
-                index < steps.length - 1 ? "md:border-r border-[var(--border-subtle)] md:pr-8" : ""
-              } ${index > 0 ? "md:pl-8" : ""}`}
+              className="relative rounded-2xl p-8 flex flex-col gap-5 cursor-default transition-colors duration-200"
+              style={{
+                background: hovered === i
+                  ? "rgba(213,77,39,0.07)"
+                  : "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.07)",
+              }}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
             >
-              <div className="text-6xl mb-6 opacity-30" style={{ fontWeight: 800 }}>
-                {step.number}
+              {/* Icon area */}
+              <div className="relative w-14 h-14">
+                <img
+                  src={step.icon}
+                  alt=""
+                  aria-hidden="true"
+                  className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-200 ${
+                    hovered === i ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+                {step.hoverIcons.map((src, hi) => (
+                  <img
+                    key={hi}
+                    src={src}
+                    alt=""
+                    aria-hidden="true"
+                    className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-200 ${
+                      hovered === i ? "opacity-100" : "opacity-0"
+                    }`}
+                  />
+                ))}
               </div>
 
-              <h3 className="mb-4 text-2xl">{step.title}</h3>
-
-              <p className="text-lg leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                {step.description}
-              </p>
+              <div>
+                <h3 className="text-white font-semibold text-lg mb-2">{step.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                  {step.description}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -49,3 +103,4 @@ export function HowItWorks() {
     </section>
   );
 }
+

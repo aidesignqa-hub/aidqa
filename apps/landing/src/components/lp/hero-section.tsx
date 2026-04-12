@@ -1,37 +1,65 @@
 "use client";
 
-const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-orange)] focus-visible:ring-offset-2";
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-orange)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]";
 
 export function HeroSection() {
   return (
-    <section className="py-20 md:py-32">
-      <div className="max-w-[1200px] mx-auto px-6 md:px-8">
+    <section className="relative py-20 md:py-32 bg-[var(--background)] overflow-hidden">
+      {/* Warm radial glow — top-left bias to complement the 2-column layout */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 60% at 25% 0%, rgba(213,77,39,0.14) 0%, transparent 65%)",
+        }}
+      />
+      {/* Subtle top dashed rule, echoing marketing hero decoration */}
+      <div
+        aria-hidden="true"
+        className="absolute left-0 right-0 pointer-events-none"
+        style={{ top: "88px", borderTop: "1px dashed rgba(255,255,255,0.08)" }}
+      />
+
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-8">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left: Headline & CTAs */}
           <div>
-            <p className="text-sm uppercase tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
+            <p
+              className="text-xs uppercase tracking-widest mb-4"
+              style={{ color: "var(--text-muted)" }}
+            >
               Design Intelligence Layer for AI Builders
             </p>
-            <h1 className="mb-6 text-[3.5rem] md:text-[4.5rem] leading-[1.05]">
+            <h1 className="mb-6 text-[3.5rem] md:text-[4.5rem] leading-[1.05] font-extrabold tracking-tight text-white">
               Catch what's wrong with your AI-generated UI before users do
             </h1>
             <p className="text-lg mb-4 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-              AI builders move fast. The output often drifts — spacing breaks, hierarchy weakens, components go inconsistent. AIDQA measures objective design signals and tells you exactly what to fix.
+              AI builders move fast. The output often drifts — spacing breaks, hierarchy weakens,
+              components go inconsistent. AIDQA measures objective design signals and tells you
+              exactly what to fix.
             </p>
             <p className="text-sm mb-8 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-              Not taste. Not opinion. Measurable issues: contrast ratios, spacing rhythm, alignment offsets, accessibility thresholds.
+              Not taste. Not opinion. Measurable issues: contrast ratios, spacing rhythm, alignment
+              offsets, accessibility thresholds.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <button
-                className={`px-8 py-4 min-h-[44px] rounded-full bg-[var(--accent-orange)] text-white hover:opacity-90 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${focusRing}`}
-                onClick={() => document.getElementById("early-access")?.scrollIntoView({ behavior: "smooth" })}
+                className={`px-8 py-4 min-h-[44px] rounded-full bg-[var(--accent-orange)] text-white font-semibold hover:opacity-90 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${focusRing}`}
+                onClick={() =>
+                  document.getElementById("early-access")?.scrollIntoView({ behavior: "smooth" })
+                }
               >
                 Scan your UI free
               </button>
               <button
-                className={`px-8 py-4 min-h-[44px] rounded-full border-2 border-[var(--foreground)] text-[var(--foreground)] hover:bg-[var(--foreground)] hover:text-[var(--background)] transition-all ${focusRing}`}
-                onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
+                className={`px-8 py-4 min-h-[44px] rounded-full text-white/80 hover:text-white transition-all ${focusRing}`}
+                style={{ border: "1px solid rgba(255,255,255,0.2)" }}
+                onClick={() =>
+                  document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })
+                }
               >
                 Watch demo
               </button>

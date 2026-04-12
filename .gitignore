@@ -46,6 +46,9 @@ coverage/
 # Compiled plugin build output
 plugin/
 
+# Legacy root-level landing ghost dir (app lives in apps/landing/)
+/landing/
+
 # Video files (host on CDN/Supabase Storage instead)
 *.mp4
 

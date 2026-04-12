@@ -47,7 +47,7 @@ export function WhyPeoplePay() {
                 key={reason.title}
                 className="p-6 rounded-xl bg-[var(--background)] border border-[var(--border-subtle)]"
               >
-                <div className="w-12 h-12 rounded-lg bg-[var(--accent-orange)] bg-opacity-10 flex items-center justify-center mb-4">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{ background: "rgba(213,77,39,0.1)" }}>
                   <Icon className="w-6 h-6" style={{ color: "var(--accent-orange)" }} />
                 </div>
 

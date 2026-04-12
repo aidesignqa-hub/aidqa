@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-const inputClass = "w-full px-4 py-3 min-h-[44px] rounded-lg border border-[var(--border-subtle)] bg-[var(--card)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent-orange)] focus:ring-offset-2 focus:border-[var(--accent-orange)]";
-const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-orange)] focus-visible:ring-offset-2";
+const inputClass = "w-full px-4 py-3 min-h-[44px] rounded-lg border border-[var(--border-subtle)] bg-[var(--card)] text-[var(--foreground)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent-orange)] focus:ring-offset-2 focus:ring-offset-[var(--background)] focus:border-[var(--accent-orange)]";
+const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-orange)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]";
 
 export function EarlyAccessForm() {
   const [formData, setFormData] = useState({
@@ -85,6 +85,7 @@ export function EarlyAccessForm() {
             <select
               id="role"
               className={inputClass}
+              style={{ colorScheme: "dark" }}
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
             >
@@ -104,6 +105,7 @@ export function EarlyAccessForm() {
             <select
               id="companySize"
               className={inputClass}
+              style={{ colorScheme: "dark" }}
               value={formData.companySize}
               onChange={(e) => setFormData({ ...formData, companySize: e.target.value })}
             >

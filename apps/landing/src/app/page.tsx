@@ -2,36 +2,23 @@
 
 import { Navigation } from '@/components/marketing/navigation';
 import { HeroSection } from '@/components/marketing/hero-section';
-import { CredibilityStrip } from '@/components/marketing/credibility-strip';
-import { ProblemSection } from '@/components/marketing/problem-section';
-import { SolutionSection } from '@/components/marketing/solution-section';
+import { ProductDemoSection } from '@/components/marketing/product-demo-section';
+import { QualitySection } from '@/components/marketing/quality-section';
 import { HowItWorks } from '@/components/marketing/how-it-works';
-import { UseCases } from '@/components/marketing/use-cases';
-import { WhyPeoplePay } from '@/components/marketing/why-people-pay';
-import { WhoItsFor } from '@/components/marketing/who-its-for';
-import { DemoSection } from '@/components/marketing/demo-section';
-import { PromiseSection } from '@/components/marketing/promise-section';
-import { EarlyAccessForm } from '@/components/marketing/early-access-form';
-import { FAQ } from '@/components/marketing/faq';
+import { PricingSection } from '@/components/marketing/pricing-section';
 import { Footer } from '@/components/marketing/footer';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#09090f]">
       <Navigation />
       <HeroSection />
-      <CredibilityStrip />
-      <ProblemSection />
-      <SolutionSection />
+      <ProductDemoSection />
+      <QualitySection />
       <HowItWorks />
-      <UseCases />
-      <WhyPeoplePay />
-      <WhoItsFor />
-      <DemoSection />
-      <PromiseSection />
-      <EarlyAccessForm />
-      <FAQ />
+      <PricingSection />
       <Footer />
     </div>
   );
 }
+

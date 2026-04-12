@@ -50,7 +50,8 @@ export function DemoSection() {
                 Watch demo
               </button>
               <button
-                className={`px-8 py-4 min-h-[44px] rounded-full border-2 border-[var(--foreground)] text-[var(--foreground)] hover:bg-[var(--foreground)] hover:text-[var(--background)] transition-all flex items-center justify-center gap-2 ${focusRing}`}
+                className={`px-8 py-4 min-h-[44px] rounded-full text-white/80 hover:text-white transition-all flex items-center justify-center gap-2 ${focusRing}`}
+                style={{ border: "1px solid rgba(255,255,255,0.2)" }}
                 onClick={() => document.getElementById("early-access")?.scrollIntoView({ behavior: "smooth" })}
               >
                 <Download className="w-5 h-5" aria-hidden="true" />
